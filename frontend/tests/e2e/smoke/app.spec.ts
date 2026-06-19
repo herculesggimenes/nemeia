@@ -42,7 +42,7 @@ test.describe("Nemeia smoke", () => {
     await expect(page.getByRole("textbox", { name: /ask nemeia/i })).toBeVisible();
     await expect(page.getByRole("button", { exact: true, name: "Front Camera" })).toBeVisible();
     await expect(page.getByRole("button", { exact: true, name: "Point Cloud" })).toBeVisible();
-    await expect(page.locator(".artifactDrawer")).toBeVisible();
+    await expect(page.getByTestId("artifact-drawer")).toBeVisible();
     await expect(page.locator("body")).not.toContainText("THREAD VIEW");
 
     await expect.poll(() => errors).toEqual([]);
@@ -56,8 +56,8 @@ test.describe("Nemeia smoke", () => {
 
     await expect(page.getByAltText("Nemeia")).toBeVisible();
     await expect(page.getByRole("link", { name: /settings/i })).toHaveAttribute("data-active", "true");
-    await expect(page.locator(".settingsBlank")).toBeVisible();
-    await expect(page.locator(".artifactDrawer")).toHaveCount(0);
+    await expect(page.getByTestId("settings-page")).toBeVisible();
+    await expect(page.getByTestId("artifact-drawer")).toHaveCount(0);
 
     await expect.poll(() => errors).toEqual([]);
   });
@@ -70,7 +70,7 @@ test.describe("Nemeia smoke", () => {
 
     await page.getByRole("link", { name: /settings/i }).click();
     await expect(page).toHaveURL("/settings");
-    await expect(page.locator(".settingsBlank")).toBeVisible();
+    await expect(page.getByTestId("settings-page")).toBeVisible();
 
     await page.getByRole("link", { name: /conversation/i }).click();
     await expect(page).toHaveURL("/");
@@ -88,8 +88,10 @@ test.describe("Nemeia smoke", () => {
     await page.getByRole("textbox", { name: /ask nemeia/i }).fill("status?");
     await page.getByRole("button", { name: /send message/i }).click();
 
-    await expect(page.locator(".lmnrMessage.user").filter({ hasText: "status?" })).toBeVisible();
-    await expect(page.locator(".lmnrMessage.assistant").filter({ hasText: "Mock response queued for" })).toBeVisible();
+    await expect(page.getByTestId("thread-message").and(page.locator('[data-kind="user"]')).filter({ hasText: "status?" })).toBeVisible();
+    await expect(
+      page.getByTestId("thread-message").and(page.locator('[data-kind="assistant"]')).filter({ hasText: "Mock response queued for" })
+    ).toBeVisible();
 
     await expect.poll(() => errors).toEqual([]);
   });
@@ -101,10 +103,10 @@ test.describe("Nemeia smoke", () => {
     await disableAnimations(page);
 
     await page.getByRole("button", { name: /open file/i }).click();
-    await expect(page.locator(".extendWorkspace.fileTreeOpen")).toBeVisible();
+    await expect(page.getByTestId("artifact-workspace")).toHaveAttribute("data-file-tree-open", "true");
 
-    const before = await page.locator(".artifactDrawer").boundingBox();
-    const handle = await page.locator(".artifactResizeHandle").boundingBox();
+    const before = await page.getByTestId("artifact-drawer").boundingBox();
+    const handle = await page.getByRole("button", { name: /resize artifact pane/i }).boundingBox();
 
     expect(before).not.toBeNull();
     expect(handle).not.toBeNull();
@@ -118,12 +120,12 @@ test.describe("Nemeia smoke", () => {
     await page.mouse.move(handle.x - 96, handle.y + 120, { steps: 8 });
     await page.mouse.up();
 
-    const after = await page.locator(".artifactDrawer").boundingBox();
+    const after = await page.getByTestId("artifact-drawer").boundingBox();
     expect(after).not.toBeNull();
     expect(after?.width ?? 0).toBeGreaterThan(before.width + 40);
 
-    await expect(page.locator(".extendTabs")).toHaveCSS("overflow-x", "auto");
-    await expect(page.locator(".extendPreviewPath")).toHaveCSS("display", "none");
+    await expect(page.getByTestId("artifact-tabs")).toHaveCSS("overflow-x", "auto");
+    await expect(page.getByTestId("artifact-preview-path")).toHaveCSS("display", "none");
     await expect.poll(() => errors).toEqual([]);
   });
 });

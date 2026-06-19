@@ -59,17 +59,21 @@ export function ConversationPage() {
   };
 
   return (
-    <section className="thread">
-      <div className="mobileThreadHeader">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden px-5 py-3 md:px-8">
+      <div className="border-b border-surface-3 px-3 py-2 text-xs font-extrabold text-foreground md:hidden">
         <span>Conversation</span>
       </div>
 
-      <div className="threadList">
+      <div className="mx-auto flex min-h-0 w-full max-w-4xl flex-1 flex-col gap-2 overflow-auto px-0 py-5">
         <LmnrChatThread items={items} />
       </div>
 
-      <form className="promptBox" onSubmit={onSubmit}>
+      <form
+        className="mx-auto mb-3 grid h-28 w-full max-w-4xl shrink-0 grid-rows-[1fr_auto] rounded-lg border border-surface-4 bg-surface-2/95 p-3 focus-within:border-primary"
+        onSubmit={onSubmit}
+      >
         <textarea
+          className="h-full min-h-0 w-full resize-none border-0 bg-transparent text-sm leading-6 text-foreground outline-none placeholder:text-muted"
           aria-label="Ask Nemeia"
           name="message"
           ref={draftRef}
@@ -79,9 +83,14 @@ export function ConversationPage() {
           placeholder="Ask Nemeia..."
           rows={2}
         />
-        <div className="promptActions">
-          <span>Shift+Enter for newline</span>
-          <button type="button" onClick={submitDraft} aria-label="Send message">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[11px] text-muted">Shift+Enter for newline</span>
+          <button
+            className="grid size-8 place-items-center rounded-md border border-primary bg-primary text-surface-0 hover:bg-[#b4befe]"
+            type="button"
+            onClick={submitDraft}
+            aria-label="Send message"
+          >
             <Send size={15} />
           </button>
         </div>

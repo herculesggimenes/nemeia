@@ -7,6 +7,27 @@ const sourceRoots = ["app", "src"];
 const forbiddenFiles = ["index.html", "vite.config.ts", "src/main.tsx", "src/app.tsx"];
 const importPattern =
   /(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
+const classNamePattern = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g;
+const legacyStyleTokens = [
+  "appMain",
+  "artifactDrawer",
+  "artifactResizeHandle",
+  "artifactSurface",
+  "controlGrid",
+  "controlMock",
+  "extend",
+  "lmnr",
+  "metrics",
+  "mobileThreadHeader",
+  "promptActions",
+  "promptBox",
+  "robotCard",
+  "robotGlyph",
+  "settingsBlank",
+  "stopButton",
+  "threadList",
+  "unitree"
+];
 
 const failures = [];
 
@@ -127,6 +148,15 @@ for (const file of sourceFiles) {
   const fromLayer = classify(relativeFile);
   const source = readFileSync(file, "utf8");
 
+  for (const classNameMatch of source.matchAll(classNamePattern)) {
+    const classNameSource = classNameMatch[1] ?? classNameMatch[2] ?? classNameMatch[3] ?? "";
+    for (const token of legacyStyleTokens) {
+      if (classNameSource.includes(token)) {
+        failures.push(`${relativeFile}: legacy custom CSS class token "${token}" is not allowed; use Tailwind utilities and data-testid.`);
+      }
+    }
+  }
+
   for (const match of source.matchAll(importPattern)) {
     const specifier = match[1] ?? match[2];
     const resolved = resolveLocalImport(file, specifier);
@@ -146,6 +176,18 @@ for (const file of sourceFiles) {
       to: resolved.relative,
       toLayer: classify(resolved.relative)
     });
+  }
+}
+
+const globalCssPath = path.join(root, "src/styles.css");
+if (existsSync(globalCssPath)) {
+  const globalCss = readFileSync(globalCssPath, "utf8");
+  const classSelectorPattern = /(^|[{};,]\s*)\.[A-Za-z_-][\w-]*/gm;
+  const matches = Array.from(globalCss.matchAll(classSelectorPattern));
+
+  if (matches.length > 0) {
+    const selectors = matches.map((match) => match[0].trim()).join(", ");
+    failures.push(`src/styles.css: custom class selectors are not allowed (${selectors}); use Tailwind @theme/@utility or component utilities.`);
   }
 }
 

@@ -23,6 +23,7 @@ import {
   SidebarProvider,
   SidebarTrigger
 } from "../components/ui/sidebar";
+import { cn } from "../lib/utils";
 
 function isSettingsPath(pathname: string) {
   return pathname === "/settings" || pathname.startsWith("/settings/");
@@ -121,10 +122,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </SidebarContent>
       </Sidebar>
 
-      <SidebarInset className="appMain">
-        <header className="topbar">
-          <div className="topbarStatus">
-            <button className="stopButton">
+      <SidebarInset className="grid h-screen min-w-0 grid-rows-[48px_1fr] overflow-hidden nemeia-grid-bg">
+        <header className="flex min-w-0 items-center justify-end gap-4 border-b border-surface-3 bg-surface-1/80 px-[18px]">
+          <div className="flex shrink-0 items-center gap-2.5">
+            <button className="inline-flex h-9 items-center gap-2 rounded-md border border-red-300/35 bg-red-600 px-3 text-sm font-bold text-white shadow-sm hover:bg-red-500">
               <CircleStop size={18} />
               Emergency Stop
             </button>
@@ -134,9 +135,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </SidebarInset>
 
       {!settingsPage ? (
-        <aside className="artifactDrawer" style={{ width: `${artifactWidth}px` }}>
+        <aside
+          className="relative grid h-screen min-w-0 grid-rows-[1fr] overflow-hidden border-l border-surface-3 bg-surface-1"
+          data-testid="artifact-drawer"
+          style={{ width: `${artifactWidth}px` }}
+        >
           <button
-            className="artifactResizeHandle"
+            className="absolute top-0 bottom-0 left-0 z-20 m-0 w-2.5 cursor-col-resize border-0 bg-transparent p-0 touch-none after:absolute after:top-0 after:bottom-0 after:left-0 after:w-px after:bg-transparent hover:after:bg-primary"
             onPointerDown={startArtifactResize}
             type="button"
             aria-label="Resize artifact pane"
@@ -148,52 +153,64 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             onOpenArtifact={openArtifact}
             openArtifactIds={openArtifactIds}
           >
-            <div className="artifactSurface">
+            <div className="min-h-0 min-w-0 overflow-hidden">
               {activeArtifact.type === "camera" ? <UnitreeCameraView objects={sceneObjects} /> : null}
 
               {activeArtifact.type === "point_cloud" ? <UnitreePointCloudView objects={sceneObjects} /> : null}
 
               {activeArtifact.type === "control" ? (
-                <div className="controlMock">
-                  <div className="robotCard compact">
-                    <div className="robotGlyph">G2</div>
+                <div className="grid gap-3 p-4">
+                  <div className="flex items-center gap-3 rounded-lg border border-surface-3 bg-surface-2 p-3">
+                    <div className="grid size-9 place-items-center rounded-md bg-primary text-sm font-extrabold text-surface-0">
+                      G2
+                    </div>
                     <div>
-                      <strong>{robot.name}</strong>
-                      <span>{robot.mode}</span>
+                      <strong className="block text-sm text-foreground">{robot.name}</strong>
+                      <span className="block text-xs text-muted">{robot.mode}</span>
                     </div>
                   </div>
-                  <dl className="metrics compact">
-                    <div>
+                  <dl className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
+                    <div className="flex items-center justify-between gap-3">
                       <dt>Connection</dt>
-                      <dd>{robot.connection}</dd>
+                      <dd className="font-bold text-foreground">{robot.connection}</dd>
                     </div>
-                    <div>
+                    <div className="flex items-center justify-between gap-3">
                       <dt>Battery</dt>
-                      <dd>{robot.battery}%</dd>
+                      <dd className="font-bold text-foreground">{robot.battery}%</dd>
                     </div>
-                    <div>
+                    <div className="flex items-center justify-between gap-3">
                       <dt>Heartbeat</dt>
-                      <dd>{robot.lastHeartbeatMs}ms</dd>
+                      <dd className="font-bold text-foreground">{robot.lastHeartbeatMs}ms</dd>
                     </div>
                   </dl>
-                  <div className="controlGrid">
-                    <button>Stand</button>
-                    <button>Damp</button>
-                    <button>Stop</button>
-                    <button>Turn left</button>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Stand", "Damp", "Stop", "Turn left"].map((label) => (
+                      <button
+                        className={cn(
+                          "h-8 rounded-md border border-surface-3 bg-surface-2 text-xs font-bold text-foreground hover:bg-surface-3",
+                          label === "Stop" ? "border-danger/50 text-danger" : null
+                        )}
+                        key={label}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : null}
 
               {activeArtifact.type === "artifact" ? (
-                <div className="agentArtifact">
+                <div className="grid gap-3 p-6 text-sm text-foreground">
                   <Route size={22} />
-                  <h2>Generated route note</h2>
-                  <p>
+                  <h2 className="text-xl font-extrabold">Generated route note</h2>
+                  <p className="max-w-prose leading-6 text-muted">
                     Avoid direct approach. Use a left arc around floor_cable, re-check mask alignment, then stop 0.8m
                     from red_backpack.
                   </p>
-                  <code>nemeiactl plan preview --target obj_backpack --avoid obj_cable</code>
+                  <code className="rounded-md border border-surface-3 bg-surface-0 px-3 py-2 font-mono text-xs text-primary">
+                    nemeiactl plan preview --target obj_backpack --avoid obj_cable
+                  </code>
                 </div>
               ) : null}
             </div>

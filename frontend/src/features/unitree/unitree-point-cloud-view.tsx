@@ -210,12 +210,12 @@ export function UnitreePointCloudView({ objects }: Props) {
   }, [laserPoints, mapPoints, objects]);
 
   return (
-    <div className="unitreePointCloud">
-      <canvas ref={canvasRef} />
-      <div className="unitreeSlamHud">
-        <span>SLAM</span>
-        <strong>{mapPoints.length / 3} map pts</strong>
-        <strong>{laserPoints.length / 3} scan pts</strong>
+    <div className="relative h-full min-h-0 overflow-hidden bg-surface-0" data-testid="unitree-point-cloud">
+      <canvas className="block size-full" ref={canvasRef} />
+      <div className="absolute left-4 top-4 rounded-md border border-primary bg-surface-2/85 px-2.5 py-2 text-xs shadow-lg">
+        <span className="block text-[10px] font-extrabold uppercase tracking-wide text-muted">SLAM</span>
+        <strong className="block text-sm text-foreground">{mapPoints.length / 3} map pts</strong>
+        <strong className="block text-sm text-foreground">{laserPoints.length / 3} scan pts</strong>
       </div>
     </div>
   );

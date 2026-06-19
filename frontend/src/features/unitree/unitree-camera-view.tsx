@@ -5,6 +5,12 @@ type Props = {
   objects: SceneObject[];
 };
 
+const detectionPositions = [
+  "left-[58%] top-[32%]",
+  "left-[38%] top-[78%]",
+  "left-[47%] top-[27%]"
+];
+
 export function UnitreeCameraView({ objects }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -48,17 +54,20 @@ export function UnitreeCameraView({ objects }: Props) {
   }, []);
 
   return (
-    <div className="unitreeCamera">
-      <canvas ref={canvasRef} />
-      <div className="unitreeCameraShade" />
-      <div className="unitreeCameraHud">
-        <span>front camera</span>
-        <strong>No Video</strong>
+    <div className="relative h-full min-h-0 overflow-hidden bg-surface-0" data-testid="unitree-camera">
+      <canvas className="block size-full" ref={canvasRef} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,transparent_0,transparent_34%,rgba(17,17,27,0.46)_74%)]" />
+      <div className="absolute left-4 top-4 rounded-md border border-primary bg-surface-2/85 px-2.5 py-2 text-xs shadow-lg">
+        <span className="block text-[10px] font-extrabold uppercase tracking-wide text-muted">front camera</span>
+        <strong className="block text-sm text-foreground">No Video</strong>
       </div>
       {objects.map((object, index) => (
-        <div className={`unitreeDetection detection${index}`} key={object.id}>
-          <strong>{object.label}</strong>
-          <span>{Math.round(object.confidence * 100)}%</span>
+        <div
+          className={`absolute flex items-center gap-1.5 rounded-md border border-primary bg-surface-2/90 px-2.5 py-1 text-xs shadow-[0_0_0_8px_rgb(205_214_244/0.08)] ${detectionPositions[index] ?? "left-1/2 top-1/2"}`}
+          key={object.id}
+        >
+          <strong className="text-foreground">{object.label}</strong>
+          <span className="font-extrabold text-primary">{Math.round(object.confidence * 100)}%</span>
         </div>
       ))}
     </div>
