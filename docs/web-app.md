@@ -25,6 +25,12 @@ Unitree UI:
   robot visualization
 ```
 
+Detailed Unitree wiring plan:
+
+```text
+docs/unitree-integration.md
+```
+
 Unitree UI's useful pattern:
 
 ```text
@@ -40,13 +46,11 @@ operator logger panel
 
 ```text
 frontend:
-  Vite
+  Next.js
   React
   TypeScript
   Tailwind
   Radix UI primitives
-  Zustand
-  TanStack Query or SWR
   Three.js / React Three Fiber
   lucide-react
 
@@ -58,7 +62,7 @@ mock runtime:
   mocked thread/turn events
 ```
 
-Use Vite rather than Next.js for v0. We do not need SSR, auth-heavy routing, or a marketing site. We need a fast local operator console.
+Use Next.js for the frontend shell, with simple local pages and client components for the operator console. We do not need SSR-heavy flows, auth-heavy routing, or a marketing site.
 
 ## Repo Structure
 
@@ -68,92 +72,48 @@ Use `frontend/` as the local web console package.
 nemeia/
   frontend/
     package.json
-    vite.config.ts
     tsconfig.json
-    index.html
-    src/
-      main.tsx
-      app.tsx
-      styles.css
+    app/
+      layout.tsx
+      globals.css
+      (app)/
+        layout.tsx
+        page.tsx
+        settings/
+          page.tsx
 
-      app/
-        providers.tsx
+    components/
+      layout/
         app-shell.tsx
-        routes.tsx
 
-      components/
-        ui/
-          button.tsx
-          dialog.tsx
-          tabs.tsx
-          tooltip.tsx
-          badge.tsx
-          separator.tsx
-          scroll-area.tsx
-        common/
-          connection-indicator.tsx
-          empty-state.tsx
-          panel-header.tsx
+      ui/
+        button.tsx
+        dialog.tsx
+        tabs.tsx
+        tooltip.tsx
+        badge.tsx
+        separator.tsx
+        scroll-area.tsx
 
-      features/
-        thread/
-          thread-view.tsx
-          message-list.tsx
-          prompt-box.tsx
-          turn-event-list.tsx
-          turn-inspector.tsx
-          goal-panel.tsx
-          thread-store.ts
-          mock-thread-data.ts
+      thread/
+        conversation-page.tsx
+        nemeia-chat-thread.tsx
 
-        scene/
-          scene-panel.tsx
-          semantic-scene-graph.tsx
-          object-list.tsx
-          object-detail.tsx
-          three-scene.tsx
-          point-cloud-layer.tsx
-          robot-pose-layer.tsx
-          object-mask-layer.tsx
-          scene-store.ts
-          mock-scene-data.ts
+      artifacts/
+        artifact-workspace.tsx
 
-        robots/
-          robot-panel.tsx
-          robot-status-strip.tsx
-          go2-controls.tsx
-          action-buttons.tsx
-          telemetry-table.tsx
-          emergency-stop.tsx
-          robot-store.ts
-          mock-robot-data.ts
+      unitree/
+        unitree-camera-view.tsx
+        unitree-point-cloud-view.tsx
 
-        component-queues/
-          component-queue-panel.tsx
-          component-event-list.tsx
-          trigger-list.tsx
-          component-event-store.ts
-          mock-component-events.ts
+      settings-page.tsx
 
-        artifacts/
-          artifact-panel.tsx
-          camera-view.tsx
-          audio-view.tsx
-          cloud-view.tsx
-          artifact-store.ts
-          mock-artifacts.ts
+    lib/
+      mock-data.ts
+      utils.ts
 
-      lib/
-        api/
-          client.ts
-          mock-client.ts
-          websocket.ts
-          mock-websocket.ts
-          types.ts
-        geometry.ts
-        time.ts
-        colors.ts
-        ids.ts
+    types/
+      nemeia.ts
 ```
 
 ## V0 Screen

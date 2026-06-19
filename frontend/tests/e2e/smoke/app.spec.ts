@@ -42,7 +42,35 @@ test.describe("Nemeia smoke", () => {
     await expect(page.getByRole("textbox", { name: /ask nemeia/i })).toBeVisible();
     await expect(page.getByRole("button", { exact: true, name: "Front Camera" })).toBeVisible();
     await expect(page.getByRole("button", { exact: true, name: "Point Cloud" })).toBeVisible();
+    await expect(page.getByRole("tree", { name: "Connected systems" })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: /systems go2/i })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: /go2 front camera/i })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: /go2 lidar/i })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: /go2 control/i })).toBeVisible();
+    await page.getByRole("treeitem", { name: /systems go2/i }).click();
+    await expect(page.getByRole("treeitem", { name: /go2 front camera/i })).toHaveCount(0);
+    await page.getByRole("treeitem", { name: /systems go2/i }).click();
+    await expect(page.getByRole("treeitem", { name: /go2 front camera/i })).toBeVisible();
     await expect(page.getByTestId("artifact-drawer")).toBeVisible();
+
+    const sidebarBefore = await page.locator('[data-slot="sidebar-container"]').boundingBox();
+    const sidebarHandle = await page.getByRole("button", { name: /resize sidebar/i }).boundingBox();
+
+    expect(sidebarBefore).not.toBeNull();
+    expect(sidebarHandle).not.toBeNull();
+
+    if (!sidebarBefore || !sidebarHandle) {
+      return;
+    }
+
+    await page.mouse.move(sidebarHandle.x + sidebarHandle.width / 2, sidebarHandle.y + 100);
+    await page.mouse.down();
+    await page.mouse.move(sidebarHandle.x + 72, sidebarHandle.y + 100, { steps: 8 });
+    await page.mouse.up();
+
+    const sidebarAfter = await page.locator('[data-slot="sidebar-container"]').boundingBox();
+    expect(sidebarAfter).not.toBeNull();
+    expect(sidebarAfter?.width ?? 0).toBeGreaterThan(sidebarBefore.width + 32);
     await expect(page.locator("body")).not.toContainText("THREAD VIEW");
 
     await expect.poll(() => errors).toEqual([]);
@@ -57,6 +85,9 @@ test.describe("Nemeia smoke", () => {
     await expect(page.getByAltText("Nemeia")).toBeVisible();
     await expect(page.getByRole("link", { name: /settings/i })).toHaveAttribute("data-active", "true");
     await expect(page.getByTestId("settings-page")).toBeVisible();
+    await expect(page.getByText("Go2 local connection")).toBeVisible();
+    await expect(page.getByLabel("Robot IP")).toHaveValue("192.168.12.1");
+    await expect(page.getByRole("button", { exact: true, name: "Connect" })).toBeVisible();
     await expect(page.getByTestId("artifact-drawer")).toHaveCount(0);
 
     await expect.poll(() => errors).toEqual([]);
@@ -104,6 +135,13 @@ test.describe("Nemeia smoke", () => {
 
     await page.getByRole("button", { name: /open file/i }).click();
     await expect(page.getByTestId("artifact-workspace")).toHaveAttribute("data-file-tree-open", "true");
+    await expect(page.getByRole("tree", { name: "Artifact file tree" })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: "robots" })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: "go2/front-camera.stream" })).toBeVisible();
+    await page.getByRole("treeitem", { name: "robots" }).click();
+    await expect(page.getByRole("treeitem", { name: "go2/front-camera.stream" })).toHaveCount(0);
+    await page.getByRole("treeitem", { name: "robots" }).click();
+    await expect(page.getByRole("treeitem", { name: "go2/front-camera.stream" })).toBeVisible();
 
     const before = await page.getByTestId("artifact-drawer").boundingBox();
     const handle = await page.getByRole("button", { name: /resize artifact pane/i }).boundingBox();

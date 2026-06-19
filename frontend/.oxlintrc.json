@@ -86,6 +86,13 @@
         "no-console": "off",
         "unicorn/prefer-top-level-await": "off"
       }
+    },
+    {
+      "files": ["public/workers/**/*.js"],
+      "rules": {
+        "no-underscore-dangle": "off",
+        "unicorn/require-post-message-target-origin": "off"
+      }
     }
   ]
 }

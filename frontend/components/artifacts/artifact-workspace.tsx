@@ -1,7 +1,5 @@
 import {
   Camera,
-  ChevronDown,
-  ChevronRight,
   FileText,
   Folder,
   Layers3,
@@ -11,12 +9,13 @@ import {
   X
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Artifact } from "../../types/nemeia";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
+import { FileTree, type FileTreeNode } from "../navigation/file-tree";
 
 type Props = {
   artifacts: Artifact[];
@@ -49,10 +48,30 @@ export function ArtifactWorkspace({
 }: Props) {
   const [fileTreeOpen, setFileTreeOpen] = useState(false);
   const active = artifacts.find((artifact) => artifact.id === activeArtifactId) ?? null;
-  const openArtifacts = openArtifactIds
-    .map((id) => artifacts.find((artifact) => artifact.id === id))
-    .filter((artifact): artifact is Artifact => Boolean(artifact));
-  const folders = Array.from(new Set(artifacts.map(folderForArtifact)));
+  const openArtifacts = useMemo(
+    () =>
+      openArtifactIds
+        .map((id) => artifacts.find((artifact) => artifact.id === id))
+        .filter((artifact): artifact is Artifact => Boolean(artifact)),
+    [artifacts, openArtifactIds]
+  );
+  const fileTreeNodes: FileTreeNode[] = useMemo(
+    () =>
+      Array.from(new Set(artifacts.map(folderForArtifact))).map((folder) => ({
+        id: `artifact-folder-${folder}`,
+        label: folder,
+        icon: Folder,
+        children: artifacts
+          .filter((artifact) => folderForArtifact(artifact) === folder)
+          .map((artifact) => ({
+            id: artifact.id,
+            label: artifact.path.split("/").slice(1).join("/") || artifact.title,
+            detail: artifact.contentType,
+            icon: artifactIcons[artifact.type]
+          }))
+      })),
+    [artifacts]
+  );
 
   return (
     <div
@@ -163,44 +182,17 @@ export function ArtifactWorkspace({
           />
         </div>
 
-        {folders.map((folder) => (
-          <div className="mt-2" key={folder}>
-            <div className="flex h-[25px] items-center gap-1.5 text-xs text-foreground">
-              <ChevronDown size={14} />
-              <span>{folder}</span>
-            </div>
-            {artifacts
-              .filter((artifact) => folderForArtifact(artifact) === folder)
-              .map((artifact) => {
-                const Icon = artifactIcons[artifact.type];
-                return (
-                  <Button
-                    className={cn(
-                      "grid min-h-[29px] w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md border border-transparent px-2 pl-[22px] text-left text-xs text-foreground hover:bg-surface-3",
-                      artifact.id === activeArtifactId ? "bg-surface-3" : null
-                    )}
-                    variant="ghost"
-                    size="sm"
-                    key={artifact.id}
-                    onClick={() => {
-                      onOpenArtifact(artifact.id);
-                      setFileTreeOpen(false);
-                    }}
-                  >
-                    <Icon size={14} />
-                    <span className="truncate whitespace-nowrap">{artifact.path.split("/").slice(1).join("/") || artifact.title}</span>
-                  </Button>
-                );
-              })}
-          </div>
-        ))}
-
-        <div className="mt-2">
-          <div className="flex h-[25px] items-center gap-1.5 text-xs text-foreground">
-            <ChevronRight size={14} />
-            <span>generated</span>
-          </div>
-        </div>
+        <FileTree
+          activeId={activeArtifactId}
+          ariaLabel="Artifact file tree"
+          className="mt-2"
+          nodes={fileTreeNodes}
+          testId="artifact-file-tree"
+          onSelect={(id) => {
+            onOpenArtifact(id);
+            setFileTreeOpen(false);
+          }}
+        />
       </aside>
       ) : null}
     </div>

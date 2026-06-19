@@ -75,7 +75,7 @@ export const artifacts: Artifact[] = [
     id: "camera_front",
     type: "camera",
     title: "Front Camera",
-    description: "Mock camera artifact with current object overlays.",
+    description: "Mock camera artifact for the front Go2 stream.",
     status: "mock",
     path: "robots/go2/front-camera.stream",
     contentType: "application/x.nemeia.camera-stream",
