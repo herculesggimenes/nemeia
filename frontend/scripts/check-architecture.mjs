@@ -3,8 +3,18 @@ import path from "node:path";
 import process from "node:process";
 
 const root = process.cwd();
-const sourceRoots = ["app", "src"];
-const forbiddenFiles = ["index.html", "vite.config.ts", "src/main.tsx", "src/app.tsx"];
+const sourceRoots = ["app", "components", "lib", "types"];
+const forbiddenPaths = [
+  "index.html",
+  "vite.config.ts",
+  "src",
+  "src/main.tsx",
+  "src/app.tsx",
+  "src/app-shell",
+  "src/features",
+  "src/route-pages",
+  "src/styles.css"
+];
 const importPattern =
   /(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
 const classNamePattern = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g;
@@ -55,9 +65,35 @@ const walk = (dir) => {
 
 const sourceFiles = sourceRoots.flatMap((dir) => walk(path.join(root, dir)));
 
-for (const forbiddenFile of forbiddenFiles) {
-  if (existsSync(path.join(root, forbiddenFile))) {
-    failures.push(`${forbiddenFile}: Vite-era entrypoints are not allowed in the Next.js frontend.`);
+for (const forbiddenPath of forbiddenPaths) {
+  if (existsSync(path.join(root, forbiddenPath))) {
+    failures.push(`${forbiddenPath}: frontend follows the Laminar-style app/components/lib/types layout; this path is not allowed.`);
+  }
+}
+
+const rootEntries = readdirSync(root, { withFileTypes: true });
+const allowedTopLevelSourceDirs = new Set([
+  ".next",
+  ".swc",
+  "app",
+  "components",
+  "dist",
+  "lib",
+  "node_modules",
+  "public",
+  "scripts",
+  "test-results",
+  "tests",
+  "types"
+]);
+
+for (const entry of rootEntries) {
+  if (!entry.isDirectory()) {
+    continue;
+  }
+
+  if (!allowedTopLevelSourceDirs.has(entry.name) && !entry.name.startsWith(".")) {
+    failures.push(`${entry.name}/: top-level frontend folders must match Laminar's app/components/lib/types split.`);
   }
 }
 
@@ -78,68 +114,51 @@ const resolveLocalImport = (fromFile, specifier) => {
 
 const classify = (relativePath) => {
   if (relativePath.startsWith("app/")) {
-    return "app";
+    return relativePath === "app/globals.css" ? "styles" : "app";
   }
 
-  if (relativePath.startsWith("src/app-shell/")) {
-    return "app-shell";
-  }
-
-  if (relativePath.startsWith("src/route-pages/")) {
-    return "route-pages";
-  }
-
-  if (relativePath.startsWith("src/components/ui/")) {
+  if (relativePath.startsWith("components/ui/")) {
     return "ui";
   }
 
-  if (relativePath.startsWith("src/features/")) {
-    return "feature";
+  if (relativePath.startsWith("components/")) {
+    return "components";
   }
 
-  if (relativePath.startsWith("src/lib/")) {
+  if (relativePath.startsWith("lib/")) {
     return "lib";
   }
 
-  if (relativePath === "src/styles.css") {
-    return "styles";
+  if (relativePath.startsWith("types/")) {
+    return "types";
   }
 
   return "unknown";
 };
 
+const allowedImportsByLayer = {
+  app: new Set(["app", "components", "ui", "lib", "types", "styles"]),
+  components: new Set(["components", "ui", "lib", "types"]),
+  ui: new Set(["ui", "lib", "types"]),
+  lib: new Set(["lib", "types"]),
+  types: new Set(["types"]),
+  styles: new Set(["styles"])
+};
+
 const ensureBoundary = ({ from, fromLayer, to, toLayer }) => {
   if (toLayer === "unknown") {
-    failures.push(`${from}: import to ${to} is outside the approved frontend folders.`);
+    failures.push(`${from}: import to ${to} is outside the approved Laminar-style frontend folders.`);
     return;
   }
 
-  if (fromLayer === "app" && !["app-shell", "route-pages", "styles"].includes(toLayer)) {
-    failures.push(`${from}: app routes may only import app-shell, route-pages, or global styles (${to}).`);
+  const allowedTargets = allowedImportsByLayer[fromLayer];
+  if (!allowedTargets) {
+    failures.push(`${from}: file is outside the approved app/components/lib/types layers.`);
+    return;
   }
 
-  if (fromLayer === "app-shell" && toLayer === "route-pages") {
-    failures.push(`${from}: app-shell must not import route pages (${to}).`);
-  }
-
-  if (fromLayer === "route-pages" && ["app-shell", "ui"].includes(toLayer)) {
-    failures.push(`${from}: route pages must stay thin and not import ${toLayer} directly (${to}).`);
-  }
-
-  if (fromLayer === "route-pages" && toLayer === "feature" && !to.startsWith("src/features/thread/")) {
-    failures.push(`${from}: route pages may only compose thread features directly (${to}).`);
-  }
-
-  if (fromLayer === "ui" && !["ui", "lib"].includes(toLayer)) {
-    failures.push(`${from}: UI primitives may only import UI primitives or lib utilities (${to}).`);
-  }
-
-  if (fromLayer === "feature" && ["app", "app-shell", "route-pages"].includes(toLayer)) {
-    failures.push(`${from}: features must not import routes or shell code (${to}).`);
-  }
-
-  if (fromLayer === "lib" && !["lib"].includes(toLayer)) {
-    failures.push(`${from}: lib modules must not import UI, features, routes, or shell code (${to}).`);
+  if (!allowedTargets.has(toLayer)) {
+    failures.push(`${from}: ${fromLayer} code must not import ${toLayer} code (${to}).`);
   }
 };
 
@@ -147,6 +166,10 @@ for (const file of sourceFiles) {
   const relativeFile = normalize(path.relative(root, file));
   const fromLayer = classify(relativeFile);
   const source = readFileSync(file, "utf8");
+
+  if (fromLayer === "unknown") {
+    failures.push(`${relativeFile}: source files must live under app/, components/, lib/, or types/.`);
+  }
 
   for (const classNameMatch of source.matchAll(classNamePattern)) {
     const classNameSource = classNameMatch[1] ?? classNameMatch[2] ?? classNameMatch[3] ?? "";
@@ -179,7 +202,7 @@ for (const file of sourceFiles) {
   }
 }
 
-const globalCssPath = path.join(root, "src/styles.css");
+const globalCssPath = path.join(root, "app/globals.css");
 if (existsSync(globalCssPath)) {
   const globalCss = readFileSync(globalCssPath, "utf8");
   const classSelectorPattern = /(^|[{};,]\s*)\.[A-Za-z_-][\w-]*/gm;
@@ -187,7 +210,7 @@ if (existsSync(globalCssPath)) {
 
   if (matches.length > 0) {
     const selectors = matches.map((match) => match[0].trim()).join(", ");
-    failures.push(`src/styles.css: custom class selectors are not allowed (${selectors}); use Tailwind @theme/@utility or component utilities.`);
+    failures.push(`app/globals.css: custom class selectors are not allowed (${selectors}); use Tailwind @theme/@utility or component utilities.`);
   }
 }
 

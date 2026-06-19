@@ -1,4 +1,4 @@
-import type { Artifact, ComponentEvent, RobotStatus, SceneObject, ThreadItem } from "./types";
+import type { Artifact, ComponentEvent, RobotStatus, SceneObject, ThreadItem } from "../types/nemeia";
 
 export const robots: RobotStatus[] = [
   {

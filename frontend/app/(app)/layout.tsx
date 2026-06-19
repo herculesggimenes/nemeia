@@ -1,4 +1,4 @@
-import { AppShell } from "../../src/app-shell/app-shell";
+import { AppShell } from "../../components/layout/app-shell";
 
 export default function NemeiaAppLayout({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;

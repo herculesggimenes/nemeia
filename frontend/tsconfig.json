@@ -18,6 +18,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["next-env.d.ts", "app", "src", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "app", "components", "lib", "types", ".next/types/**/*.ts"],
   "references": []
 }

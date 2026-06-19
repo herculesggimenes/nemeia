@@ -2,9 +2,9 @@
 
 import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useRef, useState } from "react";
 import { Send } from "lucide-react";
-import { threadItems } from "../lib/mock-data";
-import type { ThreadItem } from "../lib/types";
-import { LmnrChatThread } from "../features/thread/lmnr-chat-thread";
+import { threadItems } from "../../lib/mock-data";
+import type { ThreadItem } from "../../types/nemeia";
+import { LmnrChatThread } from "./lmnr-chat-thread";
 
 function clockTime() {
   return new Date().toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });

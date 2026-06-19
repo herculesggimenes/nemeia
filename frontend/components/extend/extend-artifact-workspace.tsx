@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
-import type { Artifact } from "../../lib/types";
+import type { Artifact } from "../../types/nemeia";
 import { cn } from "../../lib/utils";
 
 type Props = {

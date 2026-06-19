@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { SceneObject } from "../../lib/types";
+import type { SceneObject } from "../../types/nemeia";
 
 type Props = {
   objects: SceneObject[];

@@ -5,11 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CircleStop, MessagesSquare, Route, Settings } from "lucide-react";
-import { artifacts, robots, sceneObjects } from "../lib/mock-data";
-import type { Artifact } from "../lib/types";
-import { UnitreeCameraView } from "../features/unitree/unitree-camera-view";
-import { UnitreePointCloudView } from "../features/unitree/unitree-point-cloud-view";
-import { ExtendArtifactWorkspace } from "../features/extend/extend-artifact-workspace";
+import { artifacts, robots, sceneObjects } from "../../lib/mock-data";
+import type { Artifact } from "../../types/nemeia";
+import { UnitreeCameraView } from "../unitree/unitree-camera-view";
+import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
+import { ExtendArtifactWorkspace } from "../extend/extend-artifact-workspace";
 import {
   Sidebar,
   SidebarContent,
@@ -22,8 +22,8 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger
-} from "../components/ui/sidebar";
-import { cn } from "../lib/utils";
+} from "../ui/sidebar";
+import { cn } from "../../lib/utils";
 
 function isSettingsPath(pathname: string) {
   return pathname === "/settings" || pathname.startsWith("/settings/");

@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 @source "../app/**/*.{ts,tsx,js,jsx}";
-@source "../src/**/*.{ts,tsx,js,jsx}";
+@source "../components/**/*.{ts,tsx,js,jsx}";
+@source "../lib/**/*.{ts,tsx,js,jsx}";
+@source "../types/**/*.{ts,tsx,js,jsx}";
 
 @theme {
   --color-background: #1e1e2e;

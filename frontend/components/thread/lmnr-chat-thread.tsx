@@ -7,7 +7,7 @@ import {
   RadioTower
 } from "lucide-react";
 import { useState } from "react";
-import type { ThreadItem, ThreadItemKind } from "../../lib/types";
+import type { ThreadItem, ThreadItemKind } from "../../types/nemeia";
 import { cn } from "../../lib/utils";
 
 type Props = {
