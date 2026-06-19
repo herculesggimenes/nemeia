@@ -2,22 +2,7 @@
 
 Nemeia should use a web console as the primary operator interface. V0 should focus on the frontend only, with mocked data and mocked realtime events. The real app server/control plane can come later.
 
-## References
-
-Laminar frontend:
-
-```text
-/Users/hgimenes/src/lmnr/frontend
-  app/
-  components/
-  components/ui/
-  lib/
-  lib/actions/
-  contexts/
-  hooks/
-```
-
-Laminar's useful pattern:
+## Frontend Pattern
 
 ```text
 route-level shell
@@ -77,7 +62,7 @@ Use Vite rather than Next.js for v0. We do not need SSR, auth-heavy routing, or 
 
 ## Repo Structure
 
-Use `frontend/`, like Laminar.
+Use `frontend/` as the local web console package.
 
 ```text
 nemeia/

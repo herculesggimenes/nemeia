@@ -11,6 +11,10 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "incremental": true,

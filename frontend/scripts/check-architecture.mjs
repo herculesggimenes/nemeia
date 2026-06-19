@@ -18,6 +18,7 @@ const forbiddenPaths = [
 const importPattern =
   /(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
 const classNamePattern = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g;
+const rawInteractivePattern = /<(button|textarea|input)\b/g;
 const legacyStyleTokens = [
   "appMain",
   "artifactDrawer",
@@ -25,8 +26,6 @@ const legacyStyleTokens = [
   "artifactSurface",
   "controlGrid",
   "controlMock",
-  "extend",
-  "lmnr",
   "metrics",
   "mobileThreadHeader",
   "promptActions",
@@ -67,7 +66,7 @@ const sourceFiles = sourceRoots.flatMap((dir) => walk(path.join(root, dir)));
 
 for (const forbiddenPath of forbiddenPaths) {
   if (existsSync(path.join(root, forbiddenPath))) {
-    failures.push(`${forbiddenPath}: frontend follows the Laminar-style app/components/lib/types layout; this path is not allowed.`);
+    failures.push(`${forbiddenPath}: frontend follows the Nemeia app/components/lib/types layout; this path is not allowed.`);
   }
 }
 
@@ -93,7 +92,7 @@ for (const entry of rootEntries) {
   }
 
   if (!allowedTopLevelSourceDirs.has(entry.name) && !entry.name.startsWith(".")) {
-    failures.push(`${entry.name}/: top-level frontend folders must match Laminar's app/components/lib/types split.`);
+    failures.push(`${entry.name}/: top-level frontend folders must match Nemeia's app/components/lib/types split.`);
   }
 }
 
@@ -147,7 +146,7 @@ const allowedImportsByLayer = {
 
 const ensureBoundary = ({ from, fromLayer, to, toLayer }) => {
   if (toLayer === "unknown") {
-    failures.push(`${from}: import to ${to} is outside the approved Laminar-style frontend folders.`);
+    failures.push(`${from}: import to ${to} is outside the approved Nemeia frontend folders.`);
     return;
   }
 
@@ -177,6 +176,14 @@ for (const file of sourceFiles) {
       if (classNameSource.includes(token)) {
         failures.push(`${relativeFile}: legacy custom CSS class token "${token}" is not allowed; use Tailwind utilities and data-testid.`);
       }
+    }
+  }
+
+  if (!relativeFile.startsWith("components/ui/")) {
+    for (const rawInteractiveMatch of source.matchAll(rawInteractivePattern)) {
+      failures.push(
+        `${relativeFile}: raw <${rawInteractiveMatch[1]}> is not allowed outside components/ui; use the shadcn UI primitive.`
+      );
     }
   }
 

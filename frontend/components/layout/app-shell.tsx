@@ -9,7 +9,7 @@ import { artifacts, robots, sceneObjects } from "../../lib/mock-data";
 import type { Artifact } from "../../types/nemeia";
 import { UnitreeCameraView } from "../unitree/unitree-camera-view";
 import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
-import { ExtendArtifactWorkspace } from "../extend/extend-artifact-workspace";
+import { ArtifactWorkspace } from "../artifacts/artifact-workspace";
 import {
   Sidebar,
   SidebarContent,
@@ -24,6 +24,9 @@ import {
   SidebarTrigger
 } from "../ui/sidebar";
 import { cn } from "../../lib/utils";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+import { Card, CardContent } from "../ui/card";
 
 function isSettingsPath(pathname: string) {
   return pathname === "/settings" || pathname.startsWith("/settings/");
@@ -125,10 +128,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <SidebarInset className="grid h-screen min-w-0 grid-rows-[48px_1fr] overflow-hidden nemeia-grid-bg">
         <header className="flex min-w-0 items-center justify-end gap-4 border-b border-surface-3 bg-surface-1/80 px-[18px]">
           <div className="flex shrink-0 items-center gap-2.5">
-            <button className="inline-flex h-9 items-center gap-2 rounded-md border border-red-300/35 bg-red-600 px-3 text-sm font-bold text-white shadow-sm hover:bg-red-500">
+            <Button className="h-9 gap-2 px-3 text-sm font-bold" variant="destructive">
               <CircleStop size={18} />
               Emergency Stop
-            </button>
+            </Button>
           </div>
         </header>
         {children}
@@ -140,13 +143,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           data-testid="artifact-drawer"
           style={{ width: `${artifactWidth}px` }}
         >
-          <button
-            className="absolute top-0 bottom-0 left-0 z-20 m-0 w-2.5 cursor-col-resize border-0 bg-transparent p-0 touch-none after:absolute after:top-0 after:bottom-0 after:left-0 after:w-px after:bg-transparent hover:after:bg-primary"
+          <Button
+            className="absolute top-0 bottom-0 left-0 z-20 m-0 h-auto w-2.5 cursor-col-resize border-0 bg-transparent p-0 touch-none after:absolute after:top-0 after:bottom-0 after:left-0 after:w-px after:bg-transparent hover:after:bg-primary"
             onPointerDown={startArtifactResize}
-            type="button"
+            variant="ghost"
             aria-label="Resize artifact pane"
           />
-          <ExtendArtifactWorkspace
+          <ArtifactWorkspace
             activeArtifactId={activeArtifactId}
             artifacts={artifacts}
             onCloseArtifact={closeArtifact}
@@ -160,16 +163,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
               {activeArtifact.type === "control" ? (
                 <div className="grid gap-3 p-4">
-                  <div className="flex items-center gap-3 rounded-lg border border-surface-3 bg-surface-2 p-3">
-                    <div className="grid size-9 place-items-center rounded-md bg-primary text-sm font-extrabold text-surface-0">
+                  <Card className="flex items-center gap-3 p-3">
+                    <Badge className="grid size-9 place-items-center rounded-md p-0 text-sm font-extrabold">
                       G2
-                    </div>
+                    </Badge>
                     <div>
                       <strong className="block text-sm text-foreground">{robot.name}</strong>
                       <span className="block text-xs text-muted">{robot.mode}</span>
                     </div>
-                  </div>
-                  <dl className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
+                  </Card>
+                  <CardContent as="dl" className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
                     <div className="flex items-center justify-between gap-3">
                       <dt>Connection</dt>
                       <dd className="font-bold text-foreground">{robot.connection}</dd>
@@ -182,19 +185,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <dt>Heartbeat</dt>
                       <dd className="font-bold text-foreground">{robot.lastHeartbeatMs}ms</dd>
                     </div>
-                  </dl>
+                  </CardContent>
                   <div className="grid grid-cols-2 gap-2">
                     {["Stand", "Damp", "Stop", "Turn left"].map((label) => (
-                      <button
+                      <Button
                         className={cn(
-                          "h-8 rounded-md border border-surface-3 bg-surface-2 text-xs font-bold text-foreground hover:bg-surface-3",
+                          "h-8 text-xs font-bold",
                           label === "Stop" ? "border-danger/50 text-danger" : null
                         )}
+                        variant="outline"
                         key={label}
-                        type="button"
                       >
                         {label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -214,7 +217,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
               ) : null}
             </div>
-          </ExtendArtifactWorkspace>
+          </ArtifactWorkspace>
         </aside>
       ) : null}
     </SidebarProvider>

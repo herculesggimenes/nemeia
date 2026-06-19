@@ -14,6 +14,9 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import type { Artifact } from "../../types/nemeia";
 import { cn } from "../../lib/utils";
+import { Button } from "../ui/button";
+import { Card } from "../ui/card";
+import { Input } from "../ui/input";
 
 type Props = {
   artifacts: Artifact[];
@@ -36,7 +39,7 @@ function folderForArtifact(artifact: Artifact) {
   return root || "artifacts";
 }
 
-export function ExtendArtifactWorkspace({
+export function ArtifactWorkspace({
   artifacts,
   activeArtifactId,
   openArtifactIds,
@@ -66,9 +69,9 @@ export function ExtendArtifactWorkspace({
             {openArtifacts.map((artifact) => {
               const Icon = artifactIcons[artifact.type];
               return (
-                <div
+                <Card
                   className={cn(
-                    "inline-flex min-h-7 max-w-[190px] shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-xs text-muted",
+                    "inline-flex min-h-7 max-w-[190px] shrink-0 items-center gap-1.5 border-transparent bg-transparent px-2 text-xs text-muted shadow-none",
                     artifact.id === activeArtifactId ? "border-surface-3 bg-surface-3 text-foreground" : null
                   )}
                   key={artifact.id}
@@ -79,9 +82,10 @@ export function ExtendArtifactWorkspace({
                     }
                   }}
                 >
-                  <button
+                  <Button
                     className="inline-flex min-w-0 items-center gap-1.5 text-inherit"
-                    type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setFileTreeOpen(false);
                       onOpenArtifact(artifact.id);
@@ -89,10 +93,11 @@ export function ExtendArtifactWorkspace({
                   >
                     <Icon size={14} />
                     <span className="truncate whitespace-nowrap">{artifact.title}</span>
-                  </button>
-                  <button
-                    className="grid size-[18px] place-items-center rounded text-muted hover:bg-surface-3 hover:text-foreground"
-                    type="button"
+                  </Button>
+                  <Button
+                    className="size-[18px]"
+                    variant="icon"
+                    size="iconSm"
                     onClick={(event) => {
                       event.stopPropagation();
                       onCloseArtifact(artifact.id);
@@ -100,22 +105,23 @@ export function ExtendArtifactWorkspace({
                     aria-label={`Close ${artifact.title}`}
                   >
                     <X size={12} />
-                  </button>
-                </div>
+                  </Button>
+                </Card>
               );
             })}
-            <button
+            <Button
               className={cn(
-                "inline-flex min-h-7 shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2 text-xs text-muted hover:bg-surface-3 hover:text-foreground",
+                "inline-flex min-h-7 shrink-0 gap-1.5 border-transparent px-2 text-xs",
                 fileTreeOpen ? "bg-surface-3 text-foreground" : null
               )}
               onClick={() => setFileTreeOpen(true)}
               aria-label="Open file"
-              type="button"
+              variant="tab"
+              size="sm"
             >
               <Plus size={14} />
               <span>Open file</span>
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -146,9 +152,15 @@ export function ExtendArtifactWorkspace({
 
       {fileTreeOpen ? (
       <aside className="min-h-0 min-w-0 overflow-auto bg-surface-1 p-2" aria-label="Artifact file tree">
-        <div className="flex h-[30px] items-center gap-2 rounded-lg border border-surface-3 bg-surface-2 px-2 text-xs text-muted">
-          <Search size={14} />
-          <span>Filter files...</span>
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-2 text-muted" size={14} />
+          <Input
+            aria-label="Filter files"
+            className="h-[30px] pl-8 text-xs"
+            placeholder="Filter files..."
+            readOnly
+            value=""
+          />
         </div>
 
         {folders.map((folder) => (
@@ -162,11 +174,13 @@ export function ExtendArtifactWorkspace({
               .map((artifact) => {
                 const Icon = artifactIcons[artifact.type];
                 return (
-                  <button
+                  <Button
                     className={cn(
                       "grid min-h-[29px] w-full grid-cols-[16px_minmax(0,1fr)] items-center gap-2 rounded-md border border-transparent px-2 pl-[22px] text-left text-xs text-foreground hover:bg-surface-3",
                       artifact.id === activeArtifactId ? "bg-surface-3" : null
                     )}
+                    variant="ghost"
+                    size="sm"
                     key={artifact.id}
                     onClick={() => {
                       onOpenArtifact(artifact.id);
@@ -175,7 +189,7 @@ export function ExtendArtifactWorkspace({
                   >
                     <Icon size={14} />
                     <span className="truncate whitespace-nowrap">{artifact.path.split("/").slice(1).join("/") || artifact.title}</span>
-                  </button>
+                  </Button>
                 );
               })}
           </div>
