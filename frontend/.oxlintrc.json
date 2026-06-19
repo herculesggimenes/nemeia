@@ -1,0 +1,91 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": [
+    ".next/**",
+    "node_modules/**",
+    "dist/**",
+    "coverage/**",
+    "next-env.d.ts"
+  ],
+  "plugins": [
+    "typescript",
+    "react",
+    "react-perf",
+    "jsx-a11y",
+    "nextjs",
+    "import",
+    "promise",
+    "unicorn",
+    "oxc"
+  ],
+  "env": {
+    "browser": true,
+    "es2024": true,
+    "node": true
+  },
+  "settings": {
+    "next": {
+      "rootDir": "."
+    },
+    "react": {
+      "version": "19.0.0"
+    }
+  },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "rules": {
+    "no-console": "error",
+    "no-debugger": "error",
+    "no-alert": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": "error",
+    "curly": "error",
+    "import/no-unassigned-import": "off",
+    "import/no-cycle": "error",
+    "import/no-duplicates": "error",
+    "import/no-named-export": "off",
+    "import/no-relative-parent-imports": "off",
+    "import/prefer-default-export": "off",
+    "typescript/no-explicit-any": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "typescript/explicit-function-return-type": "off",
+    "typescript/explicit-module-boundary-types": "off",
+    "react/jsx-key": "error",
+    "react/jsx-filename-extension": "off",
+    "react/jsx-no-literals": "off",
+    "react/react-in-jsx-scope": "off",
+    "react/self-closing-comp": "error",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "react-perf/jsx-no-new-object-as-prop": "off",
+    "nextjs/no-html-link-for-pages": "error",
+    "promise/catch-or-return": "error",
+    "eslint/func-style": "off",
+    "eslint/id-length": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/max-statements": "off",
+    "eslint/no-magic-numbers": "off",
+    "eslint/no-ternary": "off",
+    "eslint/prefer-destructuring": "off",
+    "eslint/sort-imports": "off",
+    "eslint/sort-keys": "off",
+    "unicorn/no-array-for-each": "off",
+    "unicorn/number-literal-case": "off",
+    "unicorn/numeric-separators-style": "off",
+    "oxc/no-optional-chaining": "off"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**/*.mjs"],
+      "rules": {
+        "no-console": "off",
+        "unicorn/prefer-top-level-await": "off"
+      }
+    }
+  ]
+}
