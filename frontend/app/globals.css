@@ -30,6 +30,26 @@
 @layer base {
   * {
     box-sizing: border-box;
+    scrollbar-color: #585b70 transparent;
+    scrollbar-width: thin;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #45475a;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #585b70;
   }
 
   html,

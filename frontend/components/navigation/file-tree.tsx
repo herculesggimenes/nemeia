@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, Folder } from "lucide-react";
+import { ChevronDown, ChevronRight, Folder, Settings } from "lucide-react";
 import type { ComponentType } from "react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
@@ -10,6 +10,8 @@ export type FileTreeNode = {
   id: string;
   label: string;
   ariaLabel?: string;
+  settingsId?: string;
+  settingsLabel?: string;
   detail?: string;
   statusLabel?: string;
   statusTone?: string;
@@ -23,6 +25,7 @@ type Props = {
   className?: string;
   defaultOpenIds?: string[];
   nodes: FileTreeNode[];
+  onOpenSettings?: (id: string) => void;
   onSelect?: (id: string) => void;
   testId?: string;
 };
@@ -39,7 +42,7 @@ function collectDefaultOpenIds(nodes: FileTreeNode[], explicitIds: string[] | un
   return nodes.filter(hasChildren).map((node) => node.id);
 }
 
-export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes, onSelect, testId }: Props) {
+export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes, onOpenSettings, onSelect, testId }: Props) {
   const [openIds, setOpenIds] = useState(() => new Set(collectDefaultOpenIds(nodes, defaultOpenIds)));
 
   const toggleOpen = (id: string) => {
@@ -58,28 +61,36 @@ export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes
     const Icon = node.icon ?? Folder;
     const open = openIds.has(node.id);
     const expandable = hasChildren(node);
+    const selectNode = () => {
+      if (expandable) {
+        toggleOpen(node.id);
+        return;
+      }
+
+      onSelect?.(node.id);
+    };
 
     return (
       <div className="grid gap-0.5" key={node.id}>
-        <Button
+        <div
           className={cn(
-            "grid h-auto min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs hover:bg-sidebar-accent/60",
-            node.statusLabel ? "grid-cols-[14px_16px_minmax(0,1fr)_auto_8px]" : "grid-cols-[14px_16px_minmax(0,1fr)_8px]",
+            "group/tree-node grid h-auto min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs outline-none hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
+            node.statusLabel
+              ? "grid-cols-[14px_16px_minmax(0,1fr)_auto_18px_8px]"
+              : "grid-cols-[14px_16px_minmax(0,1fr)_18px_8px]",
             activeId === node.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : null
           )}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
-          variant="ghost"
           role="treeitem"
           tabIndex={0}
           aria-expanded={expandable ? open : undefined}
           aria-label={node.ariaLabel ?? node.label}
-          onClick={() => {
-            if (expandable) {
-              toggleOpen(node.id);
-              return;
+          onClick={selectNode}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              selectNode();
             }
-
-            onSelect?.(node.id);
           }}
         >
           {expandable ? (
@@ -93,8 +104,31 @@ export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes
             {node.detail ? <span className="block truncate text-[11px] text-muted">{node.detail}</span> : null}
           </span>
           {node.statusLabel ? <span className="text-[10px] font-bold uppercase text-muted">{node.statusLabel}</span> : null}
+          {node.settingsId ? (
+            <Button
+              className="size-[18px] opacity-0 group-hover/tree-node:opacity-100"
+              variant="icon"
+              size="iconSm"
+              aria-label={node.settingsLabel ?? `${node.label} settings`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenSettings?.(node.settingsId ?? node.id);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onOpenSettings?.(node.settingsId ?? node.id);
+                }
+              }}
+            >
+              <Settings size={13} />
+            </Button>
+          ) : (
+            <span />
+          )}
           {node.statusTone ? <span className={cn("size-2 rounded-full", node.statusTone)} aria-hidden="true" /> : <span />}
-        </Button>
+        </div>
         {expandable && open ? (
           <div className="ml-[15px] grid gap-0.5 border-l border-sidebar-border pl-1">
             {node.children?.map((child) => renderNode(child, depth + 1))}

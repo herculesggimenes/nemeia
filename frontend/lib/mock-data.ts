@@ -92,16 +92,6 @@ export const artifacts: Artifact[] = [
     source: "robot"
   },
   {
-    id: "controller",
-    type: "control",
-    title: "Go2 Control",
-    description: "Stop, damp, stand, bounded movement controls.",
-    status: "mock",
-    path: "robots/go2/control-panel.nemeia",
-    contentType: "application/x.nemeia.control",
-    source: "runtime"
-  },
-  {
     id: "agent_artifact",
     type: "artifact",
     title: "Agent Artifact",
@@ -110,6 +100,56 @@ export const artifacts: Artifact[] = [
     path: "threads/main/generated/route-note.md",
     contentType: "text/markdown",
     source: "agent"
+  },
+  {
+    id: "go2_config",
+    type: "config",
+    title: "Go2 Config",
+    description: "Robot connection and runtime settings.",
+    status: "mock",
+    path: "robots/go2/config.nemeia",
+    contentType: "application/x.nemeia.config",
+    source: "robot"
+  },
+  {
+    id: "camera_front_config",
+    type: "config",
+    title: "Front Camera Config",
+    description: "Front camera stream and perception settings.",
+    status: "mock",
+    path: "robots/go2/front-camera.config.nemeia",
+    contentType: "application/x.nemeia.config",
+    source: "robot"
+  },
+  {
+    id: "lidar_config",
+    type: "config",
+    title: "LiDAR Config",
+    description: "LiDAR and SLAM stream settings.",
+    status: "mock",
+    path: "robots/go2/lidar.config.nemeia",
+    contentType: "application/x.nemeia.config",
+    source: "robot"
+  },
+  {
+    id: "control_config",
+    type: "config",
+    title: "Control Config",
+    description: "Go2 control lane and input settings.",
+    status: "mock",
+    path: "robots/go2/control.config.nemeia",
+    contentType: "application/x.nemeia.config",
+    source: "robot"
+  },
+  {
+    id: "add_component",
+    type: "config",
+    title: "Add Component",
+    description: "Mock component registration flow.",
+    status: "mock",
+    path: "fleet/add-component.nemeia",
+    contentType: "application/x.nemeia.component-template",
+    source: "runtime"
   }
 ];
 

@@ -30,7 +30,8 @@ const artifactIcons: Record<Artifact["type"], typeof Camera> = {
   camera: Camera,
   point_cloud: Layers3,
   control: SlidersHorizontal,
-  artifact: FileText
+  artifact: FileText,
+  config: SlidersHorizontal
 };
 
 function folderForArtifact(artifact: Artifact) {
@@ -82,9 +83,9 @@ export function ArtifactWorkspace({
       data-testid="artifact-workspace"
       data-file-tree-open={fileTreeOpen}
     >
-      <section className={cn("grid min-h-0 min-w-0 grid-rows-[38px_minmax(0,1fr)]", fileTreeOpen ? "border-r border-surface-3" : null)}>
+      <section className={cn("grid min-h-0 min-w-0 grid-rows-[48px_minmax(0,1fr)]", fileTreeOpen ? "border-r border-surface-3" : null)}>
         <header className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center border-b border-surface-3 bg-surface-1">
-          <div className="thin-scrollbar-x flex min-w-0 items-center gap-0.5 overflow-x-auto px-2 py-1.5" data-testid="artifact-tabs">
+          <div className="thin-scrollbar-x flex min-w-0 items-center gap-0.5 overflow-x-auto px-2 py-2.5" data-testid="artifact-tabs">
             {openArtifacts.map((artifact) => {
               const Icon = artifactIcons[artifact.type];
               return (
@@ -128,20 +129,21 @@ export function ArtifactWorkspace({
                 </Card>
               );
             })}
-            <Button
-              className={cn(
-                "inline-flex min-h-7 shrink-0 gap-1.5 border-transparent px-2 text-xs",
-                fileTreeOpen ? "bg-surface-3 text-foreground" : null
-              )}
-              onClick={() => setFileTreeOpen(true)}
-              aria-label="Open file"
-              variant="tab"
-              size="sm"
-            >
-              <Plus size={14} />
-              <span>Open file</span>
-            </Button>
           </div>
+          {!fileTreeOpen ? (
+            <div className="border-l border-surface-3 px-2 py-2.5">
+              <Button
+                className="inline-flex min-h-7 shrink-0 gap-1.5 border-transparent px-2 text-xs"
+                onClick={() => setFileTreeOpen(true)}
+                aria-label="Open file"
+                variant="tab"
+                size="sm"
+              >
+                <Plus size={14} />
+                <span>Open file</span>
+              </Button>
+            </div>
+          ) : null}
         </header>
 
         <section className={cn("grid min-h-0 min-w-0", fileTreeOpen ? "grid-rows-[minmax(0,1fr)]" : "grid-rows-[28px_minmax(0,1fr)]")}>
@@ -170,30 +172,41 @@ export function ArtifactWorkspace({
       </section>
 
       {fileTreeOpen ? (
-      <aside className="min-h-0 min-w-0 overflow-auto bg-surface-1 p-2" aria-label="Artifact file tree">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-2 text-muted" size={14} />
-          <Input
-            aria-label="Filter files"
-            className="h-[30px] pl-8 text-xs"
-            placeholder="Filter files..."
-            readOnly
-            value=""
-          />
-        </div>
+        <aside className="min-h-0 min-w-0 overflow-auto bg-surface-1 p-2" aria-label="Artifact file tree">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute left-2 top-2 text-muted" size={14} />
+              <Input
+                aria-label="Filter files"
+                className="h-[30px] pl-8 text-xs"
+                placeholder="Filter files..."
+                readOnly
+                value=""
+              />
+            </div>
+            <Button
+              className="size-[30px]"
+              variant="icon"
+              size="icon"
+              aria-label="Close file tree"
+              onClick={() => setFileTreeOpen(false)}
+            >
+              <X size={14} />
+            </Button>
+          </div>
 
-        <FileTree
-          activeId={activeArtifactId}
-          ariaLabel="Artifact file tree"
-          className="mt-2"
-          nodes={fileTreeNodes}
-          testId="artifact-file-tree"
-          onSelect={(id) => {
-            onOpenArtifact(id);
-            setFileTreeOpen(false);
-          }}
-        />
-      </aside>
+          <FileTree
+            activeId={activeArtifactId}
+            ariaLabel="Artifact file tree"
+            className="mt-2"
+            nodes={fileTreeNodes}
+            testId="artifact-file-tree"
+            onSelect={(id) => {
+              onOpenArtifact(id);
+              setFileTreeOpen(false);
+            }}
+          />
+        </aside>
       ) : null}
     </div>
   );

@@ -16,7 +16,7 @@ export type ThreadItem = {
 
 export type Artifact = {
   id: string;
-  type: "camera" | "point_cloud" | "control" | "artifact";
+  type: "camera" | "point_cloud" | "control" | "artifact" | "config";
   title: string;
   description: string;
   status: "live" | "stale" | "mock";

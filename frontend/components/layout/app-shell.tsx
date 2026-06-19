@@ -4,10 +4,12 @@ import { PointerEvent as ReactPointerEvent, type CSSProperties, useEffect, useMe
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleStop, Folder, Gamepad2, MessagesSquare, Route, Settings, Video, Waves } from "lucide-react";
-import { artifacts, robots } from "../../lib/mock-data";
+import { CircleStop, Folder, Gamepad2, MessagesSquare, PanelBottom, PanelRight, Plus, Route, Settings, Video, Waves } from "lucide-react";
+import { artifacts } from "../../lib/mock-data";
 import type { Artifact } from "../../types/nemeia";
 import { UnitreeCameraView } from "../unitree/unitree-camera-view";
+import { Go2ConnectionConfigPanel } from "../unitree/go2-connection-config-panel";
+import { UnitreeControlPane } from "../unitree/unitree-control-pane";
 import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
 import { ArtifactWorkspace } from "../artifacts/artifact-workspace";
 import {
@@ -23,10 +25,7 @@ import {
   SidebarProvider,
   SidebarTrigger
 } from "../ui/sidebar";
-import { cn } from "../../lib/utils";
-import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { Card, CardContent } from "../ui/card";
 import { initializeGo2Store, useGo2Store } from "../../lib/robots/unitree/go2-store";
 import { FileTree, type FileTreeNode } from "../navigation/file-tree";
 
@@ -60,7 +59,6 @@ function statusLabel(status: "connected" | "waiting" | "failed") {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const robot = robots[0];
   const settingsPage = isSettingsPath(pathname);
   const go2ConnectionState = useGo2Store((state) => state.connectionState);
   const go2VideoStream = useGo2Store((state) => state.videoStream);
@@ -68,12 +66,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const go2LidarLastFrameBytes = useGo2Store((state) => state.lidarLastFrameBytes);
   const go2LidarFrame = useGo2Store((state) => state.lidarFrame);
   const go2LidarState = useGo2Store((state) => state.lidarState);
-  const go2LastEvent = useGo2Store((state) => state.lastEvent);
   const go2LastError = useGo2Store((state) => state.lastError);
   const sendGo2Command = useGo2Store((state) => state.sendCommand);
   const [activeArtifactId, setActiveArtifactId] = useState<Artifact["id"]>(artifacts[0].id);
   const [openArtifactIds, setOpenArtifactIds] = useState<Artifact["id"][]>([artifacts[0].id, artifacts[1].id]);
   const [artifactWidth, setArtifactWidth] = useState(520);
+  const [artifactDrawerOpen, setArtifactDrawerOpen] = useState(true);
+  const [controlPaneOpen, setControlPaneOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(212);
 
   const activeArtifact = useMemo(
@@ -86,38 +85,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       return [
         {
-          id: `systems go2 ${status}`,
-          label: "systems/go2",
-          ariaLabel: `systems go2 ${status}`,
+          id: `go2 ${status}`,
+          label: "Go2",
+          ariaLabel: `go2 ${status}`,
           detail: go2ConnectionState === "failed" ? go2LastError ?? "Connection failed" : go2ConnectionState,
           statusLabel: statusLabel(status),
           statusTone: statusTone(status),
+          settingsId: "go2 config",
+          settingsLabel: "Go2 settings",
           icon: Folder,
           children: [
-          {
-            id: "go2 front camera waiting",
-            label: "Front camera",
-            ariaLabel: "go2 front camera waiting",
-            detail: go2VideoStream ? "streaming" : go2ConnectionState === "connected" ? "waiting for video" : "waiting for Go2",
-            statusTone: statusTone(go2VideoStream ? "connected" : "waiting"),
-            icon: Video
-          },
-          {
-            id: "go2 lidar waiting",
-            label: "LiDAR / SLAM",
-            ariaLabel: "go2 lidar waiting",
-            detail: go2LidarFrameCount > 0 ? `${go2LidarFrameCount} frames` : go2ConnectionState === "connected" ? "waiting for frame" : "waiting for Go2",
-            statusTone: statusTone(go2LidarFrameCount > 0 ? "connected" : "waiting"),
-            icon: Waves
-          },
-          {
-            id: "go2 control waiting",
-            label: "Control",
-            ariaLabel: "go2 control waiting",
-            detail: go2ConnectionState === "connected" ? "ready" : "locked",
-            statusTone: statusTone(go2ConnectionState === "connected" ? "connected" : "waiting"),
-            icon: Gamepad2
-          }
+            {
+              id: "go2 front camera",
+              label: "Front camera",
+              ariaLabel: "go2 front camera",
+              detail: go2VideoStream ? "streaming" : go2ConnectionState === "connected" ? "waiting for video" : "waiting for Go2",
+              statusTone: statusTone(go2VideoStream ? "connected" : "waiting"),
+              settingsId: "go2 front camera config",
+              settingsLabel: "Front camera settings",
+              icon: Video
+            },
+            {
+              id: "go2 lidar",
+              label: "LiDAR / SLAM",
+              ariaLabel: "go2 lidar",
+              detail: go2LidarFrameCount > 0 ? `${go2LidarFrameCount} frames` : go2ConnectionState === "connected" ? "waiting for frame" : "waiting for Go2",
+              statusTone: statusTone(go2LidarFrameCount > 0 ? "connected" : "waiting"),
+              settingsId: "go2 lidar config",
+              settingsLabel: "LiDAR settings",
+              icon: Waves
+            },
+            {
+              id: "go2 control",
+              label: "Control",
+              ariaLabel: "go2 control",
+              detail: go2ConnectionState === "connected" ? "ready" : "locked",
+              statusTone: statusTone(go2ConnectionState === "connected" ? "connected" : "waiting"),
+              settingsId: "go2 control config",
+              settingsLabel: "Control settings",
+              icon: Gamepad2
+            }
           ]
         }
       ];
@@ -136,6 +143,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     setOpenArtifactIds((current) => (current.includes(id) ? current : [...current, id]));
     setActiveArtifactId(id);
+    setArtifactDrawerOpen(true);
   };
 
   const closeArtifact = (id: Artifact["id"]) => {
@@ -227,32 +235,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </SidebarGroup>
           <SidebarGroup className="group-data-[collapsible=icon]:hidden">
             <SidebarGroupContent>
-              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-muted">Systems</div>
+              <div className="mb-2 px-2 text-[11px] font-bold uppercase tracking-wide text-muted">Modules</div>
               <FileTree
                 activeId={
-                  activeArtifactId === "camera_front"
-                    ? "go2 front camera waiting"
-                    : activeArtifactId === "point_cloud"
-                      ? "go2 lidar waiting"
-                      : activeArtifactId === "controller"
-                        ? "go2 control waiting"
-                        : null
+                  activeArtifactId === "go2_config"
+                    ? "go2 config"
+                    : activeArtifactId === "camera_front"
+                      ? "go2 front camera"
+                      : activeArtifactId === "camera_front_config"
+                        ? "go2 front camera"
+                        : activeArtifactId === "point_cloud"
+                          ? "go2 lidar"
+                          : activeArtifactId === "lidar_config"
+                            ? "go2 lidar"
+                            : activeArtifactId === "control_config"
+                              ? "go2 control"
+                              : controlPaneOpen
+                                ? "go2 control"
+                                : null
                 }
-                ariaLabel="Connected systems"
+                ariaLabel="Modules"
                 nodes={go2TreeNodes}
-                testId="connected-systems"
+                testId="modules-tree"
                 onSelect={(id) => {
-                  if (id.startsWith("go2 front camera")) {
+                  if (id === "go2 front camera") {
                     openArtifact("camera_front");
                   }
-                  if (id.startsWith("go2 lidar")) {
+                  if (id === "go2 lidar") {
                     openArtifact("point_cloud");
                   }
-                  if (id.startsWith("go2 control")) {
-                    openArtifact("controller");
+                  if (id === "go2 control") {
+                    setControlPaneOpen(true);
+                  }
+                }}
+                onOpenSettings={(id) => {
+                  if (id === "go2 front camera config") {
+                    openArtifact("camera_front_config");
+                    return;
+                  }
+                  if (id === "go2 lidar config") {
+                    openArtifact("lidar_config");
+                    return;
+                  }
+                  if (id === "go2 control config") {
+                    openArtifact("control_config");
+                    return;
+                  }
+                  if (id === "go2 config") {
+                    openArtifact("go2_config");
                   }
                 }}
               />
+              <Button
+                className="mt-2 w-full justify-start gap-2 px-2 text-xs"
+                variant="ghost"
+                size="sm"
+                aria-label="Add module"
+                onClick={() => openArtifact("add_component")}
+              >
+                <Plus size={14} />
+                <span>Add module</span>
+              </Button>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
@@ -264,9 +307,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       </Sidebar>
 
-      <SidebarInset className="grid h-screen min-w-0 grid-rows-[48px_1fr] overflow-hidden nemeia-grid-bg">
-        <header className="flex min-w-0 items-center justify-end gap-4 border-b border-surface-3 bg-surface-1/80 px-[18px]">
-          <div className="flex shrink-0 items-center gap-2.5">
+      <SidebarInset className="grid h-screen min-w-0 grid-rows-[48px_minmax(0,1fr)_auto] overflow-hidden nemeia-grid-bg">
+        <header className="flex min-w-0 items-center justify-end gap-2 border-b border-surface-3 bg-surface-1/80 px-[18px]">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            {!settingsPage ? (
+              <>
+                <Button
+                  className="size-8"
+                  size="icon"
+                  variant={artifactDrawerOpen ? "activeTab" : "outline"}
+                  onClick={() => setArtifactDrawerOpen((value) => !value)}
+                  aria-label={artifactDrawerOpen ? "Hide artifact pane" : "Show artifact pane"}
+                >
+                  <PanelRight size={15} />
+                </Button>
+                <Button
+                  className="size-8"
+                  size="icon"
+                  variant={controlPaneOpen ? "activeTab" : "outline"}
+                  onClick={() => setControlPaneOpen((value) => !value)}
+                  aria-label={controlPaneOpen ? "Hide control pane" : "Show control pane"}
+                >
+                  <PanelBottom size={15} />
+                </Button>
+              </>
+            ) : null}
             <Button
               className="h-9 gap-2 px-3 text-sm font-bold"
               variant="destructive"
@@ -277,10 +342,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
         </header>
-        {children}
+        <div className="min-h-0 overflow-hidden">{children}</div>
+        {!settingsPage ? <UnitreeControlPane open={controlPaneOpen} onOpenChange={setControlPaneOpen} /> : null}
       </SidebarInset>
 
-      {!settingsPage ? (
+      {!settingsPage && artifactDrawerOpen ? (
         <aside
           className="relative grid h-screen min-w-0 grid-rows-[1fr] overflow-hidden border-l border-surface-3 bg-surface-1"
           data-testid="artifact-drawer"
@@ -314,70 +380,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               ) : null}
 
-              {activeArtifact.type === "control" ? (
-                <div className="grid gap-3 p-4">
-                  <Card className="flex items-center gap-3 p-3">
-                    <Badge className="grid size-9 place-items-center rounded-md p-0 text-sm font-extrabold">
-                      G2
-                    </Badge>
-                    <div>
-                      <strong className="block text-sm text-foreground">{robot.name}</strong>
-                      <span className="block text-xs text-muted">{robot.mode}</span>
-                    </div>
-                  </Card>
-                  <CardContent as="dl" className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
-                    <div className="flex items-center justify-between gap-3">
-                      <dt>Connection</dt>
-                      <dd className="font-bold text-foreground">{go2ConnectionState === "idle" ? robot.connection : go2ConnectionState}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt>Battery</dt>
-                      <dd className="font-bold text-foreground">{robot.battery}%</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <dt>Heartbeat</dt>
-                      <dd className="font-bold text-foreground">{robot.lastHeartbeatMs}ms</dd>
-                    </div>
-                  </CardContent>
-                  {go2LastEvent || go2LastError ? (
-                    <CardContent className="grid gap-1 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
-                      {go2LastEvent ? <p className="text-muted">{go2LastEvent}</p> : null}
-                      {go2LastError ? <p className="text-danger">{go2LastError}</p> : null}
-                    </CardContent>
-                  ) : null}
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      className="h-8 text-xs font-bold"
-                      variant="outline"
-                      onClick={() => sendGo2Command({ type: "balance_stand" })}
-                    >
-                      Stand
-                    </Button>
-                    <Button
-                      className="h-8 text-xs font-bold"
-                      variant="outline"
-                      onClick={() => sendGo2Command({ type: "damp" })}
-                    >
-                      Damp
-                    </Button>
-                    <Button
-                      className={cn("h-8 text-xs font-bold", "border-danger/50 text-danger")}
-                      variant="outline"
-                      onClick={() => sendGo2Command({ type: "stop_move" })}
-                    >
-                      Stop
-                    </Button>
-                    <Button
-                      className="h-8 text-xs font-bold"
-                      variant="outline"
-                      onClick={() => sendGo2Command({ type: "move", vx: 0, vy: 0, yaw: 0.3, durationMs: 350 })}
-                    >
-                      Turn left
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
-
               {activeArtifact.type === "artifact" ? (
                 <div className="grid gap-3 p-6 text-sm text-foreground">
                   <Route size={22} />
@@ -390,6 +392,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     nemeiactl plan preview --target obj_backpack --avoid obj_cable
                   </code>
                 </div>
+              ) : null}
+
+              {activeArtifact.type === "config" ? (
+                activeArtifact.id === "go2_config" ? (
+                  <Go2ConnectionConfigPanel />
+                ) : activeArtifact.id === "add_component" ? (
+                  <div className="min-h-0 overflow-auto p-4">
+                    <div className="grid gap-3 rounded-md border border-surface-3 bg-surface-1 p-4">
+                      <h2 className="text-base font-bold text-foreground">Add module</h2>
+                      <p className="text-sm text-muted">Register another robot, sensor, or actuator module.</p>
+                      {["Camera", "LiDAR / SLAM", "Robot arm with camera"].map((template) => (
+                        <Button className="justify-start gap-2" key={template} variant="outline">
+                          <Plus size={15} />
+                          {template}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="min-h-0 overflow-auto p-4">
+                    <div className="grid gap-3 rounded-md border border-surface-3 bg-surface-1 p-4">
+                      <h2 className="text-base font-bold text-foreground">{activeArtifact.title}</h2>
+                      <p className="text-sm text-muted">{activeArtifact.description}</p>
+                      <div className="rounded-md border border-surface-3 bg-surface-2 p-3 text-xs text-muted">
+                        Component-specific settings will be wired to the app server config schema.
+                      </div>
+                    </div>
+                  </div>
+                )
               ) : null}
             </div>
           </ArtifactWorkspace>

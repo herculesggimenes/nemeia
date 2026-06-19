@@ -115,15 +115,19 @@ function publishRequest(topic: string, apiId: number, parameter = "{}", priority
 }
 
 function publishMove(vx: number, vy: number, yaw: number): void {
+  publishJoystick(vy, vx, yaw, 0, 0);
+}
+
+function publishJoystick(lx: number, ly: number, rx: number, ry: number, keys = 0): void {
   connection?.send({
     type: GO2_DATA_CHANNEL_TYPE.MSG,
     topic: GO2_TOPIC.WIRELESS_CONTROLLER,
     data: {
-      lx: vy,
-      ly: vx,
-      rx: yaw,
-      ry: 0,
-      keys: 0
+      lx,
+      ly,
+      rx,
+      ry,
+      keys
     }
   });
 }
@@ -347,6 +351,24 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
       zeroMove();
       publishRequest(GO2_TOPIC.SPORT_MOD, GO2_SPORT_CMD.StopMove, "{}", true);
       set({ lastEvent: "Stop move sent" });
+      return;
+    }
+
+    if (command.type === "joystick") {
+      publishJoystick(
+        bounded(command.lx, 1),
+        bounded(command.ly, 1),
+        bounded(command.rx, 1),
+        bounded(command.ry, 1),
+        Math.max(0, Math.floor(command.keys ?? 0))
+      );
+      set({ lastEvent: "Joystick frame sent" });
+      return;
+    }
+
+    if (command.type === "sport_request") {
+      publishRequest(GO2_TOPIC.SPORT_MOD, command.apiId, command.parameter ?? "{}", Boolean(command.priority));
+      set({ lastEvent: `${command.label} sent` });
       return;
     }
 
