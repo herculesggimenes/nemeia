@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "dockview/dist/styles/dockview.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

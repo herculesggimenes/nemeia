@@ -68,6 +68,7 @@ type Go2Store = {
   obstacleAvoidanceEnabled: boolean;
   runtimeTogglePending: Partial<Record<Go2RuntimeToggle, boolean>>;
   speakerEnabled: boolean;
+  currentSportMode: string | null;
   lidarFrameCount: number;
   lidarLastFrameBytes: number | null;
   lidarFrame: Go2LidarFrame | null;
@@ -490,6 +491,47 @@ function normalizeLowStateMotors(data: unknown): Go2MotorState[] | null {
   return normalized.length >= 12 ? normalized.slice(0, 12) : null;
 }
 
+function normalizeSportMode(data: unknown): string | null {
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    try {
+      return normalizeSportMode(JSON.parse(trimmed) as unknown) ?? trimmed;
+    } catch {
+      return trimmed;
+    }
+  }
+
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+
+  const record = data as Record<string, unknown>;
+  const directLabel = record.modeName ?? record.mode_name ?? record.gaitName ?? record.gait_name ?? record.name;
+  if (typeof directLabel === "string" && directLabel.trim()) {
+    return directLabel.trim();
+  }
+
+  const mode = record.mode ?? record.sportMode ?? record.sport_mode;
+  const gait = record.gaitType ?? record.gait_type ?? record.gait;
+  const parts: string[] = [];
+  if (typeof mode === "number" && Number.isFinite(mode)) {
+    parts.push(`mode ${mode}`);
+  } else if (typeof mode === "string" && mode.trim()) {
+    parts.push(mode.trim());
+  }
+  if (typeof gait === "number" && Number.isFinite(gait)) {
+    parts.push(`gait ${gait}`);
+  } else if (typeof gait === "string" && gait.trim()) {
+    parts.push(gait.trim());
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 function normalizeLidarFrame(data: unknown): Go2LidarFrame | null {
   if (!data || typeof data !== "object") {
     return null;
@@ -602,6 +644,7 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
   obstacleAvoidanceEnabled: false,
   runtimeTogglePending: {},
   speakerEnabled: true,
+  currentSportMode: null,
   lidarFrameCount: 0,
   lidarLastFrameBytes: null,
   lidarFrame: null,
@@ -672,6 +715,7 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
       microphoneEnabled: false,
       microphoneState: "off",
       runtimeTogglePending: {},
+      currentSportMode: null,
       lidarFrameCount: 0,
       lidarLastFrameBytes: null,
       lidarFrame: null,
@@ -797,6 +841,12 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
             return;
           }
 
+          if (message.topic === GO2_TOPIC.SPORT_MODE_STATE) {
+            const currentSportMode = normalizeSportMode(message.data);
+            set({ currentSportMode, lastEvent: currentSportMode ? `Go2 mode ${currentSportMode}` : "Go2 sport mode updated" });
+            return;
+          }
+
           if (message.topic === GO2_TOPIC.LIDAR_STATE) {
             if (!get().lidarEnabled) {
               return;
@@ -862,6 +912,7 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
       microphoneEnabled: false,
       microphoneState: "off",
       runtimeTogglePending: {},
+      currentSportMode: null,
       videoStream: null,
       lidarFrameCount: 0,
       lidarLastFrameBytes: null,
@@ -949,7 +1000,10 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
 
     if (command.type === "sport_request") {
       publishRequest(GO2_TOPIC.SPORT_MOD, command.apiId, command.parameter ?? "{}", Boolean(command.priority));
-      set({ lastEvent: `${command.label} sent` });
+      set({
+        currentSportMode: command.modeLabel ?? get().currentSportMode,
+        lastEvent: `${command.label} sent`
+      });
       return;
     }
 

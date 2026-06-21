@@ -48,7 +48,7 @@ export type Go2Command =
   | { type: "stop_move" }
   | { type: "obstacle_avoidance"; enabled: boolean }
   | { type: "joystick"; lx: number; ly: number; rx: number; ry: number; keys?: number }
-  | { type: "sport_request"; apiId: number; parameter?: string; priority?: boolean; label: string }
+  | { type: "sport_request"; apiId: number; parameter?: string; priority?: boolean; label: string; modeLabel?: string }
   | { type: "move"; vx: number; vy: number; yaw: number; durationMs: number };
 
 export type Go2Callbacks = {

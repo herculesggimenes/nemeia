@@ -513,6 +513,19 @@ function PointCloudCanvas({
   const [jointCount, setJointCount] = useState(0);
   const [motorDelta, setMotorDelta] = useState(0);
   const [workerError, setWorkerError] = useState<string | null>(null);
+  const mapStatus = faceCount > 0 ? `${faceCount.toLocaleString()} faces` : "Decoding";
+  const streamStatus = frameCount > 0 ? `${frameCount.toLocaleString()} frames` : lidarState ? "Receiving" : "Waiting";
+  const go2Status = robotPose ? (motorState && jointCount >= REQUIRED_GO2_JOINT_COUNT ? "tracking + animated" : "pose tracking") : "pose missing";
+  const debugStatus = [
+    lastFrameBytes ? `${lastFrameBytes.toLocaleString()} bytes` : null,
+    lidarState ? "LiDAR state received" : null,
+    `model joints ${jointCount}/${REQUIRED_GO2_JOINT_COUNT}`,
+    motorState ? `joint data delta ${motorDelta.toFixed(3)}` : "joint data waiting",
+    `pose messages ${robotPoseMessageCount.toLocaleString()}`,
+    robotPoseParseFailureCount > 0 ? `${robotPoseParseFailureCount.toLocaleString()} bad pose messages` : null
+  ]
+    .filter((item): item is string => Boolean(item))
+    .join(" · ");
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -562,29 +575,14 @@ function PointCloudCanvas({
   return (
     <div className="relative h-full min-h-0 bg-surface-0" data-testid="unitree-point-cloud-live">
       <canvas className="absolute inset-0 h-full w-full touch-none outline-none" ref={canvasRef} />
-      <div className="absolute left-4 top-4 rounded-md border border-primary bg-surface-2/85 px-2.5 py-2 text-xs shadow-lg">
-        <span className="block text-[10px] font-extrabold uppercase tracking-wide text-muted">SLAM</span>
-        <strong className="block text-sm text-foreground">{faceCount > 0 ? `${faceCount.toLocaleString()} faces` : "Decoding"}</strong>
-        <span className="block text-muted">{frameCount.toLocaleString()} frames</span>
-        {lastFrameBytes ? <span className="block text-muted">{lastFrameBytes.toLocaleString()} bytes</span> : null}
-        {lidarState ? <span className="block max-w-48 truncate text-muted">LiDAR state received</span> : null}
-        {robotPose ? <span className="block max-w-48 truncate text-primary">Go2 pose tracking</span> : <span className="block max-w-48 truncate text-danger">Go2 pose missing</span>}
-        {jointCount > 0 ? (
-          <span className="block max-w-48 truncate text-primary">
-            model joints {jointCount}/{REQUIRED_GO2_JOINT_COUNT}
-          </span>
-        ) : (
-          <span className="block max-w-48 truncate text-muted">model loading</span>
-        )}
-        {motorState ? (
-          <span className="block max-w-48 truncate text-primary">joint data Δ {motorDelta.toFixed(3)}</span>
-        ) : (
-          <span className="block max-w-48 truncate text-muted">joint data waiting</span>
-        )}
-        <span className="block max-w-48 truncate text-muted">
-          pose {robotPoseMessageCount.toLocaleString()}
-          {robotPoseParseFailureCount > 0 ? ` / ${robotPoseParseFailureCount.toLocaleString()} bad` : ""}
-        </span>
+      <div
+        className="absolute left-4 top-4 grid gap-1 rounded-md border border-primary bg-surface-2/85 px-2.5 py-2 text-xs shadow-lg"
+        title={debugStatus}
+      >
+        <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted">SLAM</span>
+        <strong className="text-sm text-foreground">{mapStatus}</strong>
+        <span className="text-muted">{streamStatus}</span>
+        <span className={robotPose ? "text-primary" : "text-danger"}>Go2 {go2Status}</span>
         {workerError ? <span className="block max-w-48 truncate text-danger">{workerError}</span> : null}
       </div>
     </div>

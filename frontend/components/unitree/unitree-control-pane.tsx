@@ -11,7 +11,6 @@ import {
 import { useGo2Store } from "../../lib/robots/unitree/go2-store";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { Go2ActionRow } from "./go2-action-row";
 import { Go2AudioCard } from "./go2-audio-card";
 import { Go2JoystickPad } from "./go2-joystick-pad";
@@ -22,15 +21,19 @@ type Props = {
   onOpenChange: (open: boolean) => void;
 };
 
+type ContentProps = {
+  open?: boolean;
+};
+
 const CONTROL_PANE_DEFAULT_HEIGHT = 380;
 const CONTROL_PANE_MIN_HEIGHT = 176;
 const CONTROL_PANE_MAX_HEIGHT = 560;
 
-export function UnitreeControlPane({ open, onOpenChange }: Props) {
-  const paneRef = useRef<HTMLDivElement | null>(null);
+export function UnitreeControlPanelContent({ open = true }: ContentProps) {
+  const controlsRef = useRef<HTMLDivElement | null>(null);
   const go2ConnectionState = useGo2Store((state) => state.connectionState);
+  const currentSportMode = useGo2Store((state) => state.currentSportMode);
   const sendGo2Command = useGo2Store((state) => state.sendCommand);
-  const [paneHeight, setPaneHeight] = useState(CONTROL_PANE_DEFAULT_HEIGHT);
   const controlsEnabled = open && go2ConnectionState === "connected";
   const {
     controlsArmed,
@@ -43,7 +46,7 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
   } = useGo2ControlInput({
     enabled: controlsEnabled,
     open,
-    paneRef,
+    paneRef: controlsRef,
     sendCommand: sendGo2Command
   });
 
@@ -60,10 +63,40 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
       type: "sport_request",
       apiId: action.apiId,
       label: action.label,
+      modeLabel: action.kind === "mode" ? action.label : undefined,
       parameter: action.parameter,
       priority: action.danger
     });
   };
+
+  return (
+    <div
+      className="grid h-full min-h-0 overflow-auto p-2"
+      data-testid="go2-control-pane"
+      ref={controlsRef}
+      tabIndex={-1}
+      onBlurCapture={handleBlur}
+      onFocusCapture={() => setControlFocused(true)}
+      onPointerDownCapture={focusControls}
+    >
+      <div className="grid w-full grid-cols-[148px_minmax(320px,1fr)_148px] items-center gap-3 px-2">
+        <Go2JoystickPad disabled={!controlsArmed} label="move" onChange={setLeftJoystick} onStop={stopJoystick} />
+
+        <div className="mx-auto grid w-full max-w-[760px] min-w-0 gap-3 self-stretch">
+          <Go2ActionRow actions={GO2_PRIMARY_ACTIONS} label="Safety" onAction={sendSportAction} />
+          <Go2ActionRow actions={GO2_MODE_ACTIONS} label="Modes" selectedLabel={currentSportMode ?? "unknown"} onAction={sendSportAction} />
+          <Go2ActionRow actions={GO2_TRICK_ACTIONS} label="Actions" onAction={sendSportAction} />
+          <Go2AudioCard />
+        </div>
+
+        <Go2JoystickPad disabled={!controlsArmed} label="turn" onChange={setRightJoystick} onStop={stopJoystick} />
+      </div>
+    </div>
+  );
+}
+
+export function UnitreeControlPane({ open, onOpenChange }: Props) {
+  const [paneHeight, setPaneHeight] = useState(CONTROL_PANE_DEFAULT_HEIGHT);
 
   const startResize = (event: ReactPointerEvent<HTMLElement>) => {
     event.preventDefault();
@@ -87,15 +120,9 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
   return (
     <Collapsible
       className="relative shrink-0 overflow-hidden border-t border-surface-3 bg-surface-1/95"
-      data-testid="go2-control-pane"
       open={open}
       onOpenChange={onOpenChange}
-      ref={paneRef}
       style={{ height: open ? `${paneHeight}px` : undefined } as CSSProperties}
-      tabIndex={-1}
-      onBlurCapture={handleBlur}
-      onFocusCapture={() => setControlFocused(true)}
-      onPointerDownCapture={focusControls}
     >
       {open ? (
         <Button
@@ -123,27 +150,7 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
           <X size={15} />
         </Button>
         <div className="overflow-auto border-t border-surface-3 p-2" style={{ height: `${Math.max(paneHeight - 44, 0)}px` }}>
-          <Tabs className="h-full min-h-0 gap-2" defaultValue="go2">
-            <TabsList className="h-8 rounded-md bg-surface-2 p-0.5">
-              <TabsTrigger className="h-7 px-3 text-xs" value="go2">
-                Go2
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent className="min-h-0" value="go2">
-              <div className="grid w-full grid-cols-[148px_minmax(320px,1fr)_148px] items-center gap-3 px-2">
-                <Go2JoystickPad disabled={!controlsArmed} label="move" onChange={setLeftJoystick} onStop={stopJoystick} />
-
-                <div className="mx-auto grid w-full max-w-[760px] min-w-0 gap-3 self-stretch">
-                  <Go2ActionRow actions={GO2_PRIMARY_ACTIONS} label="Safety" onAction={sendSportAction} />
-                  <Go2ActionRow actions={GO2_MODE_ACTIONS} label="Modes" onAction={sendSportAction} />
-                  <Go2ActionRow actions={GO2_TRICK_ACTIONS} label="Actions" onAction={sendSportAction} />
-                  <Go2AudioCard />
-                </div>
-
-                <Go2JoystickPad disabled={!controlsArmed} label="turn" onChange={setRightJoystick} onStop={stopJoystick} />
-              </div>
-            </TabsContent>
-          </Tabs>
+          <UnitreeControlPanelContent open={open} />
         </div>
       </CollapsibleContent>
     </Collapsible>

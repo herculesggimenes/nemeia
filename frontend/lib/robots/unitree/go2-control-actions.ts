@@ -7,6 +7,7 @@ export type Go2SportAction = {
   label: string;
   parameter?: string;
   danger?: boolean;
+  kind?: "mode";
 };
 
 export const GO2_PRIMARY_ACTIONS: Go2SportAction[] = [
@@ -18,19 +19,20 @@ export const GO2_PRIMARY_ACTIONS: Go2SportAction[] = [
 ];
 
 export const GO2_MODE_ACTIONS: Go2SportAction[] = [
-  { apiId: GO2_SPORT_CMD.FreeWalk, label: "Free Walk", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.Pose, label: "Pose", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.SwitchGait, label: "Run", parameter: "{\"data\":1}" },
-  { apiId: GO2_SPORT_CMD.WalkStair, label: "Walk Stair", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.StaticWalk, label: "Static Walk", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.EconomicGait, label: "Endurance", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.LeadFollow, label: "Leash", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.HandStand, label: "Hand Stand", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.FreeBound, label: "Bound", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.FreeJump, label: "Jump", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.CrossStep, label: "Cross Step", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.BackStand, label: "Rear Stand", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.RageMode, label: "Rage", parameter: DATA_TRUE }
+  { apiId: GO2_SPORT_CMD.FreeWalk, label: "Free Walk", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.Pose, label: "Pose", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.SwitchGait, label: "Normal Walk", parameter: "{\"data\":0}", kind: "mode" },
+  { apiId: GO2_SPORT_CMD.SwitchGait, label: "Run", parameter: "{\"data\":1}", kind: "mode" },
+  { apiId: GO2_SPORT_CMD.WalkStair, label: "Walk Stair", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.StaticWalk, label: "Static Walk", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.EconomicGait, label: "Endurance", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.LeadFollow, label: "Leash", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.HandStand, label: "Hand Stand", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.FreeBound, label: "Bound", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.FreeJump, label: "Jump", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.CrossStep, label: "Cross Step", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.BackStand, label: "Rear Stand", parameter: DATA_TRUE, kind: "mode" },
+  { apiId: GO2_SPORT_CMD.RageMode, label: "Rage", parameter: DATA_TRUE, kind: "mode" }
 ];
 
 export const GO2_TRICK_ACTIONS: Go2SportAction[] = [
