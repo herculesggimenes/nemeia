@@ -19,6 +19,24 @@ const importPattern =
   /(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
 const classNamePattern = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g;
 const rawInteractivePattern = /<(button|textarea|input)\b/g;
+const maxSourceLines = 350;
+const oversizedFileAllowlist = new Set([
+  "components/layout/app-shell.tsx",
+  "components/unitree/go2-connection-config-panel.tsx",
+  "components/unitree/unitree-point-cloud-view.tsx",
+  "lib/robots/unitree/go2-store.ts",
+  "lib/robots/unitree/go2-webrtc.ts"
+]);
+const componentForbiddenImports = [
+  {
+    pattern: /(?:^|\/)go2-topics$/,
+    reason: "components should call Nemeia-level Go2 actions, not raw Unitree topic constants"
+  },
+  {
+    pattern: /(?:^|\/)go2-webrtc$/,
+    reason: "components should use the Go2 store/provider boundary, not transport primitives"
+  }
+];
 const legacyStyleTokens = [
   "appMain",
   "artifactDrawer",
@@ -165,9 +183,16 @@ for (const file of sourceFiles) {
   const relativeFile = normalize(path.relative(root, file));
   const fromLayer = classify(relativeFile);
   const source = readFileSync(file, "utf8");
+  const lineCount = source.split("\n").length;
 
   if (fromLayer === "unknown") {
     failures.push(`${relativeFile}: source files must live under app/, components/, lib/, or types/.`);
+  }
+
+  if (lineCount > maxSourceLines && !oversizedFileAllowlist.has(relativeFile)) {
+    failures.push(
+      `${relativeFile}: ${lineCount} lines exceeds the ${maxSourceLines}-line module budget; split orchestration, UI, and protocol code.`
+    );
   }
 
   for (const classNameMatch of source.matchAll(classNamePattern)) {
@@ -192,7 +217,23 @@ for (const file of sourceFiles) {
     const resolved = resolveLocalImport(file, specifier);
 
     if (!resolved) {
+      if (relativeFile.startsWith("components/")) {
+        for (const forbiddenImport of componentForbiddenImports) {
+          if (forbiddenImport.pattern.test(specifier)) {
+            failures.push(`${relativeFile}: ${forbiddenImport.reason} (${specifier}).`);
+          }
+        }
+      }
+
       continue;
+    }
+
+    if (relativeFile.startsWith("components/")) {
+      for (const forbiddenImport of componentForbiddenImports) {
+        if (forbiddenImport.pattern.test(resolved.relative)) {
+          failures.push(`${relativeFile}: ${forbiddenImport.reason} (${specifier}).`);
+        }
+      }
     }
 
     if (resolved.outsideFrontend) {
