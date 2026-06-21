@@ -4,11 +4,12 @@ import { PointerEvent as ReactPointerEvent, type CSSProperties, useEffect, useMe
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleStop, Folder, Gamepad2, MessagesSquare, PanelBottom, PanelRight, Plus, Route, Settings, Video, Waves } from "lucide-react";
+import { CircleStop, Folder, Gamepad2, MessagesSquare, PanelBottom, PanelRight, Plus, RefreshCw, Route, Settings, Video, Volume2, Waves } from "lucide-react";
 import { artifacts } from "../../lib/mock-data";
 import type { Artifact } from "../../types/nemeia";
 import { UnitreeCameraView } from "../unitree/unitree-camera-view";
 import { Go2ConnectionConfigPanel } from "../unitree/go2-connection-config-panel";
+import { UnitreeAudioView } from "../unitree/unitree-audio-view";
 import { UnitreeControlPane } from "../unitree/unitree-control-pane";
 import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
 import { ArtifactWorkspace } from "../artifacts/artifact-workspace";
@@ -38,11 +39,7 @@ function statusTone(status: "connected" | "waiting" | "failed") {
     return "bg-green";
   }
 
-  if (status === "failed") {
-    return "bg-danger";
-  }
-
-  return "bg-muted";
+  return "bg-danger";
 }
 
 function statusLabel(status: "connected" | "waiting" | "failed") {
@@ -60,13 +57,23 @@ function statusLabel(status: "connected" | "waiting" | "failed") {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const settingsPage = isSettingsPath(pathname);
+  const go2AudioStream = useGo2Store((state) => state.audioStream);
+  const go2BatteryPercent = useGo2Store((state) => state.batteryPercent);
+  const go2CameraEnabled = useGo2Store((state) => state.cameraEnabled);
   const go2ConnectionState = useGo2Store((state) => state.connectionState);
   const go2VideoStream = useGo2Store((state) => state.videoStream);
+  const go2LidarEnabled = useGo2Store((state) => state.lidarEnabled);
   const go2LidarFrameCount = useGo2Store((state) => state.lidarFrameCount);
   const go2LidarLastFrameBytes = useGo2Store((state) => state.lidarLastFrameBytes);
   const go2LidarFrame = useGo2Store((state) => state.lidarFrame);
   const go2LidarState = useGo2Store((state) => state.lidarState);
+  const go2RobotPose = useGo2Store((state) => state.robotPose);
+  const go2RobotPoseMessageCount = useGo2Store((state) => state.robotPoseMessageCount);
+  const go2RobotPoseParseFailureCount = useGo2Store((state) => state.robotPoseParseFailureCount);
+  const go2MotorState = useGo2Store((state) => state.motorState);
   const go2LastError = useGo2Store((state) => state.lastError);
+  const go2SpeakerEnabled = useGo2Store((state) => state.speakerEnabled);
+  const connectGo2 = useGo2Store((state) => state.connect);
   const sendGo2Command = useGo2Store((state) => state.sendCommand);
   const [activeArtifactId, setActiveArtifactId] = useState<Artifact["id"]>(artifacts[0].id);
   const [openArtifactIds, setOpenArtifactIds] = useState<Artifact["id"][]>([artifacts[0].id, artifacts[1].id]);
@@ -82,15 +89,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const go2TreeNodes = useMemo<FileTreeNode[]>(
     () => {
       const status = go2ConnectionState === "connected" ? "connected" : go2ConnectionState === "failed" ? "failed" : "waiting";
+      const reconnectable = go2ConnectionState !== "connected" && go2ConnectionState !== "connecting" && go2ConnectionState !== "testing";
 
       return [
         {
           id: `go2 ${status}`,
           label: "Go2",
           ariaLabel: `go2 ${status}`,
-          detail: go2ConnectionState === "failed" ? go2LastError ?? "Connection failed" : go2ConnectionState,
+          detail:
+            go2ConnectionState === "failed"
+              ? go2LastError ?? "Connection failed"
+              : go2BatteryPercent === null
+                ? go2ConnectionState
+                : `${go2ConnectionState} · ${go2BatteryPercent}%`,
           statusLabel: statusLabel(status),
           statusTone: statusTone(status),
+          actionIcon: reconnectable ? RefreshCw : undefined,
+          actionId: reconnectable ? "go2 reconnect" : undefined,
+          actionLabel: reconnectable ? "Reconnect Go2" : undefined,
           settingsId: "go2 config",
           settingsLabel: "Go2 settings",
           icon: Folder,
@@ -99,8 +115,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               id: "go2 front camera",
               label: "Front camera",
               ariaLabel: "go2 front camera",
-              detail: go2VideoStream ? "streaming" : go2ConnectionState === "connected" ? "waiting for video" : "waiting for Go2",
-              statusTone: statusTone(go2VideoStream ? "connected" : "waiting"),
+              detail: !go2CameraEnabled ? "off" : go2VideoStream ? "streaming" : go2ConnectionState === "connected" ? "waiting for video" : "waiting for Go2",
+              statusTone: statusTone(go2CameraEnabled && go2VideoStream ? "connected" : "failed"),
               settingsId: "go2 front camera config",
               settingsLabel: "Front camera settings",
               icon: Video
@@ -109,8 +125,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               id: "go2 lidar",
               label: "LiDAR / SLAM",
               ariaLabel: "go2 lidar",
-              detail: go2LidarFrameCount > 0 ? `${go2LidarFrameCount} frames` : go2ConnectionState === "connected" ? "waiting for frame" : "waiting for Go2",
-              statusTone: statusTone(go2LidarFrameCount > 0 ? "connected" : "waiting"),
+              detail: !go2LidarEnabled ? "off" : go2LidarFrameCount > 0 ? `${go2LidarFrameCount} frames` : go2ConnectionState === "connected" ? "waiting for frame" : "waiting for Go2",
+              statusTone: statusTone(go2LidarEnabled && go2LidarFrameCount > 0 ? "connected" : "failed"),
               settingsId: "go2 lidar config",
               settingsLabel: "LiDAR settings",
               icon: Waves
@@ -120,16 +136,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               label: "Control",
               ariaLabel: "go2 control",
               detail: go2ConnectionState === "connected" ? "ready" : "locked",
-              statusTone: statusTone(go2ConnectionState === "connected" ? "connected" : "waiting"),
+              statusTone: statusTone(go2ConnectionState === "connected" ? "connected" : "failed"),
               settingsId: "go2 control config",
               settingsLabel: "Control settings",
               icon: Gamepad2
+            },
+            {
+              id: "go2 speaker",
+              label: "Speaker",
+              ariaLabel: "go2 speaker",
+              detail: !go2SpeakerEnabled ? "off" : go2AudioStream ? "streaming" : go2ConnectionState === "connected" ? "waiting for audio" : "waiting for Go2",
+              statusTone: statusTone(go2SpeakerEnabled && go2AudioStream ? "connected" : "failed"),
+              settingsId: "go2 speaker config",
+              settingsLabel: "Speaker settings",
+              icon: Volume2
             }
           ]
         }
       ];
     },
-    [go2ConnectionState, go2LastError, go2LidarFrameCount, go2VideoStream]
+    [go2AudioStream, go2BatteryPercent, go2CameraEnabled, go2ConnectionState, go2LastError, go2LidarEnabled, go2LidarFrameCount, go2SpeakerEnabled, go2VideoStream]
   );
 
   useEffect(() => {
@@ -248,14 +274,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           ? "go2 lidar"
                           : activeArtifactId === "lidar_config"
                             ? "go2 lidar"
-                            : activeArtifactId === "control_config"
-                              ? "go2 control"
-                              : controlPaneOpen
+                            : activeArtifactId === "speaker"
+                              ? "go2 speaker"
+                            : activeArtifactId === "speaker_config"
+                              ? "go2 speaker"
+                              : activeArtifactId === "control_config"
                                 ? "go2 control"
-                                : null
+                                : controlPaneOpen
+                                  ? "go2 control"
+                                  : null
                 }
                 ariaLabel="Modules"
                 nodes={go2TreeNodes}
+                onAction={(id) => {
+                  if (id === "go2 reconnect") {
+                    void connectGo2();
+                  }
+                }}
                 testId="modules-tree"
                 onSelect={(id) => {
                   if (id === "go2 front camera") {
@@ -266,6 +301,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   }
                   if (id === "go2 control") {
                     setControlPaneOpen(true);
+                  }
+                  if (id === "go2 speaker") {
+                    openArtifact("speaker");
                   }
                 }}
                 onOpenSettings={(id) => {
@@ -279,6 +317,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   }
                   if (id === "go2 control config") {
                     openArtifact("control_config");
+                    return;
+                  }
+                  if (id === "go2 speaker config") {
+                    openArtifact("speaker_config");
                     return;
                   }
                   if (id === "go2 config") {
@@ -367,16 +409,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           >
             <div className="min-h-0 min-w-0 overflow-hidden">
               {activeArtifact.type === "camera" ? (
-                <UnitreeCameraView connectionState={go2ConnectionState} stream={go2VideoStream} />
+                <UnitreeCameraView connectionState={go2ConnectionState} enabled={go2CameraEnabled} stream={go2VideoStream} />
               ) : null}
 
               {activeArtifact.type === "point_cloud" ? (
                 <UnitreePointCloudView
                   connectionState={go2ConnectionState}
+                  enabled={go2LidarEnabled}
                   frameCount={go2LidarFrameCount}
                   frame={go2LidarFrame}
                   lastFrameBytes={go2LidarLastFrameBytes}
                   lidarState={go2LidarState}
+                  robotPose={go2RobotPose}
+                  robotPoseMessageCount={go2RobotPoseMessageCount}
+                  robotPoseParseFailureCount={go2RobotPoseParseFailureCount}
+                  motorState={go2MotorState}
+                />
+              ) : null}
+
+              {activeArtifact.type === "audio" ? (
+                <UnitreeAudioView
+                  audioStream={go2AudioStream}
+                  connectionState={go2ConnectionState}
+                  enabled={go2SpeakerEnabled}
                 />
               ) : null}
 
@@ -402,7 +457,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="grid gap-3 rounded-md border border-surface-3 bg-surface-1 p-4">
                       <h2 className="text-base font-bold text-foreground">Add module</h2>
                       <p className="text-sm text-muted">Register another robot, sensor, or actuator module.</p>
-                      {["Camera", "LiDAR / SLAM", "Robot arm with camera"].map((template) => (
+                      {["Camera", "LiDAR / SLAM", "Speaker", "Robot arm with camera"].map((template) => (
                         <Button className="justify-start gap-2" key={template} variant="outline">
                           <Plus size={15} />
                           {template}

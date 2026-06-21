@@ -1,14 +1,15 @@
 "use client";
 
-import { PointerEvent as ReactPointerEvent, type CSSProperties, useEffect, useRef, useState } from "react";
-import { Gamepad2, X } from "lucide-react";
-import { robots } from "../../lib/mock-data";
+import { PointerEvent as ReactPointerEvent, type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { FileAudio, Gamepad2, Play, Square, X } from "lucide-react";
 import { useGo2Store } from "../../lib/robots/unitree/go2-store";
 import { GO2_SPORT_CMD } from "../../lib/robots/unitree/go2-topics";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { CardContent } from "../ui/card";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
+import { Input } from "../ui/input";
+import { Slider } from "../ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 
 type Props = {
@@ -49,7 +50,9 @@ type SportAction = {
 const PRIMARY_ACTIONS: SportAction[] = [
   { apiId: GO2_SPORT_CMD.RecoveryStand, label: "Stand" },
   { apiId: GO2_SPORT_CMD.Damp, label: "Damp", danger: true },
-  { apiId: GO2_SPORT_CMD.StopMove, label: "Stop", danger: true }
+  { apiId: GO2_SPORT_CMD.StopMove, label: "Stop", danger: true },
+  { apiId: GO2_SPORT_CMD.FreeAvoid, label: "Obstacle Avoid On", parameter: DATA_TRUE },
+  { apiId: GO2_SPORT_CMD.FreeAvoid, label: "Obstacle Avoid Off" }
 ];
 
 const MODE_ACTIONS: SportAction[] = [
@@ -61,7 +64,6 @@ const MODE_ACTIONS: SportAction[] = [
   { apiId: GO2_SPORT_CMD.EconomicGait, label: "Endurance", parameter: DATA_TRUE },
   { apiId: GO2_SPORT_CMD.LeadFollow, label: "Leash", parameter: DATA_TRUE },
   { apiId: GO2_SPORT_CMD.HandStand, label: "Hand Stand", parameter: DATA_TRUE },
-  { apiId: GO2_SPORT_CMD.FreeAvoid, label: "Free Avoid", parameter: DATA_TRUE },
   { apiId: GO2_SPORT_CMD.FreeBound, label: "Bound", parameter: DATA_TRUE },
   { apiId: GO2_SPORT_CMD.FreeJump, label: "Jump", parameter: DATA_TRUE },
   { apiId: GO2_SPORT_CMD.CrossStep, label: "Cross Step", parameter: DATA_TRUE },
@@ -295,20 +297,38 @@ function ActionRow({
 }
 
 export function UnitreeControlPane({ open, onOpenChange }: Props) {
-  const robot = robots[0];
+  const audioFileInputRef = useRef<HTMLInputElement | null>(null);
+  const go2AudioFileName = useGo2Store((state) => state.audioFileName);
+  const go2AudioFileState = useGo2Store((state) => state.audioFileState);
+  const go2AudioInputVolume = useGo2Store((state) => state.audioInputVolume);
+  const go2RobotAudioError = useGo2Store((state) => state.robotAudioError);
+  const go2RobotAudioState = useGo2Store((state) => state.robotAudioState);
   const go2ConnectionState = useGo2Store((state) => state.connectionState);
-  const go2LastEvent = useGo2Store((state) => state.lastEvent);
-  const go2LastError = useGo2Store((state) => state.lastError);
+  const go2RuntimeTogglePending = useGo2Store((state) => state.runtimeTogglePending);
   const sendGo2Command = useGo2Store((state) => state.sendCommand);
+  const setGo2AudioFileInput = useGo2Store((state) => state.setAudioFileInput);
+  const setGo2AudioFilePlayback = useGo2Store((state) => state.setAudioFilePlayback);
+  const setGo2AudioInputVolume = useGo2Store((state) => state.setAudioInputVolume);
   const paneRef = useRef<HTMLDivElement | null>(null);
   const joystickStateRef = useRef<ControllerState>(EMPTY_CONTROLLER_STATE);
   const keyboardCodesRef = useRef<Set<string>>(new Set());
   const releaseTicksRef = useRef(0);
-  const [activeInput, setActiveInput] = useState<"keyboard" | "controller" | "joystick" | null>(null);
+  const [, setActiveInput] = useState<"keyboard" | "controller" | "joystick" | null>(null);
   const [controlFocused, setControlFocused] = useState(false);
   const [paneHeight, setPaneHeight] = useState(CONTROL_PANE_DEFAULT_HEIGHT);
   const controlsEnabled = open && go2ConnectionState === "connected";
   const controlsArmed = controlsEnabled && controlFocused;
+  const audioInputPending = Boolean(go2RuntimeTogglePending.audioInput);
+  const robotAudioStatus = go2RobotAudioState === "idle"
+    ? "idle"
+    : go2RobotAudioState === "uploading"
+      ? "sending"
+      : go2RobotAudioState === "playing"
+        ? "sent"
+          : go2RobotAudioState;
+  const audioFileLoaded = Boolean(go2AudioFileName);
+  const audioFileControllable = audioFileLoaded && go2AudioFileState !== "loading" && go2AudioFileState !== "failed";
+  const audioVolumeValue = useMemo(() => [go2AudioInputVolume], [go2AudioInputVolume]);
 
   useEffect(() => {
     if (!open) {
@@ -413,6 +433,14 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
   };
 
   const sendSportAction = (action: SportAction) => {
+    if (action.label === "Obstacle Avoid On" || action.label === "Obstacle Avoid Off") {
+      sendGo2Command({
+        type: "obstacle_avoidance",
+        enabled: action.label === "Obstacle Avoid On"
+      });
+      return;
+    }
+
     sendGo2Command({
       type: "sport_request",
       apiId: action.apiId,
@@ -480,7 +508,7 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
 
       <CollapsibleContent>
         <Button
-          className="absolute right-3 top-[52px] z-20 size-7"
+          className="absolute right-2 top-[52px] z-20 size-7"
           size="icon"
           variant="ghost"
           aria-label="Close control pane"
@@ -489,36 +517,114 @@ export function UnitreeControlPane({ open, onOpenChange }: Props) {
           <X size={15} />
         </Button>
         <div
-          className="overflow-auto border-t border-surface-3 px-4 py-3 pr-12"
+          className="overflow-auto border-t border-surface-3 p-2"
           style={{ height: `${Math.max(paneHeight - 44, 0)}px` }}
         >
-          <Tabs className="h-full min-h-0 gap-3" defaultValue="go2">
+          <Tabs className="h-full min-h-0 gap-2" defaultValue="go2">
             <TabsList className="h-8 rounded-md bg-surface-2 p-0.5">
               <TabsTrigger className="h-7 px-3 text-xs" value="go2">
                 Go2
               </TabsTrigger>
             </TabsList>
             <TabsContent className="min-h-0" value="go2">
-              <div className="grid grid-cols-[160px_minmax(220px,1fr)_160px] items-end gap-4">
+              <div className="grid w-full grid-cols-[148px_minmax(320px,1fr)_148px] items-center gap-3 px-2">
                 <JoystickPad disabled={!controlsArmed} label="move" onChange={setLeftJoystick} onStop={stopJoystick} />
 
-                <div className="grid min-w-0 gap-3 self-stretch">
+                <div className="mx-auto grid w-full max-w-[760px] min-w-0 gap-3 self-stretch">
                   <ActionRow actions={PRIMARY_ACTIONS} label="Safety" onAction={sendSportAction} />
                   <ActionRow actions={MODE_ACTIONS} label="Modes" onAction={sendSportAction} />
                   <ActionRow actions={TRICK_ACTIONS} label="Actions" onAction={sendSportAction} />
+                  <CardContent className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-2.5 text-xs">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <div className="grid size-7 shrink-0 place-items-center rounded-md bg-surface-3 text-primary">
+                        <FileAudio size={15} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-bold text-foreground">Robot audio</span>
+                          {go2RobotAudioState === "idle" ? null : (
+                            <span
+                              className={cn(
+                                "text-[10px] font-bold uppercase tracking-wide",
+                                go2RobotAudioState === "playing" || go2RobotAudioState === "ready"
+                                  ? "text-primary"
+                                  : go2RobotAudioState === "failed"
+                                    ? "text-danger"
+                                    : "text-muted"
+                              )}
+                            >
+                              {robotAudioStatus}
+                            </span>
+                          )}
+                        </div>
+                        <p className="truncate text-muted">{go2AudioFileName ?? "Audio or MP4 file"}</p>
+                      </div>
+                    </div>
 
-                  <CardContent className="grid gap-1 rounded-lg border border-surface-3 bg-surface-2 p-3 text-xs">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted">Robot</span>
-                      <strong className="text-foreground">{robot.name}</strong>
+                    <Input
+                      ref={audioFileInputRef}
+                      className="hidden"
+                      type="file"
+                      accept="audio/*,video/*,.mp4"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        void setGo2AudioFileInput(file);
+                        event.target.value = "";
+                      }}
+                    />
+
+                    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
+                      <Button
+                        className="h-7 min-w-0 justify-start px-2 text-[11px] font-bold"
+                        disabled={go2ConnectionState !== "connected" || audioInputPending || go2AudioFileState === "loading"}
+                        onClick={() => audioFileInputRef.current?.click()}
+                        variant="outline"
+                      >
+                        {audioInputPending || go2AudioFileState === "loading" ? "Loading..." : go2AudioFileName ? "Replace file" : "Choose file"}
+                      </Button>
+                      <Button
+                        className="h-7 px-2 text-[11px] font-bold"
+                        disabled={!audioFileControllable || audioInputPending}
+                        onClick={() => {
+                          void setGo2AudioFilePlayback("play");
+                        }}
+                        variant="default"
+                      >
+                        <Play size={13} />
+                        Send
+                      </Button>
+                      <Button
+                        className="size-7"
+                        disabled={!audioFileLoaded || audioInputPending}
+                        size="icon"
+                        onClick={() => {
+                          void setGo2AudioFilePlayback("stop");
+                        }}
+                        variant="ghost"
+                        aria-label="Clear audio file"
+                      >
+                        <Square size={14} />
+                      </Button>
                     </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-muted">Battery</span>
-                      <strong className="text-foreground">{robot.battery}%</strong>
+
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 text-[10px] font-bold uppercase tracking-wide text-muted">Volume</span>
+                      <Slider
+                        aria-label="Robot audio volume"
+                        className="min-w-0 flex-1"
+                        disabled={audioInputPending}
+                        max={100}
+                        min={0}
+                        step={1}
+                        value={audioVolumeValue}
+                        onValueChange={(value) => {
+                          setGo2AudioInputVolume(value[0] ?? go2AudioInputVolume);
+                        }}
+                      />
+                      <strong className="w-8 shrink-0 text-right text-[11px] text-foreground">{go2AudioInputVolume}%</strong>
                     </div>
-                    {controlsArmed ? <p className="text-muted">Input: {activeInput ?? "focused"}</p> : null}
-                    {go2LastEvent ? <p className="truncate text-muted">{go2LastEvent}</p> : <p className="text-muted">No control events yet.</p>}
-                    {go2LastError ? <p className="truncate text-danger">{go2LastError}</p> : null}
+
+                    {go2RobotAudioError ? <p className="truncate text-[11px] text-danger">{go2RobotAudioError}</p> : null}
                   </CardContent>
                 </div>
 

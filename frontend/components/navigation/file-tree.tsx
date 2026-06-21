@@ -10,6 +10,9 @@ export type FileTreeNode = {
   id: string;
   label: string;
   ariaLabel?: string;
+  actionIcon?: ComponentType<{ className?: string; size?: number }>;
+  actionId?: string;
+  actionLabel?: string;
   settingsId?: string;
   settingsLabel?: string;
   detail?: string;
@@ -25,6 +28,7 @@ type Props = {
   className?: string;
   defaultOpenIds?: string[];
   nodes: FileTreeNode[];
+  onAction?: (id: string) => void;
   onOpenSettings?: (id: string) => void;
   onSelect?: (id: string) => void;
   testId?: string;
@@ -42,7 +46,7 @@ function collectDefaultOpenIds(nodes: FileTreeNode[], explicitIds: string[] | un
   return nodes.filter(hasChildren).map((node) => node.id);
 }
 
-export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes, onOpenSettings, onSelect, testId }: Props) {
+export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes, onAction, onOpenSettings, onSelect, testId }: Props) {
   const [openIds, setOpenIds] = useState(() => new Set(collectDefaultOpenIds(nodes, defaultOpenIds)));
 
   const toggleOpen = (id: string) => {
@@ -59,8 +63,10 @@ export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes
 
   const renderNode = (node: FileTreeNode, depth: number) => {
     const Icon = node.icon ?? Folder;
+    const ActionIcon = node.actionIcon;
     const open = openIds.has(node.id);
     const expandable = hasChildren(node);
+    const dangerStatus = node.statusTone?.includes("bg-danger");
     const selectNode = () => {
       if (expandable) {
         toggleOpen(node.id);
@@ -76,8 +82,8 @@ export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes
           className={cn(
             "group/tree-node grid h-auto min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs outline-none hover:bg-sidebar-accent/60 focus-visible:ring-2 focus-visible:ring-ring",
             node.statusLabel
-              ? "grid-cols-[14px_16px_minmax(0,1fr)_auto_18px_8px]"
-              : "grid-cols-[14px_16px_minmax(0,1fr)_18px_8px]",
+              ? "grid-cols-[14px_16px_minmax(0,1fr)_auto_18px_18px_8px]"
+              : "grid-cols-[14px_16px_minmax(0,1fr)_18px_18px_8px]",
             activeId === node.id ? "bg-sidebar-accent text-sidebar-accent-foreground" : null
           )}
           style={{ paddingLeft: `${8 + depth * 16}px` }}
@@ -103,7 +109,30 @@ export function FileTree({ activeId, ariaLabel, className, defaultOpenIds, nodes
             <span className="block truncate font-medium text-sidebar-foreground">{node.label}</span>
             {node.detail ? <span className="block truncate text-[11px] text-muted">{node.detail}</span> : null}
           </span>
-          {node.statusLabel ? <span className="text-[10px] font-bold uppercase text-muted">{node.statusLabel}</span> : null}
+          {node.statusLabel ? <span className={cn("text-[10px] font-bold uppercase", dangerStatus ? "text-danger" : "text-muted")}>{node.statusLabel}</span> : null}
+          {node.actionId && ActionIcon ? (
+            <Button
+              className="size-[18px]"
+              variant="icon"
+              size="iconSm"
+              aria-label={node.actionLabel ?? node.actionId}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction?.(node.actionId ?? node.id);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onAction?.(node.actionId ?? node.id);
+                }
+              }}
+            >
+              <ActionIcon size={13} />
+            </Button>
+          ) : (
+            <span />
+          )}
           {node.settingsId ? (
             <Button
               className="size-[18px] opacity-0 group-hover/tree-node:opacity-100"

@@ -1,10 +1,18 @@
 import { useEffect, useRef } from "react";
+import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
+import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import type { Go2ConnectionState } from "../../lib/robots/unitree/go2-types";
+import { Button } from "../ui/button";
 
 type Props = {
   connectionState: Go2ConnectionState;
+  enabled: boolean;
   stream: MediaStream | null;
 };
+
+const MIN_CAMERA_ZOOM = 1;
+const MAX_CAMERA_ZOOM = 4;
+const CAMERA_ZOOM_STEP = 0.25;
 
 function CameraWaitingState({ title, detail }: { title: string; detail: string }) {
   return (
@@ -18,7 +26,7 @@ function CameraWaitingState({ title, detail }: { title: string; detail: string }
   );
 }
 
-export function UnitreeCameraView({ connectionState, stream }: Props) {
+export function UnitreeCameraView({ connectionState, enabled, stream }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -37,6 +45,15 @@ export function UnitreeCameraView({ connectionState, stream }: Props) {
       video.srcObject = null;
     };
   }, [stream]);
+
+  if (!enabled) {
+    return (
+      <CameraWaitingState
+        title="Front camera disabled"
+        detail="Turn the stream back on from the Front Camera Config tab when you need live video."
+      />
+    );
+  }
 
   if (connectionState !== "connected") {
     return (
@@ -57,18 +74,75 @@ export function UnitreeCameraView({ connectionState, stream }: Props) {
   }
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden bg-surface-0" data-testid="unitree-camera">
-      <video
-        className="block size-full object-cover"
-        muted
-        playsInline
-        ref={videoRef}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,transparent_0,transparent_34%,rgba(17,17,27,0.46)_74%)]" />
-      <div className="absolute left-4 top-4 rounded-md border border-primary bg-surface-2/85 px-2.5 py-2 text-xs shadow-lg">
-        <span className="block text-[10px] font-extrabold uppercase tracking-wide text-muted">front camera</span>
-        <strong className="block text-sm text-foreground">Live</strong>
-      </div>
+    <div className="relative h-full min-h-0 overflow-hidden bg-black" data-testid="unitree-camera">
+      <TransformWrapper
+        centerOnInit
+        centerZoomedOut
+        doubleClick={{ mode: "reset", step: CAMERA_ZOOM_STEP }}
+        limitToBounds
+        maxScale={MAX_CAMERA_ZOOM}
+        minScale={MIN_CAMERA_ZOOM}
+        panning={{ allowLeftClickPan: true, velocityDisabled: true }}
+        pinch={{ step: CAMERA_ZOOM_STEP }}
+        wheel={{ step: CAMERA_ZOOM_STEP }}
+      >
+        {({ resetTransform, state, zoomIn, zoomOut }) => (
+          <>
+            <TransformComponent
+              contentClass="!grid !h-full !w-full !place-items-center"
+              wrapperClass="!h-full !w-full"
+            >
+              <video
+                autoPlay
+                className="block max-h-full max-w-full select-none"
+                muted
+                playsInline
+                ref={videoRef}
+              />
+            </TransformComponent>
+            <div className="absolute left-3 top-3 rounded-md border border-white/10 bg-black/45 px-2 py-1.5 text-xs shadow-lg backdrop-blur">
+              <span className="block text-[9px] font-extrabold uppercase tracking-wide text-white/50">front camera</span>
+              <strong className="block text-xs text-white">Live</strong>
+            </div>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/10 bg-black/45 p-1 shadow-lg backdrop-blur">
+              <Button
+                aria-label="Zoom out camera"
+                className="size-7 rounded-full text-white/70 hover:bg-white/10 hover:text-white disabled:text-white/30"
+                disabled={state.scale === MIN_CAMERA_ZOOM}
+                onClick={() => zoomOut(CAMERA_ZOOM_STEP)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <ZoomOut className="size-4" />
+              </Button>
+              <span className="min-w-10 text-center text-[11px] font-semibold text-white/70">{Math.round(state.scale * 100)}%</span>
+              <Button
+                aria-label="Zoom in camera"
+                className="size-7 rounded-full text-white/70 hover:bg-white/10 hover:text-white disabled:text-white/30"
+                disabled={state.scale === MAX_CAMERA_ZOOM}
+                onClick={() => zoomIn(CAMERA_ZOOM_STEP)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <ZoomIn className="size-4" />
+              </Button>
+              <Button
+                aria-label="Reset camera view"
+                className="size-7 rounded-full text-white/70 hover:bg-white/10 hover:text-white disabled:text-white/30"
+                disabled={state.scale === MIN_CAMERA_ZOOM && state.positionX === 0 && state.positionY === 0}
+                onClick={() => resetTransform()}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <RotateCcw className="size-4" />
+              </Button>
+            </div>
+          </>
+        )}
+      </TransformWrapper>
     </div>
   );
 }

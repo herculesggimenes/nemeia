@@ -178,6 +178,30 @@ full SLAM map editing
 autonomous policy execution
 ```
 
+## Go2 Audio Boundary
+
+Go2 audio has two separate paths that should not be treated as the same thing.
+
+The WebRTC connection includes a `sendrecv` audio transceiver and Unitree UI sends `DATA_CHANNEL_TYPE.AUD = "on"`, but that only proves browser RTP can flow across the WebRTC connection. It does not prove the robot speaker service is consuming that RTP as playback. In Nemeia, outbound WebRTC audio stats should be labeled as RTP diagnostics, not as confirmed robot playback.
+
+Confirmed Go2 speaker playback uses the robot audio service / AudioHub path:
+
+```text
+rt/api/audiohub/request
+  4001  prepare/upload session
+  4003  send base64 WAV chunk
+  4002  finish/playback command
+```
+
+The reference implementations are:
+
+```text
+/Users/hgimenes/src/unitree_ui/src/ui/components/audio-player.ts
+/Users/hgimenes/src/go2-webrtc-cli/go2_cli/dds_client.py
+```
+
+For real-time chat audio, the right architecture is a backend Go2 audio provider that owns the robot audio service, exposes readiness/playback acknowledgements, and reports latency. The frontend should display backend state such as `audio_service_ready`, `uploading`, `playing`, `rtp_sending`, and `robot_playback_confirmed` instead of inferring speaker playback from browser `RTCRtpSender` bytes.
+
 ## Frontend Module Shape
 
 Add a Unitree adapter feature with a narrow Nemeia-facing API:

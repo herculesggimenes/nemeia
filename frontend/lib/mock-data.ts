@@ -92,6 +92,16 @@ export const artifacts: Artifact[] = [
     source: "robot"
   },
   {
+    id: "speaker",
+    type: "audio",
+    title: "Speaker",
+    description: "Go2 remote audio playback.",
+    status: "live",
+    path: "robots/go2/speaker.audio",
+    contentType: "application/x.nemeia.audio-output",
+    source: "robot"
+  },
+  {
     id: "agent_artifact",
     type: "artifact",
     title: "Agent Artifact",
@@ -138,6 +148,16 @@ export const artifacts: Artifact[] = [
     description: "Go2 control lane and input settings.",
     status: "mock",
     path: "robots/go2/control.config.nemeia",
+    contentType: "application/x.nemeia.config",
+    source: "robot"
+  },
+  {
+    id: "speaker_config",
+    type: "config",
+    title: "Speaker Config",
+    description: "Go2 audio output settings.",
+    status: "mock",
+    path: "robots/go2/speaker.config.nemeia",
     contentType: "application/x.nemeia.config",
     source: "robot"
   },

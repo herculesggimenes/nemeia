@@ -28,6 +28,21 @@ function proxyHeaders(host: string, contentType?: string): Record<string, string
   return headers;
 }
 
+async function responseErrorMessage(response: Response, label: string): Promise<string> {
+  let detail = "";
+  try {
+    const text = await response.text();
+    if (text) {
+      const parsed = JSON.parse(text) as { error?: unknown };
+      detail = typeof parsed.error === "string" ? ` (${parsed.error})` : ` (${text})`;
+    }
+  } catch {
+    // Keep the HTTP status when the error body is not JSON/text.
+  }
+
+  return `${label} failed: HTTP ${response.status}${detail}`;
+}
+
 function extractPathEnding(data1: string): string {
   const tail = data1.slice(-10);
   const lookup = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
@@ -63,7 +78,7 @@ async function detectPort(ip: string): Promise<"new" | "old"> {
       headers: proxyHeaders(`${hostIp}:${GO2_OLD_OFFER_PORT}`),
       signal: AbortSignal.timeout(3000)
     });
-    if (response.status !== 502) {
+    if (response.ok) {
       return "old";
     }
   } catch {
@@ -81,7 +96,7 @@ async function exchangeSdpNew(ip: string, payload: SdpPayload): Promise<string> 
   });
 
   if (!notifyResponse.ok) {
-    throw new Error(`con_notify failed: HTTP ${notifyResponse.status}`);
+    throw new Error(await responseErrorMessage(notifyResponse, "con_notify"));
   }
 
   const notifyBase64 = await notifyResponse.text();
@@ -105,7 +120,7 @@ async function exchangeSdpNew(ip: string, payload: SdpPayload): Promise<string> 
   });
 
   if (!ingResponse.ok) {
-    throw new Error(`con_ing failed: HTTP ${ingResponse.status}`);
+    throw new Error(await responseErrorMessage(ingResponse, "con_ing"));
   }
 
   const encryptedAnswer = await ingResponse.text();
@@ -126,7 +141,7 @@ async function exchangeSdpOld(ip: string, payload: SdpPayload): Promise<string> 
   });
 
   if (!response.ok) {
-    throw new Error(`offer failed: HTTP ${response.status}`);
+    throw new Error(await responseErrorMessage(response, "offer"));
   }
 
   const answer = (await response.json()) as { sdp?: string };
@@ -143,10 +158,12 @@ export async function testGo2Connection(config: Go2ConnectionConfig): Promise<"n
 
 export async function connectGo2Local(
   config: Go2ConnectionConfig,
-  callbacks: Go2Callbacks
+  callbacks: Go2Callbacks,
+  onConnectionCreated?: (connection: Go2WebRtcConnection) => void
 ): Promise<Go2WebRtcConnection> {
   const method = await detectPort(config.ip);
   const connection = new Go2WebRtcConnection(callbacks);
+  onConnectionCreated?.(connection);
   const offerSdp = await connection.createOffer();
   const payload: SdpPayload = {
     id: config.mode === "AP" ? "abcd" : "STA_localNetwork",

@@ -3,6 +3,7 @@ import {
   FileText,
   Folder,
   Layers3,
+  Volume2,
   Plus,
   Search,
   SlidersHorizontal,
@@ -27,6 +28,7 @@ type Props = {
 };
 
 const artifactIcons: Record<Artifact["type"], typeof Camera> = {
+  audio: Volume2,
   camera: Camera,
   point_cloud: Layers3,
   control: SlidersHorizontal,
