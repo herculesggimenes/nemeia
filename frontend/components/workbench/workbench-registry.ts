@@ -60,6 +60,14 @@ export const modulePanels: ModulePanelDescriptor[] = [
     singleton: true
   },
   {
+    id: "go2.stats",
+    kind: "stats",
+    title: "Stats",
+    defaultPlacement: "right",
+    moduleId: "go2",
+    singleton: true
+  },
+  {
     id: "go2.config",
     kind: "config",
     title: "Go2 Config",
@@ -137,7 +145,7 @@ export const modules: ModuleInstance[] = [
     kind: "robot.dog",
     label: "Go2",
     provider: "unitree.go2",
-    panelIds: ["go2.config", "go2.front_camera", "go2.point_cloud", "go2.control", "go2.speaker"]
+    panelIds: ["go2.config", "go2.front_camera", "go2.point_cloud", "go2.control", "go2.speaker", "go2.stats"]
   },
   {
     id: "go2.front_camera",

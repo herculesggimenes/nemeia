@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, Folder, Gamepad2, MessageSquare, Plus, RefreshCw, Video, Volume2, Waves } from "lucide-react";
+import { Activity, Bot, Folder, Gamepad2, MessageSquare, Plus, RefreshCw, Video, Volume2, Waves } from "lucide-react";
 import { useMemo } from "react";
 import { useGo2Store } from "../../lib/robots/unitree/go2-store";
 import { FileTree, type FileTreeNode } from "../navigation/file-tree";
@@ -124,6 +124,13 @@ export function ModuleTreePanel({ openPanel }: Props) {
             settingsId: "go2.speaker.config",
             settingsLabel: "Speaker settings",
             icon: Volume2
+          },
+          {
+            id: "go2.stats",
+            label: "Stats",
+            ariaLabel: "go2 stats",
+            detail: go2Connected ? "telemetry" : "offline",
+            icon: Activity
           }
         ]
       },

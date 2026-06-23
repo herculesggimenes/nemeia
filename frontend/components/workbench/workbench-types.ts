@@ -17,7 +17,8 @@ export type WorkbenchPanelKind =
   | "generated_artifact"
   | "modules"
   | "point_cloud"
-  | "settings";
+  | "settings"
+  | "stats";
 
 export type ModulePanelDescriptor = {
   id: string;

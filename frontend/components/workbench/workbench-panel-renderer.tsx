@@ -11,6 +11,7 @@ import { Go2ConnectionConfigPanel } from "../unitree/go2-connection-config-panel
 import { UnitreeAudioView } from "../unitree/unitree-audio-view";
 import { UnitreeCameraView } from "../unitree/unitree-camera-view";
 import { UnitreeControlPanelContent } from "../unitree/unitree-control-pane";
+import { UnitreeGo2StatsView } from "../unitree/unitree-go2-stats-view";
 import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
 import { ModuleTreePanel } from "./module-tree-panel";
 import { getPanelDescriptor } from "./workbench-registry";
@@ -133,6 +134,10 @@ export function WorkbenchPanelRenderer({ params }: RendererProps) {
 
   if (descriptor.kind === "control") {
     return <UnitreeControlPanelContent />;
+  }
+
+  if (descriptor.kind === "stats") {
+    return <UnitreeGo2StatsView />;
   }
 
   if (descriptor.kind === "generated_artifact") {

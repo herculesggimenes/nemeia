@@ -54,6 +54,7 @@ test.describe("Nemeia smoke", () => {
     await expect(page.getByRole("treeitem", { name: /go2 lidar/i })).toBeVisible();
     await expect(page.getByRole("treeitem", { name: /go2 control/i })).toBeVisible();
     await expect(page.getByRole("treeitem", { name: /go2 speaker/i })).toBeVisible();
+    await expect(page.getByRole("treeitem", { name: /go2 stats/i })).toBeVisible();
     await expect(page.getByRole("treeitem", { name: "add module" })).toBeVisible();
     await expect(page.getByRole("treeitem", { name: "settings" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Reconnect Go2" })).toBeVisible();
@@ -148,6 +149,11 @@ test.describe("Nemeia smoke", () => {
     await page.getByRole("treeitem", { name: /go2 speaker/i }).click();
     await expect(page.getByText("Speaker").nth(1)).toBeVisible();
     await expect(page.getByText("Waiting for Go2 connection")).toBeVisible();
+
+    await page.getByRole("treeitem", { name: /go2 stats/i }).click();
+    await expect(page.getByTestId("go2-stats-panel")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Go2 Stats" })).toBeVisible();
+    await expect(page.getByText("Normalized telemetry")).toBeVisible();
 
     await page.getByRole("treeitem", { name: "atena chat" }).click();
     await expect(page.getByRole("textbox", { name: /ask nemeia/i })).toBeVisible();
