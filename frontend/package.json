@@ -13,14 +13,16 @@
     "lint": "oxlint --deny-warnings . && npm run lint:architecture",
     "lint:fix": "oxlint --fix .",
     "lint:architecture": "node scripts/check-architecture.mjs",
+    "test:unit": "node --test tests/unit/*.test.ts",
     "e2e:smoke": "playwright test tests/e2e/smoke --project=chromium-smoke",
-    "check:fast": "npm run lint && npm run type-check && npm run e2e:smoke",
-    "check": "npm run type-check && npm run lint && npm run build && npm run e2e:smoke",
+    "check:fast": "npm run lint && npm run type-check && npm run test:unit && npm run e2e:smoke",
+    "check": "npm run type-check && npm run lint && npm run test:unit && npm run build && npm run e2e:smoke",
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@headless-tree/core": "^1.7.0",
     "@headless-tree/react": "^1.7.0",
+    "@nemeia/world-runtime": "file:../world-runtime",
     "@radix-ui/react-accordion": "^1.2.14",
     "@radix-ui/react-alert-dialog": "^1.1.17",
     "@radix-ui/react-avatar": "^1.2.0",

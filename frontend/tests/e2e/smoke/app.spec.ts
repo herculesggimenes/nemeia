@@ -119,9 +119,12 @@ test.describe("Nemeia smoke", () => {
     await expect(page.getByTestId("world-spatial-viewport")).toBeVisible();
     await expect(page.getByText("core.environment", { exact: true }).first()).toBeVisible();
     await expect(page.getByText("core.robot", { exact: true })).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Connect\b/ })).toBeEnabled();
-    await expect(page.getByRole("button", { name: /^Observe\b/ })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /^Move\b/ })).toBeDisabled();
+    await expect(page.getByText("Manual interaction", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Select Connect interaction" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Select Observe interaction" })).toBeEnabled();
+    await expect(page.getByTestId("manual-interaction-request")).toContainText("robot.connect");
+    await expect(page.getByTestId("manual-interaction-request")).toContainText("robot_01");
+    await expect(page.getByRole("button", { name: "Execute Connect interaction" })).toBeEnabled();
     await expect(page.getByText("Robot Control", { exact: true })).toBeVisible();
     await expect(page.getByTestId("go2-control-pane")).toBeVisible();
     await expect(page.getByTestId("go2-control-pane")).toContainText("Safety");

@@ -3,65 +3,52 @@
 import {
   Bot,
   Box,
-  Boxes,
-  Camera,
-  CircleStop,
-  Gamepad2,
-  Headphones,
-  Map as MapIcon,
-  RadioTower
+  Boxes
 } from "lucide-react";
 import { useState } from "react";
 import { projectRobotWorld, type WorldActionView, type WorldComponentView, type WorldEntityView } from "../../lib/world/robot-world-model";
+import {
+  createRobotWorldRuntime,
+  executeManualInteraction,
+  type ManualInteractionReceipt,
+  type WorldActionId
+} from "../../lib/world/robot-world-runtime";
 import { useRobotRuntime } from "../../lib/robots/standard/robot-runtime";
 import { Button } from "../ui/button";
 import { UnitreePointCloudView } from "../unitree/unitree-point-cloud-view";
 import { useWorkbenchActions } from "../workbench/workbench-context";
-
-const actionIcons = {
-  connect: RadioTower,
-  control: Gamepad2,
-  listen: Headphones,
-  map: MapIcon,
-  observe: Camera,
-  stop: CircleStop
-};
+import { ManualInteractionPanel } from "./manual-interaction-panel";
 
 export function WorldPanel() {
   const robot = useRobotRuntime();
   const { openPanel } = useWorkbenchActions();
   const [mapFaceCount, setMapFaceCount] = useState(0);
   const [selectedEntityId, setSelectedEntityId] = useState("world_local");
-  const world = projectRobotWorld(robot, mapFaceCount);
+  const [selectedActionId, setSelectedActionId] = useState<WorldActionId>("robot.connect");
+  const [receipt, setReceipt] = useState<ManualInteractionReceipt | null>(null);
+  const [executing, setExecuting] = useState(false);
+  const runtime = createRobotWorldRuntime(robot, mapFaceCount);
+  const world = projectRobotWorld(runtime);
   const selectedEntity = world.entities.find((entity) => entity.id === selectedEntityId) ?? world.entities[0];
 
-  const runAction = (action: WorldActionView) => {
-    if (!action.available) {
+  const runAction = async (action: WorldActionView) => {
+    if (!action.available || executing) {
       return;
     }
-    if (action.id === "connect") {
-      void robot.connect();
-    }
-    if (action.id === "observe") {
-      if (!robot.cameraEnabled) {
-        void robot.setCameraEnabled(true);
-      }
+    const request = { actionId: action.id, actorId: action.actorId, input: {}, targetId: action.targetId };
+    setExecuting(true);
+    setReceipt({ completedAt: null, error: null, events: [], request, result: null, startedAt: new Date().toISOString(), status: "executing" });
+    const nextReceipt = await executeManualInteraction(runtime, request);
+    setReceipt(nextReceipt);
+    setExecuting(false);
+
+    const surface = nextReceipt.result?.surface;
+    if (nextReceipt.status === "completed" && surface === "vision") {
       openPanel("go2.front_camera");
-    }
-    if (action.id === "map" && !robot.lidarEnabled) {
-      void robot.setLidarEnabled(true);
-    }
-    if (action.id === "listen") {
-      if (!robot.speakerEnabled) {
-        void robot.setSpeakerEnabled(true);
-      }
+    } else if (nextReceipt.status === "completed" && surface === "audio") {
       openPanel("go2.speaker");
-    }
-    if (action.id === "control") {
+    } else if (nextReceipt.status === "completed" && surface === "locomotion") {
       openPanel("go2.control");
-    }
-    if (action.id === "stop") {
-      robot.stopMotion();
     }
   };
 
@@ -135,28 +122,15 @@ export function WorldPanel() {
             </div>
           </PanelSection>
 
-          <PanelSection label="Interactions">
-            <div className="grid grid-cols-2 gap-1.5">
-              {world.actions.map((action) => {
-                const Icon = actionIcons[action.id];
-                return (
-                  <Button
-                    className="group grid h-16 min-w-0 grid-cols-[auto_1fr] items-start gap-2 whitespace-normal px-2 py-2 text-left disabled:cursor-not-allowed disabled:opacity-40"
-                    disabled={!action.available}
-                    key={action.id}
-                    onClick={() => runAction(action)}
-                    title={action.available ? action.description : action.reason ?? undefined}
-                    variant="outline"
-                  >
-                    <Icon className={action.id === "stop" ? "text-danger" : "text-primary"} size={14} />
-                    <span className="min-w-0">
-                      <strong className="block truncate text-[11px]">{action.label}</strong>
-                      <span className="mt-1 block line-clamp-2 text-[9px] leading-3 text-muted">{action.available ? action.description : action.reason}</span>
-                    </span>
-                  </Button>
-                );
-              })}
-            </div>
+          <PanelSection label="Manual interaction">
+            <ManualInteractionPanel
+              actions={world.actions}
+              executing={executing}
+              onExecute={(action) => void runAction(action)}
+              onSelect={setSelectedActionId}
+              receipt={receipt}
+              selectedActionId={selectedActionId}
+            />
           </PanelSection>
         </aside>
       </div>

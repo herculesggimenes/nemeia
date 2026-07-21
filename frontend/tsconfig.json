@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
+    "target": "ES2023",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "allowImportingTsExtensions": true,
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
