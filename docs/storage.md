@@ -1,32 +1,46 @@
 # Nemeia Storage
 
-Nemeia should avoid using the local filesystem as the normal runtime store. Runtime data should be queryable through databases and APIs.
+> **Archived governance design.** These Event Log requirements belong to the
+> optional NEM governance extension. World state itself is defined by
+> [`world-runtime.md`](./world-runtime.md).
+
+Nemeia's normative storage primitive is the NEM-1 append-only Event Log. Runtime
+data should be queryable through APIs and projections, but those projections
+must be reproducible from the log plus pinned versions.
 
 ## Storage Goals
 
 ```text
-query threads, turns, goals, events, tool calls, component events
-query semantic scene graph snapshots
+query missions, runs, authorizations, events, tool calls, and attention seams
+query scene snapshots and entity projections
+query observations, geometry, affordances, and provenance
 query robot telemetry and perception outputs
 store images, masks, point clouds, audio, and videos by database-backed refs
-support replay, debugging, evaluation, and training-data extraction
+support replay, reports, debugging, evaluation, and training-data extraction
 avoid depending on local paths for app correctness
 ```
 
 ## Recommended V0
 
-Use Postgres as the primary store.
+Use Postgres as the first implementation of the Event Log and materialized
+projections. Postgres is an implementation choice, not the NEM source-of-truth
+abstraction.
 
 ```text
 Postgres
-  threads
-  turns
-  goals
-  rollout items
-  component events
-  semantic scene graph snapshots
-  robot status samples
-  tool calls/results
+  event_log
+  missions
+  runs
+  authorizations
+  anomalies
+  registry_state
+  idempotency_records
+  scene_projection_snapshots
+  entity_projection_snapshots
+  attention_contracts
+  attention_seams
+  replay_artifacts
+  normalized_status_cache
   artifact metadata
   small binary artifacts if needed
 ```
@@ -64,6 +78,49 @@ gcs
 ```
 
 without changing thread/scene/event records.
+
+## Embedded Reference Storage
+
+The reference implementation also includes a file-backed Event Log for local
+development, conformance tests, and small embedded deployments. It is not the
+preferred fleet-scale source of truth, but it must still preserve the NEM-1
+properties:
+
+```text
+append before ack
+monotonic seq
+replay after restart
+fail closed on corrupt records
+durable fsync on append
+```
+
+The file-backed log stores newline-delimited JSON records. On startup it
+validates every persisted line before serving reads or accepting new appends.
+Restore uses the same validator and rejects corrupt or non-monotonic `seq`
+records before replacing the active log.
+
+The local backup/restore contract is:
+
+```text
+backup(destination)
+  validate active log
+  copy bytes to destination
+  fsync destination
+  return event_count and last_seq
+
+restore(source)
+  validate source log
+  write active log through a temp file
+  fsync temp file
+  atomic rename over active log
+  fsync parent directory
+  reload in-memory projection cursor
+  continue seq from restored tail
+```
+
+Operators still need to choose deployment-specific policy outside the reference
+code: where logs live, how often backups are taken, how long backups are kept,
+how backups leave the robot/host, and how recovery is rehearsed.
 
 ## Binary Data
 
@@ -103,25 +160,29 @@ Postgres should be enough for v0 queries:
 ```text
 latest scene graph for thread
 latest objects visible to robot
-all events for a turn
-all tool calls that moved robot
-all component events for object obj17
-all perception snapshots where backpack was detected
+latest scene projection for mission
+latest entities and affordances visible to robot
+all events for a run
+all Authorizations for a run
+all tool calls that proposed robot-affecting runs
+all observations contributing to entity ent_123
+all scene snapshots where backpack was detected
 all emergency stops in a time window
 ```
 
 Use `jsonb` for flexible payloads, with typed columns for fields we query often:
 
 ```text
-thread_id
-turn_id
+mission_id
+run_id
 robot_id
-component_id
+source
 event_type
-object_id
+entity_id
+authorization_id
 timestamp
 created_at
-status
+seq
 ```
 
 ## When To Add ClickHouse
@@ -139,17 +200,20 @@ long-term fleet analytics
 evaluation traces
 ```
 
-Do not make ClickHouse the source of truth for v0. Treat it later as an analytical mirror fed from Postgres/component events.
+Do not make ClickHouse the source of truth for v0. Treat it later as an
+analytical mirror fed from the Event Log.
 
 ## Storage Decision
 
 ```text
 v0:
-  Postgres for source of truth
+  Postgres-backed append-only Event Log
+  materialized projections for Mission API reads
   Postgres-backed artifact refs
   optional object-store-compatible backend later
 
 not v0:
   local filesystem as runtime source of truth
   ClickHouse as primary store
+  projections that cannot be reproduced from log records and version pins
 ```

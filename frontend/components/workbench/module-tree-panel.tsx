@@ -1,8 +1,8 @@
 "use client";
 
-import { Activity, Bot, Folder, Gamepad2, MessageSquare, Plus, RefreshCw, Video, Volume2, Waves } from "lucide-react";
+import { Activity, Bot, Boxes, Folder, Gamepad2, MessageSquare, Plus, RefreshCw, Video, Volume2, Waves } from "lucide-react";
 import { useMemo } from "react";
-import { useGo2Store } from "../../lib/robots/unitree/go2-store";
+import { useRobotRuntime } from "../../lib/robots/standard/robot-runtime";
 import { FileTree, type FileTreeNode } from "../navigation/file-tree";
 
 type Props = {
@@ -40,22 +40,20 @@ function streamStatus(options: { connected: boolean; enabled: boolean; streaming
 }
 
 export function ModuleTreePanel({ openPanel }: Props) {
-  const go2AudioStream = useGo2Store((state) => state.audioStream);
-  const go2BatteryPercent = useGo2Store((state) => state.batteryPercent);
-  const go2CameraEnabled = useGo2Store((state) => state.cameraEnabled);
-  const go2ConnectionState = useGo2Store((state) => state.connectionState);
-  const go2LastError = useGo2Store((state) => state.lastError);
-  const go2LidarEnabled = useGo2Store((state) => state.lidarEnabled);
-  const go2LidarFrameCount = useGo2Store((state) => state.lidarFrameCount);
-  const go2SpeakerEnabled = useGo2Store((state) => state.speakerEnabled);
-  const go2VideoStream = useGo2Store((state) => state.videoStream);
-  const connectGo2 = useGo2Store((state) => state.connect);
+  const robotRuntime = useRobotRuntime();
   const moduleTreeNodes = useMemo<FileTreeNode[]>(() => {
-    const go2Status = connectionStatus(go2ConnectionState);
-    const go2Connected = go2ConnectionState === "connected";
-    const reconnectable = go2ConnectionState !== "connected" && go2ConnectionState !== "connecting" && go2ConnectionState !== "testing";
+    const robotStatus = connectionStatus(robotRuntime.connectionState);
+    const robotConnected = robotRuntime.connectionState === "connected";
+    const reconnectable = robotRuntime.connectionState !== "connected" && robotRuntime.connectionState !== "connecting" && robotRuntime.connectionState !== "testing";
 
     return [
+      {
+        id: "world.main",
+        label: "World",
+        ariaLabel: "world entities and interactions",
+        detail: robotConnected ? "live · 2 entities" : "2 entities · waiting",
+        icon: Boxes
+      },
       {
         id: "atena",
         label: "Atena",
@@ -76,24 +74,24 @@ export function ModuleTreePanel({ openPanel }: Props) {
       },
       {
         id: "go2",
-        label: "Go2",
-        ariaLabel: `go2 ${go2Status}`,
+        label: "Robot",
+        ariaLabel: `robot ${robotStatus}`,
         detail:
-          go2ConnectionState === "failed"
-            ? go2LastError ?? "Connection failed"
-            : withBattery(go2Status, go2BatteryPercent),
+          robotRuntime.connectionState === "failed"
+            ? robotRuntime.lastError ?? "Connection failed"
+            : withBattery(robotStatus, robotRuntime.batteryPercent),
         actionIcon: reconnectable ? RefreshCw : undefined,
         actionId: reconnectable ? "go2 reconnect" : undefined,
-        actionLabel: reconnectable ? "Reconnect Go2" : undefined,
+        actionLabel: reconnectable ? "Reconnect robot" : undefined,
         settingsId: "go2.config",
-        settingsLabel: "Go2 settings",
+        settingsLabel: "Robot settings",
         icon: Folder,
         children: [
           {
             id: "go2.front_camera",
             label: "Front camera",
-            ariaLabel: "go2 front camera",
-            detail: streamStatus({ connected: go2Connected, enabled: go2CameraEnabled, streaming: Boolean(go2VideoStream) }),
+            ariaLabel: "robot front camera",
+            detail: streamStatus({ connected: robotConnected, enabled: robotRuntime.cameraEnabled, streaming: Boolean(robotRuntime.videoStream) }),
             settingsId: "go2.front_camera.config",
             settingsLabel: "Front camera settings",
             icon: Video
@@ -101,8 +99,8 @@ export function ModuleTreePanel({ openPanel }: Props) {
           {
             id: "go2.point_cloud",
             label: "LiDAR / SLAM",
-            ariaLabel: "go2 lidar",
-            detail: streamStatus({ connected: go2Connected, enabled: go2LidarEnabled, streaming: go2LidarFrameCount > 0 }),
+            ariaLabel: "robot lidar",
+            detail: streamStatus({ connected: robotConnected, enabled: robotRuntime.lidarEnabled, streaming: robotRuntime.lidarFrameCount > 0 }),
             settingsId: "go2.lidar.config",
             settingsLabel: "LiDAR settings",
             icon: Waves
@@ -110,8 +108,8 @@ export function ModuleTreePanel({ openPanel }: Props) {
           {
             id: "go2.control",
             label: "Control",
-            ariaLabel: "go2 control",
-            detail: go2Connected ? "ready" : "locked",
+            ariaLabel: "robot control",
+            detail: robotConnected ? "ready" : "locked",
             settingsId: "go2.control.config",
             settingsLabel: "Control settings",
             icon: Gamepad2
@@ -119,8 +117,8 @@ export function ModuleTreePanel({ openPanel }: Props) {
           {
             id: "go2.speaker",
             label: "Speaker",
-            ariaLabel: "go2 speaker",
-            detail: streamStatus({ connected: go2Connected, enabled: go2SpeakerEnabled, streaming: Boolean(go2AudioStream) }),
+            ariaLabel: "robot speaker",
+            detail: streamStatus({ connected: robotConnected, enabled: robotRuntime.speakerEnabled, streaming: Boolean(robotRuntime.audioStream) }),
             settingsId: "go2.speaker.config",
             settingsLabel: "Speaker settings",
             icon: Volume2
@@ -128,8 +126,8 @@ export function ModuleTreePanel({ openPanel }: Props) {
           {
             id: "go2.stats",
             label: "Stats",
-            ariaLabel: "go2 stats",
-            detail: go2Connected ? "telemetry" : "offline",
+            ariaLabel: "robot stats",
+            detail: robotConnected ? "telemetry" : "offline",
             icon: Activity
           }
         ]
@@ -142,7 +140,7 @@ export function ModuleTreePanel({ openPanel }: Props) {
         icon: Plus
       }
     ];
-  }, [go2AudioStream, go2BatteryPercent, go2CameraEnabled, go2ConnectionState, go2LastError, go2LidarEnabled, go2LidarFrameCount, go2SpeakerEnabled, go2VideoStream]);
+  }, [robotRuntime]);
 
   return (
     <section className="grid h-full min-h-0 bg-sidebar text-sidebar-foreground" data-testid="modules-panel">
@@ -153,7 +151,7 @@ export function ModuleTreePanel({ openPanel }: Props) {
           nodes={moduleTreeNodes}
           onAction={(id) => {
             if (id === "go2 reconnect") {
-              void connectGo2();
+              void robotRuntime.connect();
             }
           }}
           onOpenSettings={openPanel}

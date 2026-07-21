@@ -1,67 +1,72 @@
 # Nemeia
 
-Nemeia is an open-source robotics operator console and agent runtime experiment. It is designed around Codex-style threads, turns, tools, and durable runtime state, adapted for robots that expose sensors, controls, telemetry, and long-running component streams.
+Nemeia is an open-source World Runtime for AI agents in physical and simulated
+environments. It gives agents a consistent way to understand what exists, what
+each thing can do, how things relate, and which interactions are possible now.
 
-The current implementation is a local web console for operating and debugging a Unitree Go2. It provides a dockable workspace for conversation, robot modules, camera, LiDAR / SLAM, controls, speaker output, and telemetry stats.
+The simplest mental model is **The Sims for agents**:
+
+```text
+sense -> entities -> components -> available interactions
+      -> execute an action -> update the world -> repeat
+```
+
+A robot, person, room, backpack, camera, or simulated character is an entity.
+Components such as `locomotion`, `transform`, `observable`, `portable`, and
+`audio` give entities state and abilities. Actions declare the components they
+need, and the runtime derives the current affordances from the world itself.
 
 ## Status
 
-Nemeia is early and actively changing. The frontend is usable today as a local operator console; the broader app-server, agent runtime, perception, and multi-robot control plane are still being designed and implemented.
+The first World Runtime slice is implemented:
 
-Current focus:
+- deterministic entity, component, and relationship state;
+- action registration and actor/target requirement matching;
+- live affordance derivation;
+- action execution with component, relationship, and event effects;
+- a vendor-neutral robot runtime boundary;
+- an operator World panel that projects live connection, locomotion, camera,
+  spatial sensing, audio, power, and pose data into a `core.robot` entity.
 
-- Dockable web workspace for robotics modules
-- Go2 WebRTC camera, speaker, control, and telemetry surfaces
-- LiDAR / SLAM point-cloud visualization with Go2 pose/model rendering
-- Control pane for Go2 safety, locomotion modes, actions, joystick input, and robot audio files
-- Stats panel that exposes the Go2 runtime store as full telemetry
-- Strict frontend checks with Oxlint, TypeScript, production build, and Playwright smoke tests
+The next implementation slice is semantic perception: turn camera, LiDAR, and
+scene observations into additional entities and relationships, then bind
+physical action packs to the same actions used in simulation.
 
-## Architecture Direction
+## Core Model
 
-Nemeia separates operator UI, agent runtime, and robot control infrastructure:
+| Primitive | Purpose |
+|---|---|
+| World | Holds current entities, relationships, actions, and events. |
+| Entity | Gives one thing a stable identity. |
+| Component | Adds composable state or ability to an entity. |
+| Relationship | Connects two entities with a directed fact. |
+| Affordance | Describes an action currently available to an actor and target. |
+| Action | Applies a meaningful change to the world. |
+| System | Continuously senses, updates, executes, or emits events. |
 
-```text
-Web console
-  -> Runtime / Executive
-  -> App Server / Control Plane
-  -> Robot, sensor, audio, perception, and policy modules
-  -> Safety / Monitoring
-```
-
-The model-facing runtime is intended to use a small tool surface, centered on `bash`, while robot and perception operations are exposed through command-line or API surfaces backed by a long-running app server.
-
-See the architecture notes in [`docs/`](./docs):
-
-- [`docs/components.md`](./docs/components.md)
-- [`docs/runtime.md`](./docs/runtime.md)
-- [`docs/storage.md`](./docs/storage.md)
-- [`docs/unitree-integration.md`](./docs/unitree-integration.md)
-- [`docs/web-app.md`](./docs/web-app.md)
+See [docs/world-runtime.md](./docs/world-runtime.md) for the full explanation,
+[the visual framework story](http://localhost:5173/framework), and
+[the detailed documentation](http://localhost:5173/docs).
 
 ## Repository Layout
 
 ```text
 nemeia/
-  docs/       architecture and design notes
-  frontend/   Next.js operator console
-  tools/      local helper scripts
+  world-runtime/    entity, component, relationship, affordance, and action core
+  scene/            semantic scene projection
+  world-twin/       deterministic spatial state and clearance checks
+  driver-go2/       physical robot adapter behind the standard runtime boundary
+  frontend/         operator console, World panel, sensing, and controls
+  docs/             framework, architecture, and integration notes
 ```
 
-## Frontend Stack
+The earlier authorization-first NEM Suite implementation remains in packages
+such as `mission-api/`, `mission-server/`, `policy/`, `supervisor/`, and
+`replay/`. It is archived as an optional future governance extension; it is not
+required by the World Runtime. See
+[docs/archive/governance/README.md](./docs/archive/governance/README.md).
 
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/Radix-style UI primitives
-- Dockview
-- Three.js
-- Zustand
-- Playwright smoke tests
-- Oxlint
-
-## Run Locally
+## Run The Operator
 
 ```bash
 cd frontend
@@ -69,50 +74,26 @@ npm install
 npm run dev
 ```
 
-Open:
+The server binds to `0.0.0.0:5173`. Open `http://<host-ip>:5173` from another
+machine on the network, or `http://localhost:5173` on the host.
 
-```text
-http://localhost:5173
-```
+## Validate
 
-## Checks
-
-Fast local validation:
+Run every package and frontend check:
 
 ```bash
-cd frontend
-npm run check:fast
-```
-
-Full validation:
-
-```bash
-cd frontend
 npm run check
 ```
 
-`npm run check` runs:
+Run only the World Runtime:
 
-- TypeScript
-- Oxlint
-- frontend architecture rules
-- Next.js production build
-- Playwright smoke tests
+```bash
+npm run check:world-runtime
+```
 
-## Go2 Notes
-
-The Go2 integration expects the robot to be reachable on the configured Go2 network and uses browser/WebRTC-facing surfaces in the frontend. Some robot services require the host network route to the Go2 LAN to be configured correctly.
-
-The UI currently exposes:
-
-- Front camera
-- LiDAR / SLAM point cloud
-- Go2 control pane
-- Speaker output
-- Robot audio file playback
-- Runtime stats / telemetry
-- Go2 connection and power-management settings
+The operator can connect to a robot and inspect live data without movement.
+Physical movement remains a separate, explicitly supervised validation step.
 
 ## License
 
-Nemeia is licensed under the Apache License 2.0. See [`LICENSE`](./LICENSE).
+Nemeia is licensed under the Apache License 2.0. See [LICENSE](./LICENSE).

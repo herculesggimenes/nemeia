@@ -16,9 +16,25 @@ export const modulePanels: ModulePanelDescriptor[] = [
     singleton: true
   },
   {
+    id: "world.main",
+    kind: "world",
+    title: "World",
+    defaultPlacement: "right",
+    moduleId: "world",
+    singleton: true
+  },
+  {
     id: "atena.runtime_config",
     kind: "settings",
     title: "Runtime Config",
+    defaultPlacement: "right",
+    moduleId: "atena",
+    singleton: true
+  },
+  {
+    id: "mission.cockpit",
+    kind: "mission",
+    title: "Mission Cockpit",
     defaultPlacement: "right",
     moduleId: "atena",
     singleton: true
@@ -44,7 +60,7 @@ export const modulePanels: ModulePanelDescriptor[] = [
   {
     id: "go2.control",
     kind: "control",
-    title: "Go2 Control",
+    title: "Robot Control",
     artifactId: "control_config",
     defaultPlacement: "bottom",
     moduleId: "go2.control",
@@ -70,7 +86,7 @@ export const modulePanels: ModulePanelDescriptor[] = [
   {
     id: "go2.config",
     kind: "config",
-    title: "Go2 Config",
+    title: "Robot Config",
     artifactId: "go2_config",
     defaultPlacement: "right",
     moduleId: "go2",
@@ -138,12 +154,12 @@ export const modules: ModuleInstance[] = [
     kind: "agent.llm",
     label: "Atena",
     provider: "nemeia.agent",
-    panelIds: ["conversation.main", "atena.runtime_config", "generated.route_note"]
+    panelIds: ["conversation.main", "mission.cockpit", "atena.runtime_config", "generated.route_note"]
   },
   {
     id: "go2",
     kind: "robot.dog",
-    label: "Go2",
+    label: "Robot",
     provider: "unitree.go2",
     panelIds: ["go2.config", "go2.front_camera", "go2.point_cloud", "go2.control", "go2.speaker", "go2.stats"]
   },

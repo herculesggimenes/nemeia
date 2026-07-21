@@ -31,7 +31,7 @@ const dockviewTabComponents = {
 
 const SETTINGS_PANEL_ID = "atena.runtime_config";
 const MODULES_PANEL_WIDTH = 136;
-const CONVERSATION_PANEL_WIDTH = 720;
+const CONVERSATION_PANEL_WIDTH = 560;
 
 function PinnedWorkbenchTab(props: IDockviewPanelHeaderProps) {
   return <DockviewDefaultTab {...props} hideClose />;
@@ -54,19 +54,23 @@ function defaultPositionFor(panelId: string) {
     return { referencePanel: "modules", direction: "right" as const };
   }
 
-  if (panelId === "go2.front_camera") {
+  if (panelId === "world.main") {
     return { referencePanel: "conversation.main", direction: "right" as const };
   }
 
+  if (panelId === "go2.front_camera") {
+    return { referencePanel: "world.main", direction: "within" as const };
+  }
+
   if (panelId === "go2.point_cloud") {
-    return { referencePanel: "go2.front_camera", direction: "within" as const };
+    return { referencePanel: "world.main", direction: "within" as const };
   }
 
   if (panelId === "go2.control") {
     return { referencePanel: "conversation.main", direction: "below" as const };
   }
 
-  return { referencePanel: "go2.front_camera", direction: "within" as const };
+  return { referencePanel: "world.main", direction: "within" as const };
 }
 
 function panelParams(panelId: string): WorkbenchPanelParams {
@@ -129,7 +133,7 @@ export const NemeiaWorkbench = forwardRef<WorkbenchApi, Props>(({ activeRoute },
     }
 
     api.clear();
-    for (const panelId of ["modules", "conversation.main", "go2.front_camera", "go2.point_cloud", "go2.control"]) {
+    for (const panelId of ["modules", "conversation.main", "world.main", "go2.control"]) {
       openPanel(panelId);
     }
     resizeDefaultPanels(api);
@@ -145,7 +149,9 @@ export const NemeiaWorkbench = forwardRef<WorkbenchApi, Props>(({ activeRoute },
 
   const onReady = (event: DockviewReadyEvent) => {
     apiRef.current = event.api;
-    for (const panelId of ["modules", "conversation.main", "go2.front_camera", "go2.point_cloud", "go2.control"]) {
+    // World is the lightweight right-side anchor. Media and point-cloud views
+    // mount only when their interactions are selected.
+    for (const panelId of ["modules", "conversation.main", "world.main", "go2.control"]) {
       openPanel(panelId);
     }
     resizeDefaultPanels(event.api);

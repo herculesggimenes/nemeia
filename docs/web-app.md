@@ -1,6 +1,13 @@
 # Nemeia Frontend
 
-Nemeia should use a web console as the primary operator interface. V0 should focus on the frontend only, with mocked data and mocked realtime events. The real app server/control plane can come later.
+> **Archived governance design.** This document preserves the earlier
+> Mission-cockpit frontend plan. The current operator starts from the live World
+> surface described in [`world-runtime.md`](./world-runtime.md).
+
+Nemeia should use a web console as the primary operator cockpit. The frontend is
+a client of the NEM Mission API: it displays missions, runs, approvals,
+Authorizations, Supervisor/Driver status, Scene projections, Attention digests,
+Replay, anomalies, and stop state.
 
 ## Frontend Pattern
 
@@ -56,10 +63,11 @@ frontend:
 
 mock runtime:
   static fixtures
-  mocked websocket event source
-  mocked semantic scene graph snapshots
-  mocked robot telemetry
-  mocked thread/turn events
+  mocked Mission API responses
+  mocked Event Log tail
+  mocked Scene projections
+  mocked NormalizedStatus
+  mocked Run and Authorization lifecycle events
 ```
 
 Use Next.js for the frontend shell, with simple local pages and client components for the operator console. We do not need SSR-heavy flows, auth-heavy routing, or a marketing site.
@@ -124,75 +132,83 @@ Start with one usable operator console, not a landing page.
 top bar:
   connection state
   active robot
-  active goal
+  active mission
   emergency stop
 
 left:
   robots
-  component queues
-  thread/subthread list
+  missions
+  runs
+  event filters
 
 center:
-  main thread/chat
-  turn events
+  operator thread/chat
+  run timeline
   prompt input
 
 right:
-  semantic scene graph object list
+  scene entity list
   selected object detail
   robot telemetry
-  artifacts/camera
+  approval/replay/evidence panel
 
 bottom or expandable:
   3D scene view
 ```
 
-Emergency stop should be visible at all times, even while mocked.
+Emergency stop should be visible at all times. Approval panels must show checks,
+enforcement modes, expiry, abort triggers, evidence refs, and predicted sweep
+when available.
 
 ## Mock Data Contract
 
-Design the frontend against the shape we expect from the future app server.
+Design the frontend against the NEM Mission API and projection shapes.
 
 ```text
-Thread
-Turn
-ThreadItem
-ComponentEvent
-SemanticSceneGraphSnapshot
-SceneObject
-RobotStatus
+Mission
+Run
+Authorization
+CheckResult
+EventEnvelope
+SceneSnapshot
+Entity
+NormalizedStatus
 ArtifactRef
-Goal
-ToolCall
-ToolResult
+AttentionDigest
+Replay
+Anomaly
 ```
 
 Mock event flow:
 
 ```text
 mock websocket
-  -> component_event
-  -> scene_graph_snapshot
-  -> thread_event
-  -> robot_status
+  -> event_log_tail
+  -> run_state_update
+  -> scene_projection_update
+  -> normalized_status_update
 ```
 
-Example component event:
+Example Event Log record:
 
 ```json
 {
-  "id": "evt_001",
-  "component_id": "go2.camera.front",
-  "component_type": "camera",
-  "event_type": "object_detected",
-  "timestamp": "2026-06-19T10:00:00Z",
+  "seq": 48211,
+  "schema_version": 1,
+  "source": "perception:fusion-rgb-lidar@1.2",
+  "event_type": "scene.observation",
+  "severity": 0,
+  "timestamp": "2026-07-07T10:00:00.000Z",
   "robot_id": "go2",
+  "mission_id": "msn_123",
+  "refs": ["artifact:frame_123"],
   "payload": {
-    "object_id": "obj_backpack",
-    "label": "red_backpack"
-  },
-  "confidence": 0.86,
-  "freshness_ms": 120
+    "streams": ["camera_front"],
+    "labels": ["red_backpack"],
+    "confidence": 0.86,
+    "geometry": { "type": "bbox_2d", "frame_id": "camera_front" },
+    "artifact_refs": ["artifact:frame_123"]
+  }
 }
 ```
 
@@ -216,30 +232,36 @@ logger panel
 Nemeia-specific visualization:
 
 ```text
-Semantic Scene Graph nodes/edges
+Scene entities and affordances
 robot poses
 object masks and boxes
 LiDAR-projected object points
-free-space/costmap layer
-active goal target
-current turn/tool status
-component queue event stream
+free-space / advisory clearance layer
+active Run target
+Authorization and check status
+Event Log tail
+Replay timeline
 ```
 
-## Later App Server Contract
+## Mission API Contract
 
-Do not build this in v0, but keep the frontend shaped for it.
-
-Future app server/control plane:
+Keep the frontend shaped for these NEM resources:
 
 ```text
-Python FastAPI
-WebSocket
-SQLite
-component queues
-semantic scene graph snapshots
-robot adapters
-perception workers
+GET /robots
+GET /robots/{id}/status
+GET /robots/{id}/verbs
+POST /missions
+POST /runs
+POST /runs/{id}/approve
+POST /runs/{id}/reject
+GET /runs/{id}/replay
+POST /robots/{id}/stop
+POST /robots/{id}/clear-stop
+GET /scene
+GET /entities/{id}
+GET /missions/{id}/attention
+POST /anomalies
 ```
 
 Future WebSocket message types:
@@ -247,41 +269,46 @@ Future WebSocket message types:
 ```text
 subscribe
 unsubscribe
-component_event
-thread_event
-scene_graph_snapshot
-robot_status
-tool_request
-tool_result
-robot_command
-emergency_stop
+event_log_tail
+run_state_update
+scene_projection_update
+normalized_status_update
+attention_digest
+supervisor_event
+driver_event
+stop_state_update
 ```
 
 Future bash helper path:
 
 ```text
 AI SDK bash tool
-  -> nemeiactl helper CLI
-  -> long-lived WebSocket connection
-  -> app server/control plane
+  -> nemeiactl
+  -> Mission API
+  -> Run / Authorization / Replay
 ```
 
 ## Iterative Build Plan
 
 1. Frontend shell
-   Create Vite React app in `frontend/` with app shell, top bar, sidebar, main thread panel, scene panel, robot panel, and emergency button.
+   Use the existing Next.js app in `frontend/` with app shell, top bar,
+   sidebar, run timeline, scene panel, robot panel, and emergency button.
 
 2. Mock data stores
-   Add mocked thread, robot, scene graph, component queue, and artifact stores.
+   Add mocked Mission, Run, Authorization, Event Log, Scene, NormalizedStatus,
+   Attention, Replay, Anomaly, and artifact stores.
 
 3. Mock realtime stream
-   Add a mocked WebSocket/event source that periodically emits component events, robot status, and scene graph snapshots.
+   Add a mocked WebSocket/event source that periodically emits Event Log
+   records, run updates, normalized status, and Scene projection updates.
 
 4. 3D scene view
    Add Three.js scene with robot pose, object nodes, simple point samples, and selected-object detail.
 
 5. Interaction polish
-   Wire object selection, thread event filtering, robot selection, panel resizing, and artifact previews.
+   Wire entity selection, event filtering, robot selection, panel resizing,
+   approval panels, replay navigation, and artifact previews.
 
-6. Future app server adapter
-   Replace mock client with real WebSocket client when the app server/control plane exists.
+6. Mission API adapter
+   Replace mock client with the real Mission API and Event Log tail when the
+   Mission Server exists.

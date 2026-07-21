@@ -3,8 +3,9 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { CircleStop } from "lucide-react";
-import { initializeGo2Store, useGo2Store } from "../../lib/robots/unitree/go2-store";
+import { Boxes, CircleStop } from "lucide-react";
+import Link from "next/link";
+import { initializeRobotRuntime, useRobotRuntime } from "../../lib/robots/standard/robot-runtime";
 import { Button } from "../ui/button";
 import { NemeiaWorkbench } from "../workbench/nemeia-workbench";
 import type { WorkbenchApi } from "../workbench/workbench-types";
@@ -16,11 +17,11 @@ function isSettingsPath(pathname: string) {
 export function AppShell({ children: _children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const settingsPage = isSettingsPath(pathname);
-  const sendGo2Command = useGo2Store((state) => state.sendCommand);
+  const { emergencyStop } = useRobotRuntime();
   const workbenchRef = useRef<WorkbenchApi | null>(null);
 
   useEffect(() => {
-    initializeGo2Store();
+    initializeRobotRuntime();
   }, []);
 
   return (
@@ -38,10 +39,16 @@ export function AppShell({ children: _children }: { children: React.ReactNode })
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
+          <Button asChild className="h-9 gap-2 px-3 text-sm" variant="outline">
+            <Link href="/framework">
+              <Boxes size={16} />
+              Framework
+            </Link>
+          </Button>
           <Button
             className="h-9 gap-2 px-3 text-sm font-bold"
             variant="destructive"
-            onClick={() => sendGo2Command({ type: "emergency_stop" })}
+            onClick={emergencyStop}
           >
             <CircleStop size={18} />
             Emergency Stop

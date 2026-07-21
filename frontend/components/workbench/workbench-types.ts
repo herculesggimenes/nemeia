@@ -15,10 +15,12 @@ export type WorkbenchPanelKind =
   | "control"
   | "conversation"
   | "generated_artifact"
+  | "mission"
   | "modules"
   | "point_cloud"
   | "settings"
-  | "stats";
+  | "stats"
+  | "world";
 
 export type ModulePanelDescriptor = {
   id: string;
