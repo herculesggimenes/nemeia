@@ -2,7 +2,7 @@
 
 import type { ComponentType } from "react";
 import { Activity, Battery, Gauge, Radio, Volume2, Waves } from "lucide-react";
-import { useGo2Store } from "../../lib/robots/unitree/go2-store";
+import { useRobotRuntime } from "../../lib/robots/standard/robot-runtime";
 import { cn } from "../../lib/utils";
 
 type StatCardProps = {
@@ -88,62 +88,65 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
 }
 
 export function UnitreeGo2StatsView() {
-  const state = useGo2Store();
-  const connected = state.connectionState === "connected";
+  const robotRuntime = useRobotRuntime();
+  const connected = robotRuntime.connectionState === "connected";
   const telemetry = {
     connection: {
-      state: state.connectionState,
-      lastEvent: state.lastEvent,
-      lastError: state.lastError,
-      emergencyStopped: state.emergencyStopped,
-      config: state.config
+      state: robotRuntime.connectionState,
+      lastEvent: robotRuntime.lastEvent,
+      lastError: robotRuntime.lastError,
+      emergencyStopped: robotRuntime.emergencyStopped,
+      config: {
+        ...robotRuntime.config,
+        robotId: "robot_01"
+      }
     },
     robot: {
-      batteryPercent: state.batteryPercent,
-      batteryVoltage: state.batteryVoltage,
-      currentSportMode: state.currentSportMode,
-      obstacleAvoidanceEnabled: state.obstacleAvoidanceEnabled,
-      runtimeTogglePending: state.runtimeTogglePending
+      batteryPercent: robotRuntime.batteryPercent,
+      batteryVoltage: robotRuntime.batteryVoltage,
+      currentSportMode: robotRuntime.driverMode,
+      obstacleAvoidanceEnabled: robotRuntime.obstacleAvoidanceEnabled,
+      runtimeTogglePending: robotRuntime.runtimePending
     },
     streams: {
-      cameraEnabled: state.cameraEnabled,
-      hasVideoStream: Boolean(state.videoStream),
-      lidarEnabled: state.lidarEnabled,
-      lidarFrameCount: state.lidarFrameCount,
-      lidarLastFrameBytes: state.lidarLastFrameBytes,
-      lidarState: state.lidarState,
-      speakerEnabled: state.speakerEnabled,
-      hasAudioStream: Boolean(state.audioStream)
+      cameraEnabled: robotRuntime.cameraEnabled,
+      hasVideoStream: Boolean(robotRuntime.videoStream),
+      lidarEnabled: robotRuntime.lidarEnabled,
+      lidarFrameCount: robotRuntime.lidarFrameCount,
+      lidarLastFrameBytes: robotRuntime.lidarLastFrameBytes,
+      lidarState: robotRuntime.lidarState,
+      speakerEnabled: robotRuntime.speakerEnabled,
+      hasAudioStream: Boolean(robotRuntime.audioStream)
     },
     audioInput: {
-      audioFileCurrentTime: state.audioFileCurrentTime,
-      audioFileDuration: state.audioFileDuration,
-      audioFileName: state.audioFileName,
-      audioFileState: state.audioFileState,
-      audioInputBytesSent: state.audioInputBytesSent,
-      audioInputLastStatsAt: state.audioInputLastStatsAt,
-      audioInputMode: state.audioInputMode,
-      audioInputPacketsSent: state.audioInputPacketsSent,
-      audioInputSource: state.audioInputSource,
-      audioInputStreaming: state.audioInputStreaming,
-      audioInputTrackState: state.audioInputTrackState,
-      audioInputVolume: state.audioInputVolume,
-      robotAudioError: state.robotAudioError,
-      robotAudioState: state.robotAudioState
+      audioFileCurrentTime: robotRuntime.audioFileCurrentTime,
+      audioFileDuration: robotRuntime.audioFileDuration,
+      audioFileName: robotRuntime.audioFileName,
+      audioFileState: robotRuntime.audioFileState,
+      audioInputBytesSent: robotRuntime.audioInputBytesSent,
+      audioInputLastStatsAt: robotRuntime.audioInputLastStatsAt,
+      audioInputMode: robotRuntime.audioInputMode,
+      audioInputPacketsSent: robotRuntime.audioInputPacketsSent,
+      audioInputSource: robotRuntime.audioInputSource,
+      audioInputStreaming: robotRuntime.audioInputStreaming,
+      audioInputTrackState: robotRuntime.audioInputTrackState,
+      audioInputVolume: robotRuntime.audioInputVolume,
+      robotAudioError: robotRuntime.robotAudioError,
+      robotAudioState: robotRuntime.robotAudioState
     },
     pose: {
-      robotPose: state.robotPose,
-      robotPoseMessageCount: state.robotPoseMessageCount,
-      robotPoseParseFailureCount: state.robotPoseParseFailureCount
+      robotPose: robotRuntime.robotPose,
+      robotPoseMessageCount: robotRuntime.robotPoseMessageCount,
+      robotPoseParseFailureCount: robotRuntime.robotPoseParseFailureCount
     },
     motors: {
-      count: state.motorState?.length ?? 0,
-      motorState: state.motorState
+      count: robotRuntime.motorState?.length ?? 0,
+      motorState: robotRuntime.motorState
     },
     microphone: {
-      microphoneEnabled: state.microphoneEnabled,
-      microphonePermissionState: state.microphonePermissionState,
-      microphoneState: state.microphoneState
+      microphoneEnabled: robotRuntime.microphoneEnabled,
+      microphonePermissionState: robotRuntime.microphonePermissionState,
+      microphoneState: robotRuntime.microphoneState
     }
   };
 
@@ -152,8 +155,8 @@ export function UnitreeGo2StatsView() {
       <div className="grid gap-4">
         <div className="flex min-w-0 items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-extrabold text-foreground">Go2 Stats</h2>
-            <p className="text-sm text-muted">Full telemetry snapshot from the current Go2 runtime store.</p>
+            <h2 className="text-base font-extrabold text-foreground">Robot Stats</h2>
+            <p className="text-sm text-muted">Full telemetry snapshot from the standard robot runtime.</p>
           </div>
           <span
             className={cn(
@@ -161,63 +164,63 @@ export function UnitreeGo2StatsView() {
               connected ? "border-green/40 bg-green/10 text-green" : "border-danger/40 bg-danger/10 text-danger"
             )}
           >
-            {state.connectionState}
+            {robotRuntime.connectionState}
           </span>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           <StatCard
-            detail={state.lastEvent ?? "No runtime event recorded yet."}
+            detail={robotRuntime.lastEvent ?? "No runtime event recorded yet."}
             icon={Radio}
             label="Connection"
-            tone={connected ? "success" : state.connectionState === "failed" ? "danger" : "warning"}
-            value={state.connectionState}
+            tone={connected ? "success" : robotRuntime.connectionState === "failed" ? "danger" : "warning"}
+            value={robotRuntime.connectionState}
           />
           <StatCard
-            detail={`Voltage ${formatNullable(state.batteryVoltage, "unknown")}`}
+            detail={`Voltage ${formatNullable(robotRuntime.batteryVoltage, "unknown")}`}
             icon={Battery}
             label="Battery"
-            tone={state.batteryPercent !== null && state.batteryPercent < 20 ? "danger" : "normal"}
-            value={state.batteryPercent === null ? "unknown" : `${state.batteryPercent}%`}
+            tone={robotRuntime.batteryPercent !== null && robotRuntime.batteryPercent < 20 ? "danger" : "normal"}
+            value={robotRuntime.batteryPercent === null ? "unknown" : `${robotRuntime.batteryPercent}%`}
           />
           <StatCard
-            detail="Current sport mode reported by Go2 or last mode command sent."
+            detail="Current driver mode reported by the robot or last mode command sent."
             icon={Gauge}
             label="Mode"
-            value={state.currentSportMode ?? "unknown"}
+            value={robotRuntime.driverMode ?? "unknown"}
           />
           <StatCard
-            detail={`${state.lidarFrameCount} frames received, latest ${formatBytes(state.lidarLastFrameBytes)}`}
+            detail={`${robotRuntime.lidarFrameCount} frames received, latest ${formatBytes(robotRuntime.lidarLastFrameBytes)}`}
             icon={Waves}
             label="LiDAR"
-            tone={state.lidarEnabled ? "success" : "warning"}
-            value={formatBoolean(state.lidarEnabled)}
+            tone={robotRuntime.lidarEnabled ? "success" : "warning"}
+            value={formatBoolean(robotRuntime.lidarEnabled)}
           />
           <StatCard
-            detail={`${state.audioInputPacketsSent} packets, ${formatBytes(state.audioInputBytesSent)} sent`}
+            detail={`${formatNullable(robotRuntime.audioInputPacketsSent, "0")} packets, ${formatBytes(robotRuntime.audioInputBytesSent)} sent`}
             icon={Volume2}
             label="Robot Audio"
-            tone={state.robotAudioState === "failed" ? "danger" : "normal"}
-            value={state.robotAudioState}
+            tone={robotRuntime.robotAudioState === "failed" ? "danger" : "normal"}
+            value={robotRuntime.robotAudioState}
           />
           <StatCard
-            detail={`${state.motorState?.length ?? 0}/12 joints available`}
+            detail={`${robotRuntime.motorState?.length ?? 0}/12 joints available`}
             icon={Activity}
             label="Motors"
-            tone={state.motorState && state.motorState.length >= 12 ? "success" : "warning"}
-            value={state.motorState ? "live" : "none"}
+            tone={robotRuntime.motorState && robotRuntime.motorState.length >= 12 ? "success" : "warning"}
+            value={robotRuntime.motorState ? "live" : "none"}
           />
         </div>
 
         <section className="rounded-md border border-surface-3 bg-surface-1">
-          <DataRow label="Robot pose" value={formatPose(state.robotPose)} />
-          <DataRow label="Pose messages" value={`${state.robotPoseMessageCount}`} />
-          <DataRow label="Pose parse failures" value={`${state.robotPoseParseFailureCount}`} />
-          <DataRow label="Camera stream" value={`${formatBoolean(state.cameraEnabled)} · media ${state.videoStream ? "attached" : "missing"}`} />
-          <DataRow label="Speaker stream" value={`${formatBoolean(state.speakerEnabled)} · media ${state.audioStream ? "attached" : "missing"}`} />
-          <DataRow label="Obstacle avoidance" value={formatBoolean(state.obstacleAvoidanceEnabled)} />
-          <DataRow label="Emergency stop" value={formatBoolean(state.emergencyStopped)} />
-          <DataRow label="Last error" value={state.lastError ?? "none"} />
+          <DataRow label="Robot pose" value={formatPose(robotRuntime.robotPose)} />
+          <DataRow label="Pose messages" value={`${robotRuntime.robotPoseMessageCount}`} />
+          <DataRow label="Pose parse failures" value={`${robotRuntime.robotPoseParseFailureCount}`} />
+          <DataRow label="Camera stream" value={`${formatBoolean(robotRuntime.cameraEnabled)} · media ${robotRuntime.videoStream ? "attached" : "missing"}`} />
+          <DataRow label="Speaker stream" value={`${formatBoolean(robotRuntime.speakerEnabled)} · media ${robotRuntime.audioStream ? "attached" : "missing"}`} />
+          <DataRow label="Obstacle avoidance" value={formatBoolean(robotRuntime.obstacleAvoidanceEnabled)} />
+          <DataRow label="Emergency stop" value={formatBoolean(robotRuntime.emergencyStopped)} />
+          <DataRow label="Last error" value={robotRuntime.lastError ?? "none"} />
         </section>
 
         <JsonBlock title="Normalized telemetry" value={telemetry} />

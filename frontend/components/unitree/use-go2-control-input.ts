@@ -1,7 +1,7 @@
 "use client";
 
 import { FocusEvent, RefObject, useEffect, useRef, useState } from "react";
-import type { Go2Command } from "../../lib/robots/unitree/go2-types";
+import type { RobotControllerState } from "../../lib/robots/standard/robot-runtime";
 import { EMPTY_CONTROLLER_STATE, type ControllerState, type JoystickValue } from "./go2-control-types";
 
 const JOYSTICK_INTERVAL_MS = 50;
@@ -13,7 +13,8 @@ type UseGo2ControlInputProps = {
   enabled: boolean;
   open: boolean;
   paneRef: RefObject<HTMLDivElement | null>;
-  sendCommand: (command: Go2Command) => void;
+  sendControllerState: (state: RobotControllerState) => void;
+  stopMotion: () => void;
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -102,7 +103,7 @@ function inUse(state: ControllerState): boolean {
   return state.lx !== 0 || state.ly !== 0 || state.rx !== 0 || state.ry !== 0 || state.keys !== 0;
 }
 
-export function useGo2ControlInput({ enabled, open, paneRef, sendCommand }: UseGo2ControlInputProps) {
+export function useGo2ControlInput({ enabled, open, paneRef, sendControllerState, stopMotion }: UseGo2ControlInputProps) {
   const joystickStateRef = useRef<ControllerState>(EMPTY_CONTROLLER_STATE);
   const keyboardCodesRef = useRef<Set<string>>(new Set());
   const releaseTicksRef = useRef(0);
@@ -138,7 +139,7 @@ export function useGo2ControlInput({ enabled, open, paneRef, sendCommand }: UseG
         event.preventDefault();
         joystickStateRef.current = EMPTY_CONTROLLER_STATE;
         releaseTicksRef.current = JOYSTICK_RELEASE_TICKS;
-        sendCommand({ type: "stop_move" });
+        stopMotion();
         setActiveInput("keyboard");
         return;
       }
@@ -170,7 +171,7 @@ export function useGo2ControlInput({ enabled, open, paneRef, sendCommand }: UseG
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [controlsArmed, sendCommand]);
+  }, [controlsArmed, stopMotion]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -192,11 +193,11 @@ export function useGo2ControlInput({ enabled, open, paneRef, sendCommand }: UseG
         releaseTicksRef.current -= 1;
       }
 
-      sendCommand({ type: "joystick", ...state });
+      sendControllerState(state);
     }, JOYSTICK_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [controlsArmed, sendCommand]);
+  }, [controlsArmed, sendControllerState]);
 
   const setLeftJoystick = (value: JoystickValue) => {
     joystickStateRef.current = { ...joystickStateRef.current, lx: value.x, ly: value.y };

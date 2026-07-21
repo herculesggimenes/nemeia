@@ -140,7 +140,7 @@ export function UnitreeCameraView({ connectionState, enabled, stream }: Props) {
   if (connectionState !== "connected") {
     return (
       <CameraWaitingState
-        title="Waiting for Go2 connection"
+        title="Waiting for robot connection"
         detail="Connect to the robot from Settings before opening the live camera stream."
       />
     );

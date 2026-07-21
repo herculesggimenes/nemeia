@@ -2,7 +2,7 @@
   "name": "nemeia-frontend",
   "private": true,
   "version": "0.1.0",
-  "description": "Dockable robotics operator console for Nemeia, focused on Go2 control, sensing, telemetry, and agent runtime workflows.",
+  "description": "Dockable robotics operator console for Nemeia standard robot control, sensing, telemetry, and agent runtime workflows.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {

@@ -1,13 +1,13 @@
 "use client";
 
-import type { Go2SportAction } from "../../lib/robots/unitree/go2-control-actions";
+import type { RobotNativeAction } from "../../lib/robots/standard/robot-runtime";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 
 type Go2ActionRowProps = {
-  actions: Go2SportAction[];
+  actions: RobotNativeAction[];
   label: string;
-  onAction: (action: Go2SportAction) => void;
+  onAction: (action: RobotNativeAction) => void;
   selectedLabel?: string | null;
 };
 
@@ -24,7 +24,7 @@ export function Go2ActionRow({ actions, label, onAction, selectedLabel }: Go2Act
             key={`${label}-${action.apiId}-${action.label}`}
             className={cn(
               "h-8 shrink-0 px-2 text-[11px] font-bold",
-              action.danger ? "border-danger/50 text-danger" : "",
+              action.priority ? "border-danger/50 text-danger" : "",
               selectedLabel === action.label ? "border-primary/70 bg-primary/15 text-primary" : ""
             )}
             variant="outline"

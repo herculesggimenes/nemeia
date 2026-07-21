@@ -3,12 +3,12 @@
 import { PointerEvent as ReactPointerEvent, type CSSProperties, useRef, useState } from "react";
 import { Gamepad2, X } from "lucide-react";
 import {
-  GO2_MODE_ACTIONS,
-  GO2_PRIMARY_ACTIONS,
-  GO2_TRICK_ACTIONS,
-  type Go2SportAction
-} from "../../lib/robots/unitree/go2-control-actions";
-import { useGo2Store } from "../../lib/robots/unitree/go2-store";
+  ROBOT_MODE_ACTIONS,
+  ROBOT_NATIVE_ACTIONS,
+  ROBOT_PRIMARY_ACTIONS,
+  type RobotNativeAction,
+  useRobotRuntime
+} from "../../lib/robots/standard/robot-runtime";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent } from "../ui/collapsible";
 import { Go2ActionRow } from "./go2-action-row";
@@ -31,10 +31,9 @@ const CONTROL_PANE_MAX_HEIGHT = 560;
 
 export function UnitreeControlPanelContent({ open = true }: ContentProps) {
   const controlsRef = useRef<HTMLDivElement | null>(null);
-  const go2ConnectionState = useGo2Store((state) => state.connectionState);
-  const currentSportMode = useGo2Store((state) => state.currentSportMode);
-  const sendGo2Command = useGo2Store((state) => state.sendCommand);
-  const controlsEnabled = open && go2ConnectionState === "connected";
+  const robotRuntime = useRobotRuntime();
+  const controlsEnabled = open && robotRuntime.connectionState === "connected";
+  const runtimeMessage = robotRuntime.lastError ?? robotRuntime.lastEvent ?? "No command event yet.";
   const {
     controlsArmed,
     focusControls,
@@ -47,25 +46,23 @@ export function UnitreeControlPanelContent({ open = true }: ContentProps) {
     enabled: controlsEnabled,
     open,
     paneRef: controlsRef,
-    sendCommand: sendGo2Command
+    sendControllerState: robotRuntime.sendControllerState,
+    stopMotion: robotRuntime.stopMotion
   });
 
-  const sendSportAction = (action: Go2SportAction) => {
+  const sendRobotAction = (action: RobotNativeAction) => {
     if (action.label === "Obstacle Avoid On" || action.label === "Obstacle Avoid Off") {
-      sendGo2Command({
-        type: "obstacle_avoidance",
-        enabled: action.label === "Obstacle Avoid On"
-      });
+      robotRuntime.setObstacleAvoidance(action.label === "Obstacle Avoid On");
       return;
     }
 
-    sendGo2Command({
-      type: "sport_request",
+    robotRuntime.sendNativeAction({
       apiId: action.apiId,
       label: action.label,
-      modeLabel: action.kind === "mode" ? action.label : undefined,
+      modeLabel: action.role === "mode" ? action.label : undefined,
       parameter: action.parameter,
-      priority: action.danger
+      priority: action.priority,
+      role: action.role
     });
   };
 
@@ -83,9 +80,26 @@ export function UnitreeControlPanelContent({ open = true }: ContentProps) {
         <Go2JoystickPad disabled={!controlsArmed} label="move" onChange={setLeftJoystick} onStop={stopJoystick} />
 
         <div className="mx-auto grid w-full max-w-[760px] min-w-0 gap-3 self-stretch">
-          <Go2ActionRow actions={GO2_PRIMARY_ACTIONS} label="Safety" onAction={sendSportAction} />
-          <Go2ActionRow actions={GO2_MODE_ACTIONS} label="Modes" selectedLabel={currentSportMode ?? "unknown"} onAction={sendSportAction} />
-          <Go2ActionRow actions={GO2_TRICK_ACTIONS} label="Actions" onAction={sendSportAction} />
+          <Go2ActionRow actions={ROBOT_PRIMARY_ACTIONS} label="Safety" onAction={sendRobotAction} />
+          <Go2ActionRow actions={ROBOT_MODE_ACTIONS} label="Modes" selectedLabel={robotRuntime.driverMode ?? "unknown"} onAction={sendRobotAction} />
+          <Go2ActionRow actions={ROBOT_NATIVE_ACTIONS} label="Actions" onAction={sendRobotAction} />
+          <div
+            className="grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2 rounded border border-surface-3 bg-surface-2/70 px-3 py-2 text-xs"
+            data-testid="go2-control-runtime-feedback"
+          >
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase text-muted">Connection</div>
+              <div className="truncate font-medium text-foreground">{robotRuntime.connectionState}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase text-muted">Mode</div>
+              <div className="truncate font-medium text-foreground">{robotRuntime.driverMode ?? "unknown"}</div>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase text-muted">{robotRuntime.lastError ? "Error" : "Last event"}</div>
+              <div className={`truncate font-medium ${robotRuntime.lastError ? "text-danger" : "text-foreground"}`}>{runtimeMessage}</div>
+            </div>
+          </div>
           <Go2AudioCard />
         </div>
 

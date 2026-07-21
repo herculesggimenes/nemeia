@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from "react";
 import { FileAudio, Play, Square } from "lucide-react";
-import { useGo2Store } from "../../lib/robots/unitree/go2-store";
+import { useRobotRuntime } from "../../lib/robots/standard/robot-runtime";
 import { cn } from "../../lib/utils";
 import { Button } from "../ui/button";
 import { CardContent } from "../ui/card";
@@ -11,27 +11,18 @@ import { Slider } from "../ui/slider";
 
 export function Go2AudioCard() {
   const audioFileInputRef = useRef<HTMLInputElement | null>(null);
-  const go2AudioFileName = useGo2Store((state) => state.audioFileName);
-  const go2AudioFileState = useGo2Store((state) => state.audioFileState);
-  const go2AudioInputVolume = useGo2Store((state) => state.audioInputVolume);
-  const go2RobotAudioError = useGo2Store((state) => state.robotAudioError);
-  const go2RobotAudioState = useGo2Store((state) => state.robotAudioState);
-  const go2ConnectionState = useGo2Store((state) => state.connectionState);
-  const go2RuntimeTogglePending = useGo2Store((state) => state.runtimeTogglePending);
-  const setGo2AudioFileInput = useGo2Store((state) => state.setAudioFileInput);
-  const setGo2AudioFilePlayback = useGo2Store((state) => state.setAudioFilePlayback);
-  const setGo2AudioInputVolume = useGo2Store((state) => state.setAudioInputVolume);
-  const audioInputPending = Boolean(go2RuntimeTogglePending.audioInput);
-  const audioFileLoaded = Boolean(go2AudioFileName);
-  const audioFileControllable = audioFileLoaded && go2AudioFileState !== "loading" && go2AudioFileState !== "failed";
-  const audioVolumeValue = useMemo(() => [go2AudioInputVolume], [go2AudioInputVolume]);
-  const robotAudioStatus = go2RobotAudioState === "idle"
+  const robotRuntime = useRobotRuntime();
+  const audioInputPending = robotRuntime.runtimePending.audioInput;
+  const audioFileLoaded = Boolean(robotRuntime.audioFileName);
+  const audioFileControllable = audioFileLoaded && robotRuntime.audioFileState !== "loading" && robotRuntime.audioFileState !== "failed";
+  const audioVolumeValue = useMemo(() => [robotRuntime.audioInputVolume], [robotRuntime.audioInputVolume]);
+  const robotAudioStatus = robotRuntime.robotAudioState === "idle"
     ? "idle"
-    : go2RobotAudioState === "uploading"
+    : robotRuntime.robotAudioState === "uploading"
       ? "sending"
-      : go2RobotAudioState === "playing"
+      : robotRuntime.robotAudioState === "playing"
         ? "sent"
-        : go2RobotAudioState;
+        : robotRuntime.robotAudioState;
 
   return (
     <CardContent className="grid gap-2 rounded-lg border border-surface-3 bg-surface-2 p-2.5 text-xs">
@@ -42,13 +33,13 @@ export function Go2AudioCard() {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3">
             <span className="font-bold text-foreground">Robot audio</span>
-            {go2RobotAudioState === "idle" ? null : (
+            {robotRuntime.robotAudioState === "idle" ? null : (
               <span
                 className={cn(
                   "text-[10px] font-bold uppercase tracking-wide",
-                  go2RobotAudioState === "playing" || go2RobotAudioState === "ready"
+                  robotRuntime.robotAudioState === "playing" || robotRuntime.robotAudioState === "ready"
                     ? "text-primary"
-                    : go2RobotAudioState === "failed"
+                    : robotRuntime.robotAudioState === "failed"
                       ? "text-danger"
                       : "text-muted"
                 )}
@@ -57,7 +48,7 @@ export function Go2AudioCard() {
               </span>
             )}
           </div>
-          <p className="truncate text-muted">{go2AudioFileName ?? "Audio or MP4 file"}</p>
+          <p className="truncate text-muted">{robotRuntime.audioFileName ?? "Audio or MP4 file"}</p>
         </div>
       </div>
 
@@ -68,7 +59,7 @@ export function Go2AudioCard() {
         accept="audio/*,video/*,.mp4"
         onChange={(event) => {
           const file = event.target.files?.[0] ?? null;
-          void setGo2AudioFileInput(file);
+          void robotRuntime.setAudioFileInput(file);
           event.target.value = "";
         }}
       />
@@ -76,17 +67,17 @@ export function Go2AudioCard() {
       <div className="grid grid-cols-[1fr_auto_auto] items-center gap-2">
         <Button
           className="h-7 min-w-0 justify-start px-2 text-[11px] font-bold"
-          disabled={go2ConnectionState !== "connected" || audioInputPending || go2AudioFileState === "loading"}
+          disabled={robotRuntime.connectionState !== "connected" || audioInputPending || robotRuntime.audioFileState === "loading"}
           onClick={() => audioFileInputRef.current?.click()}
           variant="outline"
         >
-          {audioInputPending || go2AudioFileState === "loading" ? "Loading..." : go2AudioFileName ? "Replace file" : "Choose file"}
+          {audioInputPending || robotRuntime.audioFileState === "loading" ? "Loading..." : robotRuntime.audioFileName ? "Replace file" : "Choose file"}
         </Button>
         <Button
           className="h-7 px-2 text-[11px] font-bold"
           disabled={!audioFileControllable || audioInputPending}
           onClick={() => {
-            void setGo2AudioFilePlayback("play");
+            void robotRuntime.setAudioFilePlayback("play");
           }}
           variant="default"
         >
@@ -98,7 +89,7 @@ export function Go2AudioCard() {
           disabled={!audioFileLoaded || audioInputPending}
           size="icon"
           onClick={() => {
-            void setGo2AudioFilePlayback("stop");
+            void robotRuntime.setAudioFilePlayback("stop");
           }}
           variant="ghost"
           aria-label="Clear audio file"
@@ -118,13 +109,13 @@ export function Go2AudioCard() {
           step={1}
           value={audioVolumeValue}
           onValueChange={(value) => {
-            setGo2AudioInputVolume(value[0] ?? go2AudioInputVolume);
+            robotRuntime.setAudioInputVolume(value[0] ?? robotRuntime.audioInputVolume);
           }}
         />
-        <strong className="w-8 shrink-0 text-right text-[11px] text-foreground">{go2AudioInputVolume}%</strong>
+        <strong className="w-8 shrink-0 text-right text-[11px] text-foreground">{robotRuntime.audioInputVolume}%</strong>
       </div>
 
-      {go2RobotAudioError ? <p className="truncate text-[11px] text-danger">{go2RobotAudioError}</p> : null}
+      {robotRuntime.robotAudioError ? <p className="truncate text-[11px] text-danger">{robotRuntime.robotAudioError}</p> : null}
     </CardContent>
   );
 }

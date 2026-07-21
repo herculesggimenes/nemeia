@@ -15,6 +15,7 @@ type Props = {
   robotPoseMessageCount: number;
   robotPoseParseFailureCount: number;
   motorState: Go2MotorState[] | null;
+  onGeometryStats?: (stats: { faceCount: number }) => void;
 };
 
 type VoxelGeometryMessage = {
@@ -80,14 +81,14 @@ function createTextSprite(text: string): THREE.Sprite {
 
 function createGo2Marker(): THREE.Group {
   const marker = new THREE.Group();
-  marker.name = "Go2 marker";
+  marker.name = "Robot marker";
   marker.position.set(0, 0, 0.3);
 
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.43, 0.5, 72),
     new THREE.MeshBasicMaterial({ color: "#89b4fa", side: THREE.DoubleSide, transparent: true, opacity: 0.72 })
   );
-  ring.name = "Go2 fallback ring";
+  ring.name = "Robot fallback ring";
   ring.rotation.x = Math.PI / 2;
   ring.position.z = -0.19;
   marker.add(ring);
@@ -96,7 +97,7 @@ function createGo2Marker(): THREE.Group {
     new THREE.BoxGeometry(0.7, 0.31, 0.012),
     new THREE.MeshBasicMaterial({ color: "#89b4fa", transparent: true, opacity: 0.18 })
   );
-  footprint.name = "Go2 fallback footprint";
+  footprint.name = "Robot fallback footprint";
   footprint.position.z = -0.19;
   marker.add(footprint);
 
@@ -108,10 +109,10 @@ function createGo2Marker(): THREE.Group {
     0.18,
     0.1
   );
-  arrow.name = "Go2 fallback heading";
+  arrow.name = "Robot fallback heading";
   marker.add(arrow);
 
-  const label = createTextSprite("Go2");
+  const label = createTextSprite("Robot");
   label.position.set(0, 0, 0.62);
   marker.add(label);
 
@@ -320,7 +321,7 @@ function createVoxelScene(
   const gltfLoader = new GLTFLoader();
   gltfLoader.load("/models/Go2.glb", (gltf) => {
     const model = gltf.scene;
-    model.name = "Go2 CAD";
+    model.name = "Robot CAD";
     model.position.set(0, 0, -0.3);
     model.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) {
@@ -349,9 +350,9 @@ function createVoxelScene(
 
     go2Joints = buildGo2JointMap(model);
     onJointCount(go2Joints.size);
-    go2Marker.getObjectByName("Go2 fallback ring")?.removeFromParent();
-    go2Marker.getObjectByName("Go2 fallback footprint")?.removeFromParent();
-    go2Marker.getObjectByName("Go2 fallback heading")?.removeFromParent();
+    go2Marker.getObjectByName("Robot fallback ring")?.removeFromParent();
+    go2Marker.getObjectByName("Robot fallback footprint")?.removeFromParent();
+    go2Marker.getObjectByName("Robot fallback heading")?.removeFromParent();
     go2Marker.add(model);
     setMotorTargets(latestMotorState);
   });
@@ -495,7 +496,8 @@ function PointCloudCanvas({
   robotPose,
   robotPoseMessageCount,
   robotPoseParseFailureCount,
-  motorState
+  motorState,
+  onGeometryStats
 }: {
   frame: Go2LidarFrame | null;
   frameCount: number;
@@ -505,6 +507,7 @@ function PointCloudCanvas({
   robotPoseMessageCount: number;
   robotPoseParseFailureCount: number;
   motorState: Go2MotorState[] | null;
+  onGeometryStats?: (stats: { faceCount: number }) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<VoxelScene | null>(null);
@@ -515,7 +518,7 @@ function PointCloudCanvas({
   const [workerError, setWorkerError] = useState<string | null>(null);
   const mapStatus = faceCount > 0 ? `${faceCount.toLocaleString()} faces` : "Decoding";
   const streamStatus = frameCount > 0 ? `${frameCount.toLocaleString()} frames` : lidarState ? "Receiving" : "Waiting";
-  const go2Status = robotPose ? (motorState && jointCount >= REQUIRED_GO2_JOINT_COUNT ? "tracking + animated" : "pose tracking") : "pose missing";
+  const robotStatus = robotPose ? (motorState && jointCount >= REQUIRED_GO2_JOINT_COUNT ? "tracking + animated" : "pose tracking") : "pose missing";
   const debugStatus = [
     lastFrameBytes ? `${lastFrameBytes.toLocaleString()} bytes` : null,
     lidarState ? "LiDAR state received" : null,
@@ -572,6 +575,10 @@ function PointCloudCanvas({
     setMotorDelta(maxDelta);
   }, [motorState]);
 
+  useEffect(() => {
+    onGeometryStats?.({ faceCount });
+  }, [faceCount, onGeometryStats]);
+
   return (
     <div className="relative h-full min-h-0 bg-surface-0" data-testid="unitree-point-cloud-live">
       <canvas className="absolute inset-0 h-full w-full touch-none outline-none" ref={canvasRef} />
@@ -582,7 +589,7 @@ function PointCloudCanvas({
         <span className="text-[10px] font-extrabold uppercase tracking-wide text-muted">SLAM</span>
         <strong className="text-sm text-foreground">{mapStatus}</strong>
         <span className="text-muted">{streamStatus}</span>
-        <span className={robotPose ? "text-primary" : "text-danger"}>Go2 {go2Status}</span>
+        <span className={robotPose ? "text-primary" : "text-danger"}>Robot {robotStatus}</span>
         {workerError ? <span className="block max-w-48 truncate text-danger">{workerError}</span> : null}
       </div>
     </div>
@@ -599,7 +606,8 @@ export function UnitreePointCloudView({
   robotPose,
   robotPoseMessageCount,
   robotPoseParseFailureCount,
-  motorState
+  motorState,
+  onGeometryStats
 }: Props) {
   if (!enabled) {
     return (
@@ -613,7 +621,7 @@ export function UnitreePointCloudView({
   if (connectionState !== "connected") {
     return (
       <PointCloudWaitingState
-        title="Waiting for Go2 connection"
+        title="Waiting for robot connection"
         detail="Connect to the robot from Settings before opening the live LiDAR and SLAM view."
       />
     );
@@ -630,6 +638,7 @@ export function UnitreePointCloudView({
         robotPoseMessageCount={robotPoseMessageCount}
         robotPoseParseFailureCount={robotPoseParseFailureCount}
         motorState={motorState}
+        onGeometryStats={onGeometryStats}
       />
     );
   }

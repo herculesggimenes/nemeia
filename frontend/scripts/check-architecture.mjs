@@ -19,6 +19,8 @@ const importPattern =
   /(?:import|export)\s+(?:type\s+)?(?:[^'"]*?\s+from\s+)?["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/g;
 const classNamePattern = /className\s*=\s*(?:"([^"]*)"|'([^']*)'|{`([^`]*)`})/g;
 const rawInteractivePattern = /<(button|textarea|input)\b/g;
+const visibleVendorStringPattern =
+  /(?:aria-label|alt|label|placeholder|title)\s*=\s*(?:"[^"\n]*(?:Go2|Unitree)[^"\n]*"|'[^'\n]*(?:Go2|Unitree)[^'\n]*'|{`[^`\n]*(?:Go2|Unitree)[^`\n]*`})|>\s*[^\n<]*(?:Go2|Unitree)[^\n<]*</g;
 const maxSourceLines = 350;
 const oversizedFileAllowlist = new Set([
   "components/layout/app-shell.tsx",
@@ -29,8 +31,16 @@ const oversizedFileAllowlist = new Set([
 ]);
 const componentForbiddenImports = [
   {
+    pattern: /(?:^|\/)go2-store$/,
+    reason: "components must use the standard robot runtime boundary, not the Go2 store"
+  },
+  {
     pattern: /(?:^|\/)go2-topics$/,
     reason: "components should call Nemeia-level Go2 actions, not raw Unitree topic constants"
+  },
+  {
+    pattern: /(?:^|\/)go2-control-actions$/,
+    reason: "components should use standard robot action groups, not driver-specific action tables"
   },
   {
     pattern: /(?:^|\/)go2-webrtc$/,
@@ -55,6 +65,10 @@ const legacyStyleTokens = [
   "threadList",
   "unitree"
 ];
+const standardRobotRuntimePath = "lib/robots/standard/robot-runtime.ts";
+const driverStoreImportPattern = /(?:^|\/)go2-store$/;
+const driverStoreSymbolPattern = /\b(?:initializeGo2Store|useGo2Store)\b/;
+const operatorVisibleSourcePattern = /^(?:app\/(?!api\/robots\/go2\/)|components\/|lib\/mission-api\/|lib\/mock-data\.ts)/;
 
 const failures = [];
 
@@ -184,6 +198,7 @@ for (const file of sourceFiles) {
   const fromLayer = classify(relativeFile);
   const source = readFileSync(file, "utf8");
   const lineCount = source.split("\n").length;
+  const mayUseDriverStore = relativeFile === standardRobotRuntimePath || relativeFile.startsWith("lib/robots/unitree/");
 
   if (fromLayer === "unknown") {
     failures.push(`${relativeFile}: source files must live under app/, components/, lib/, or types/.`);
@@ -212,6 +227,18 @@ for (const file of sourceFiles) {
     }
   }
 
+  if (operatorVisibleSourcePattern.test(relativeFile)) {
+    for (const visibleVendorMatch of source.matchAll(visibleVendorStringPattern)) {
+      failures.push(
+        `${relativeFile}: visible operator text must use the standard Robot surface instead of vendor/model terms (${visibleVendorMatch[0].trim()}).`
+      );
+    }
+  }
+
+  if (!mayUseDriverStore && driverStoreSymbolPattern.test(source)) {
+    failures.push(`${relativeFile}: use the standard robot runtime boundary instead of Go2 store symbols.`);
+  }
+
   for (const match of source.matchAll(importPattern)) {
     const specifier = match[1] ?? match[2];
     const resolved = resolveLocalImport(file, specifier);
@@ -234,6 +261,10 @@ for (const file of sourceFiles) {
           failures.push(`${relativeFile}: ${forbiddenImport.reason} (${specifier}).`);
         }
       }
+    }
+
+    if (!mayUseDriverStore && driverStoreImportPattern.test(resolved.relative)) {
+      failures.push(`${relativeFile}: direct Go2 store imports must stay behind ${standardRobotRuntimePath} (${specifier}).`);
     }
 
     if (resolved.outsideFrontend) {

@@ -56,15 +56,15 @@ export function UnitreeAudioView({ audioStream, connectionState, enabled }: Prop
   }, [audioStream, muted, volume]);
 
   if (!enabled) {
-    return <AudioWaitingState title="Speaker disabled" detail="Turn the speaker output stream back on from Go2 settings when you need robot audio." />;
+    return <AudioWaitingState title="Speaker disabled" detail="Turn the speaker output stream back on from robot settings when you need robot audio." />;
   }
 
   if (connectionState !== "connected") {
-    return <AudioWaitingState title="Waiting for Go2 connection" detail="Connect to the robot before opening the speaker stream." />;
+    return <AudioWaitingState title="Waiting for robot connection" detail="Connect to the robot before opening the speaker stream." />;
   }
 
   if (!audioStream) {
-    return <AudioWaitingState title="Connected, waiting for speaker audio" detail="Nemeia is waiting for the Go2 audio track to attach." />;
+    return <AudioWaitingState title="Connected, waiting for speaker audio" detail="Nemeia is waiting for the robot audio track to attach." />;
   }
 
   return (
@@ -78,7 +78,7 @@ export function UnitreeAudioView({ audioStream, connectionState, enabled }: Prop
           </div>
           <div className="min-w-0">
             <h2 className="text-base font-bold text-foreground">Speaker</h2>
-            <p className="text-xs text-muted">{playbackState === "blocked" ? "Playback needs a user gesture." : "Go2 audio output stream."}</p>
+            <p className="text-xs text-muted">{playbackState === "blocked" ? "Playback needs a user gesture." : "Robot audio output stream."}</p>
           </div>
         </div>
 

@@ -2,9 +2,8 @@
 
 import { type ElementType, useEffect, useState } from "react";
 import { Cable, Gamepad2, Plug, Save, Shield, Unplug, Video, Volume2, Waves } from "lucide-react";
+import { initializeRobotRuntime, useRobotRuntime, type RobotConnectionMode } from "../../lib/robots/standard/robot-runtime";
 import { normalizeGo2Ip } from "../../lib/robots/unitree/go2-config";
-import { initializeGo2Store, useGo2Store } from "../../lib/robots/unitree/go2-store";
-import type { Go2Mode } from "../../lib/robots/unitree/go2-types";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Input } from "../ui/input";
@@ -54,30 +53,33 @@ function PowerSwitch({
 }
 
 export function Go2ConnectionConfigPanel() {
-  const cameraEnabled = useGo2Store((state) => state.cameraEnabled);
-  const config = useGo2Store((state) => state.config);
-  const connectionState = useGo2Store((state) => state.connectionState);
-  const lidarEnabled = useGo2Store((state) => state.lidarEnabled);
-  const lastError = useGo2Store((state) => state.lastError);
-  const lastEvent = useGo2Store((state) => state.lastEvent);
-  const obstacleAvoidanceEnabled = useGo2Store((state) => state.obstacleAvoidanceEnabled);
-  const runtimeTogglePending = useGo2Store((state) => state.runtimeTogglePending);
-  const speakerEnabled = useGo2Store((state) => state.speakerEnabled);
-  const sendCommand = useGo2Store((state) => state.sendCommand);
-  const setCameraEnabled = useGo2Store((state) => state.setCameraEnabled);
-  const setConfig = useGo2Store((state) => state.setConfig);
-  const setLidarEnabled = useGo2Store((state) => state.setLidarEnabled);
-  const setObstacleAvoidanceEnabled = useGo2Store((state) => state.setObstacleAvoidanceEnabled);
-  const setSpeakerEnabled = useGo2Store((state) => state.setSpeakerEnabled);
-  const testConnection = useGo2Store((state) => state.testConnection);
-  const connect = useGo2Store((state) => state.connect);
-  const disconnect = useGo2Store((state) => state.disconnect);
+  const robotRuntime = useRobotRuntime();
+  const {
+    cameraEnabled,
+    config,
+    connectionState,
+    disconnect,
+    enterDampState,
+    enterStandState,
+    lastError,
+    lastEvent,
+    lidarEnabled,
+    obstacleAvoidanceEnabled,
+    runtimePending,
+    setCameraEnabled,
+    setConfig,
+    setLidarEnabled,
+    setObstacleAvoidanceEnabled,
+    setSpeakerEnabled,
+    speakerEnabled,
+    stopMotion
+  } = robotRuntime;
   const [draftAutoReconnect, setDraftAutoReconnect] = useState(config.autoReconnect);
   const [draftIp, setDraftIp] = useState(config.ip);
-  const [draftMode, setDraftMode] = useState<Go2Mode>(config.mode);
+  const [draftMode, setDraftMode] = useState<RobotConnectionMode>(config.mode);
 
   useEffect(() => {
-    initializeGo2Store();
+    initializeRobotRuntime();
   }, []);
 
   useEffect(() => {
@@ -102,8 +104,8 @@ export function Go2ConnectionConfigPanel() {
     <div className="min-h-0 overflow-auto p-4">
       <Card>
         <div className="border-b border-surface-3 p-4">
-          <h2 className="text-base font-bold text-foreground">Go2 local connection</h2>
-          <p className="mt-1 text-xs text-muted">Robot connection settings live with the Go2 component.</p>
+          <h2 className="text-base font-bold text-foreground">Robot local connection</h2>
+          <p className="mt-1 text-xs text-muted">Robot connection settings live with the standard driver component.</p>
         </div>
         <CardContent className="grid gap-5">
           <div className="grid gap-2">
@@ -115,14 +117,14 @@ export function Go2ConnectionConfigPanel() {
               placeholder="10.0.0.78"
             />
             <p className="text-xs text-muted">
-              Detected on this network: 10.0.0.78. Use 192.168.12.1 only when connected to the Go2 access point.
+              Detected on this network: 10.0.0.78. Use the access-point address only when connected directly to the robot network.
             </p>
           </div>
 
           <div className="grid gap-2">
             <Label>Connection mode</Label>
-            <Select value={draftMode} onValueChange={(value) => setDraftMode(value as Go2Mode)}>
-              <SelectTrigger aria-label="Go2 connection mode">
+            <Select value={draftMode} onValueChange={(value) => setDraftMode(value as RobotConnectionMode)}>
+              <SelectTrigger aria-label="Robot connection mode">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +154,7 @@ export function Go2ConnectionConfigPanel() {
             </div>
             <PowerSwitch
               checked={cameraEnabled}
-              description={runtimeControlsDisabled ? "Connect Go2 before changing camera power." : "Sends the stream command to the connected Go2."}
+              description={runtimeControlsDisabled ? "Connect the robot before changing camera power." : "Sends the stream command to the connected robot."}
               disabled={runtimeControlsDisabled}
               icon={Video}
               id="go2-camera-power"
@@ -160,11 +162,11 @@ export function Go2ConnectionConfigPanel() {
               onCheckedChange={(checked) => {
                 void setCameraEnabled(checked);
               }}
-              pending={runtimeTogglePending.camera}
+              pending={runtimePending.camera}
             />
             <PowerSwitch
               checked={lidarEnabled}
-              description={runtimeControlsDisabled ? "Connect Go2 before changing LiDAR power." : "Sends the Unitree LiDAR switch command to the connected Go2."}
+              description={runtimeControlsDisabled ? "Connect the robot before changing LiDAR power." : "Sends the LiDAR switch command to the connected robot."}
               disabled={runtimeControlsDisabled}
               icon={Waves}
               id="go2-lidar-power"
@@ -172,11 +174,11 @@ export function Go2ConnectionConfigPanel() {
               onCheckedChange={(checked) => {
                 void setLidarEnabled(checked);
               }}
-              pending={runtimeTogglePending.lidar}
+              pending={runtimePending.lidar}
             />
             <PowerSwitch
               checked={speakerEnabled}
-              description={runtimeControlsDisabled ? "Connect Go2 before changing speaker output." : "Sends the audio stream command to the connected Go2."}
+              description={runtimeControlsDisabled ? "Connect the robot before changing speaker output." : "Sends the audio stream command to the connected robot."}
               disabled={runtimeControlsDisabled}
               icon={Volume2}
               id="go2-speaker-power"
@@ -184,11 +186,11 @@ export function Go2ConnectionConfigPanel() {
               onCheckedChange={(checked) => {
                 void setSpeakerEnabled(checked);
               }}
-              pending={runtimeTogglePending.speaker}
+              pending={runtimePending.speaker}
             />
             <PowerSwitch
               checked={obstacleAvoidanceEnabled}
-              description={runtimeControlsDisabled ? "Connect Go2 before changing obstacle avoidance." : "Sends the obstacle avoidance request to the connected Go2."}
+              description={runtimeControlsDisabled ? "Connect the robot before changing obstacle avoidance." : "Sends the obstacle avoidance request to the connected robot."}
               disabled={runtimeControlsDisabled}
               icon={Shield}
               id="go2-obstacle-avoidance"
@@ -196,7 +198,7 @@ export function Go2ConnectionConfigPanel() {
               onCheckedChange={(checked) => {
                 void setObstacleAvoidanceEnabled(checked);
               }}
-              pending={runtimeTogglePending.obstacleAvoidance}
+              pending={runtimePending.obstacleAvoidance}
             />
           </div>
 
@@ -215,7 +217,7 @@ export function Go2ConnectionConfigPanel() {
                 className="h-7 px-2 text-xs"
                 disabled={runtimeControlsDisabled}
                 variant="outline"
-                onClick={() => sendCommand({ type: "stop_move" })}
+                onClick={stopMotion}
               >
                 Stop movement
               </Button>
@@ -223,7 +225,7 @@ export function Go2ConnectionConfigPanel() {
                 className="h-7 px-2 text-xs"
                 disabled={runtimeControlsDisabled}
                 variant="outline"
-                onClick={() => sendCommand({ type: "damp" })}
+                onClick={enterDampState}
               >
                 Damp motors
               </Button>
@@ -231,7 +233,7 @@ export function Go2ConnectionConfigPanel() {
                 className="h-7 px-2 text-xs"
                 disabled={runtimeControlsDisabled}
                 variant="outline"
-                onClick={() => sendCommand({ type: "balance_stand" })}
+                onClick={enterStandState}
               >
                 Stand
               </Button>
@@ -247,7 +249,7 @@ export function Go2ConnectionConfigPanel() {
               className="gap-2"
               variant="outline"
               onClick={() => {
-                void testConnection(draftConfig());
+                void robotRuntime.testConnection(draftConfig());
               }}
             >
               <Cable size={15} />
@@ -256,7 +258,7 @@ export function Go2ConnectionConfigPanel() {
             <Button
               className="gap-2"
               onClick={() => {
-                void connect(draftConfig());
+                void robotRuntime.connectWithConfig(draftConfig());
               }}
             >
               <Plug size={15} />

@@ -12,12 +12,14 @@ import type { Go2WebRtcConnection } from "./go2-webrtc";
 const DEFAULT_CONFIG: Go2ConnectionConfig = {
   autoReconnect: false,
   robotId: "go2",
-  ip: "192.168.12.1",
-  mode: "AP"
+  ip: "10.0.0.78",
+  mode: "STA-L"
 };
 
 const CONFIG_STORAGE_KEY = "nemeia.go2.config";
 const RUNTIME_SETTINGS_STORAGE_KEY = "nemeia.go2.runtime-settings";
+const RUNTIME_SETTINGS_VERSION_STORAGE_KEY = "nemeia.robot.runtime-settings.version";
+const RUNTIME_SETTINGS_VERSION = "2";
 
 type Go2RuntimeToggle = "audioInput" | "camera" | "lidar" | "microphone" | "obstacleAvoidance" | "speaker";
 
@@ -31,10 +33,12 @@ type Go2RuntimeSettings = {
 
 const DEFAULT_RUNTIME_SETTINGS: Go2RuntimeSettings = {
   audioInputVolume: 80,
-  cameraEnabled: true,
-  lidarEnabled: true,
+  // A connection should establish control and light telemetry only. Video, audio,
+  // and LiDAR are opt-in because all three are expensive on the operator host.
+  cameraEnabled: false,
+  lidarEnabled: false,
   obstacleAvoidanceEnabled: false,
-  speakerEnabled: true
+  speakerEnabled: false
 };
 
 type Go2RobotAudioState = "checking" | "failed" | "idle" | "playing" | "ready" | "uploading";
@@ -129,7 +133,13 @@ function loadConfig(): Go2ConnectionConfig {
 
   try {
     const parsed = { ...DEFAULT_CONFIG, ...(JSON.parse(raw) as Partial<Go2ConnectionConfig>) };
-    return { ...parsed, ip: normalizeGo2Ip(parsed.ip) };
+    const ip = normalizeGo2Ip(parsed.ip);
+    if (ip === "192.168.12.1") {
+      const migrated = { ...parsed, ip: DEFAULT_CONFIG.ip, mode: DEFAULT_CONFIG.mode };
+      persistConfig(migrated);
+      return migrated;
+    }
+    return { ...parsed, ip };
   } catch {
     return DEFAULT_CONFIG;
   }
@@ -143,6 +153,13 @@ function persistConfig(config: Go2ConnectionConfig): void {
 
 function loadRuntimeSettings(): Go2RuntimeSettings {
   if (typeof window === "undefined") {
+    return DEFAULT_RUNTIME_SETTINGS;
+  }
+
+  // Version 2 changes the connection contract from "start every stream" to
+  // "start control only". Do not carry an implicit legacy opt-in forward.
+  if (window.localStorage.getItem(RUNTIME_SETTINGS_VERSION_STORAGE_KEY) !== RUNTIME_SETTINGS_VERSION) {
+    persistRuntimeSettings(DEFAULT_RUNTIME_SETTINGS);
     return DEFAULT_RUNTIME_SETTINGS;
   }
 
@@ -161,6 +178,7 @@ function loadRuntimeSettings(): Go2RuntimeSettings {
 function persistRuntimeSettings(settings: Go2RuntimeSettings): void {
   if (typeof window !== "undefined") {
     window.localStorage.setItem(RUNTIME_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    window.localStorage.setItem(RUNTIME_SETTINGS_VERSION_STORAGE_KEY, RUNTIME_SETTINGS_VERSION);
   }
 }
 
@@ -388,11 +406,14 @@ function enableRobotStreams(): void {
     GO2_TOPIC.SPORT_MODE_STATE,
     GO2_TOPIC.ROBOT_ODOM,
     GO2_TOPIC.USLAM_ODOM,
-    GO2_TOPIC.USLAM_LOC_ODOM,
-    GO2_TOPIC.LIDAR_ARRAY,
-    GO2_TOPIC.LIDAR_STATE
+    GO2_TOPIC.USLAM_LOC_ODOM
   ]) {
     connection.send({ type: GO2_DATA_CHANNEL_TYPE.SUBSCRIBE, topic });
+  }
+  if (lidarEnabled) {
+    for (const topic of [GO2_TOPIC.LIDAR_ARRAY, GO2_TOPIC.LIDAR_STATE]) {
+      connection.send({ type: GO2_DATA_CHANNEL_TYPE.SUBSCRIBE, topic });
+    }
   }
   publishLidarSwitch(lidarEnabled);
   publishRequest(GO2_TOPIC.OBSTACLES_AVOID, 1001, JSON.stringify({ enable: obstacleAvoidanceEnabled }), false);
@@ -1038,6 +1059,10 @@ export const useGo2Store = create<Go2Store>((set, get) => ({
     }
 
     setRuntimeTogglePending("lidar", true);
+    if (enabled) {
+      connection?.send({ type: GO2_DATA_CHANNEL_TYPE.SUBSCRIBE, topic: GO2_TOPIC.LIDAR_ARRAY });
+      connection?.send({ type: GO2_DATA_CHANNEL_TYPE.SUBSCRIBE, topic: GO2_TOPIC.LIDAR_STATE });
+    }
     publishLidarSwitch(enabled);
     await commandRoundTripDelay();
     persistRuntimeSettings(currentRuntimeSettings({ lidarEnabled: enabled }));
