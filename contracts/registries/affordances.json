@@ -1,0 +1,14 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R7.affordances",
+  "values": [
+    "trackable",
+    "approachable",
+    "followable",
+    "graspable",
+    "foldable",
+    "deformable",
+    "support_surface",
+    "obstacle"
+  ]
+}

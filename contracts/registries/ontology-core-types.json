@@ -1,0 +1,15 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R6.ontology_core_types",
+  "values": [
+    "core.person",
+    "core.animal",
+    "core.fragile",
+    "core.hot",
+    "core.hazard",
+    "core.garment",
+    "core.robot",
+    "core.obstacle",
+    "core.container"
+  ]
+}

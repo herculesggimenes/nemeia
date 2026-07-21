@@ -1,0 +1,43 @@
+{
+  "name": "nemeia",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "scripts": {
+    "check": "npm run check:world-runtime && npm run check:contracts && npm run check:mission-server && npm run check:mission-api && npm run check:supervisor && npm run check:driver-go2 && npm run check:capability-host && npm run check:scene && npm run check:world-twin && npm run check:attention && npm run check:anomaly && npm run check:policy && npm run check:replay && npm run check:cli && npm run check:conformance && npm run check:frontend",
+    "check:anomaly": "npm --prefix anomaly run check",
+    "check:attention": "npm --prefix attention run check",
+    "check:capability-host": "npm --prefix capability-host run check",
+    "check:cli": "npm --prefix cli run check",
+    "check:conformance": "npm --prefix conformance run check",
+    "check:contracts": "npm --prefix contracts run check",
+    "check:driver-go2": "npm --prefix driver-go2 run check",
+    "check:frontend": "npm --prefix frontend run check",
+    "check:mission-api": "npm --prefix mission-api run check",
+    "check:mission-server": "npm --prefix mission-server run check",
+    "check:policy": "npm --prefix policy run check",
+    "check:replay": "npm --prefix replay run check",
+    "check:scene": "npm --prefix scene run check",
+    "check:supervisor": "npm --prefix supervisor run check",
+    "check:world-runtime": "npm --prefix world-runtime run check",
+    "check:world-twin": "npm --prefix world-twin run check"
+  },
+  "workspaces": [
+    "contracts",
+    "cli",
+    "anomaly",
+    "attention",
+    "capability-host",
+    "conformance",
+    "driver-go2",
+    "mission-api",
+    "mission-server",
+    "policy",
+    "replay",
+    "scene",
+    "supervisor",
+    "world-twin",
+    "world-runtime",
+    "frontend"
+  ]
+}

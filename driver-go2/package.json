@@ -1,0 +1,12 @@
+{
+  "name": "@nemeia/driver-go2",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "bin": {
+    "go2-driver-gauntlet": "src/bin/go2-driver-gauntlet.ts"
+  },
+  "scripts": {
+    "check": "node --test test/*.test.ts"
+  }
+}

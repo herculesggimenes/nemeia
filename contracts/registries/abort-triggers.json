@@ -1,0 +1,11 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R4.abort_triggers",
+  "values": [
+    { "name": "target_stale", "params": ["max_ms"] },
+    { "name": "geofence_exit", "params": [] },
+    { "name": "battery_low", "params": [] },
+    { "name": "stream_silence", "params": [] },
+    { "name": "operator_stop", "params": [] }
+  ]
+}

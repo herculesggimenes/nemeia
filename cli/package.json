@@ -1,0 +1,12 @@
+{
+  "name": "@nemeia/cli",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "bin": {
+    "nemeiactl": "src/bin/nemeiactl.ts"
+  },
+  "scripts": {
+    "check": "node --test test/*.test.ts"
+  }
+}

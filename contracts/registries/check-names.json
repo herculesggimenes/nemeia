@@ -1,0 +1,16 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R5.check_names",
+  "values": [
+    "policy.principal_grant",
+    "policy.verb",
+    "policy.approval",
+    "policy.maturity",
+    "freshness.robot_status",
+    "freshness.scene",
+    "bounds.args",
+    "bounds.grant",
+    "driver.observables",
+    "sim.clearance"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R8.attention_themes",
+  "values": [
+    "run.own",
+    "mission.lifecycle",
+    "entity.bound",
+    "scene.affordance_match:foldable",
+    "scene.affordance_match:trackable",
+    "proximity.advisory",
+    "operator.message",
+    "protected_class.advisory"
+  ]
+}

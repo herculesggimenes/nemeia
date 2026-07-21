@@ -1,0 +1,11 @@
+{
+  "suite_version": "0.2.1",
+  "registry": "R3.kernel_coupled",
+  "action_spaces": [
+    {
+      "name": "base_velocity_3d",
+      "setpoint_fields": ["vx_mps", "vy_mps", "yaw_rps"]
+    }
+  ],
+  "safe_state_kinds": ["zero_velocity", "hold_posture"]
+}

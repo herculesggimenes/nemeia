@@ -1,0 +1,9 @@
+{
+  "name": "@nemeia/contracts",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check-contracts.ts && node --test test/*.test.ts"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@nemeia/mission-server",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "scripts": {
+    "check": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@nemeia/contracts": "0.2.1"
+  }
+}

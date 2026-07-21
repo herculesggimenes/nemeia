@@ -1,0 +1,313 @@
+{
+  "errorObject": {
+    "error_code": "STALE_ROBOT_STATUS",
+    "message": "Robot status is 2400 ms old; required <= 500 ms.",
+    "details": { "check": "freshness.robot_status", "age_ms": 2400 },
+    "recommended_action": "Re-read status and retry."
+  },
+  "eventEnvelope": {
+    "seq": 48211,
+    "schema_version": 1,
+    "source": "mission-server",
+    "event_type": "run.proposed",
+    "severity": 0,
+    "timestamp": "2026-07-07T17:00:00.000Z",
+    "robot_id": "go2",
+    "mission_id": "msn_01J00000000000000000000000",
+    "run_id": "run_01J00000000000000000000000",
+    "refs": [],
+    "payload": { "verb": "follow" }
+  },
+  "run": {
+    "id": "run_01J00000000000000000000000",
+    "schema_version": 1,
+    "mission_id": "msn_01J00000000000000000000000",
+    "robot_id": "go2",
+    "verb": "follow",
+    "args": { "standoff_m": 1.5 },
+    "target": {
+      "entity_id": "ent_person_01",
+      "snapshot_id": "ssg_01J00000000000000000000000",
+      "evidence_refs": ["obs_01J00000000000000000000000", "artifact:crop_01"]
+    },
+    "reason": "Keep the person centered in view.",
+    "expected_result": "Go2 follows at the requested standoff distance.",
+    "proposed_by": "agent",
+    "state": "awaiting_approval",
+    "authorization_ids": []
+  },
+  "checkResult": {
+    "name": "policy.approval",
+    "result": "pass",
+    "mode": "enforcing",
+    "details": {
+      "approval": {
+        "operator": "op_01",
+        "decided_at": "2026-07-07T17:00:01.000Z"
+      }
+    }
+  },
+  "authorization": {
+    "id": "auth_01J00000000000000000000000",
+    "schema_version": 1,
+    "robot_id": "go2",
+    "run_id": "run_01J00000000000000000000000",
+    "mission_id": "msn_01J00000000000000000000000",
+    "grant": {
+      "stream": {
+        "action_space": "base_velocity_3d",
+        "limits": { "max_speed_mps": 0.15, "max_yaw_rps": 0.2 },
+        "geofence": { "frame_id": "map", "polygon": [[0, 0], [2, 0], [2, 2], [0, 2]] },
+        "watchdog_ms": 100,
+        "max_duration_ms": 120000
+      }
+    },
+    "enforcement": {
+      "max_speed_mps": "enforcing",
+      "max_force_n": "advisory"
+    },
+    "target": {
+      "entity_id": "ent_person_01",
+      "snapshot_id": "ssg_01J00000000000000000000000"
+    },
+    "streams_granted": ["camera_front"],
+    "abort_triggers": [{ "target_stale": { "max_ms": 700 } }, "operator_stop"],
+    "capability": { "verb": "follow", "impl": "cap:follow-entity@0.3.2" },
+    "checks": [
+      {
+        "name": "policy.approval",
+        "result": "pass",
+        "mode": "enforcing",
+        "details": { "approval": { "operator": "op_01" } }
+      }
+    ],
+    "issued_at": "2026-07-07T17:00:02.000Z",
+    "expires_at": "2026-07-07T17:02:02.000Z",
+    "signature": "ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+  },
+  "driverManifest": {
+    "driver": "go2",
+    "version": "1.4.0",
+    "action_spaces": [
+      {
+        "name": "base_velocity_3d",
+        "kind": "continuous",
+        "hard_caps": { "vx_mps": 0.25, "yaw_rps": 0.35 },
+        "observables": { "velocity": "measured", "force": "none" }
+      }
+    ],
+    "native_actions": [
+      { "name": "sit", "interruptible": true },
+      { "name": "damp", "interruptible": true, "safety_action": true }
+    ],
+    "streams": [
+      { "name": "camera_front", "type": "rgb", "hz": 30 },
+      { "name": "microphone", "type": "audio", "hz": 16000, "sensitive": true }
+    ],
+    "safe_state": {
+      "kind": "hold_posture",
+      "balance_loop": "vendor_onboard",
+      "max_entry_ms": 300,
+      "on_total_loss": { "behavior": "vendor:damp", "within_ms": 300 }
+    }
+  },
+  "normalizedStatus": {
+    "robot_id": "go2",
+    "heartbeat_age_ms": 120,
+    "battery": { "pct": 82, "power_headroom": "nominal" },
+    "safe_state_active": false,
+    "pose": {
+      "frame_id": "map",
+      "position": [0, 0, 0],
+      "rotation_xyzw": [0, 0, 0, 1],
+      "age_ms": 120
+    },
+    "faults": [],
+    "vendor_display": { "mode": "balance_stand" }
+  },
+  "capabilityManifest": {
+    "capability": "follow-entity",
+    "version": "0.3.2",
+    "publisher": "community:roboflow-labs",
+    "verbs": [
+      {
+        "verb": "follow",
+        "args": { "standoff_m": { "type": "float", "min": 1.0, "max": 3.0 } },
+        "applies_to": ["person", "trackable"],
+        "doc": "Follow an entity at a standoff distance."
+      }
+    ],
+    "requires": {
+      "action_spaces": ["base_velocity_3d"],
+      "streams": ["rgb@>=15hz"]
+    },
+    "dependencies": [
+      {
+        "name": "sort-tracker.onnx",
+        "sha256": "9be1000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "network": "none",
+    "grant_defaults": {
+      "limits": { "max_speed_mps": 0.2 },
+      "abort": [{ "target_stale": { "max_ms": 700 } }]
+    }
+  },
+  "preset": {
+    "id": "preset_go2_follow_v1",
+    "schema_version": 1,
+    "name": "go2-follow-approved",
+    "version": "1.0.0",
+    "min_capability_maturity": "experimental",
+    "rules": [
+      {
+        "verb": "follow",
+        "robots": ["go2"],
+        "principals": ["agent", "operator"],
+        "impl": { "capability": "follow-entity", "version": "0.3.2" },
+        "applies_to": ["trackable"],
+        "args": { "standoff_m": { "min": 1.0, "max": 3.0 } },
+        "grant": {
+          "limits": { "max_speed_mps": 0.15 },
+          "watchdog_ms": 100,
+          "max_duration_ms": 120000
+        },
+        "freshness": { "robot_status_ms": 500, "scene_ms": 700 },
+        "streams": ["camera_front"],
+        "network": "none",
+        "approval": { "required": true, "scope": "per_run" },
+        "abort_triggers": [{ "target_stale": { "max_ms": 700 } }, "operator_stop"]
+      }
+    ],
+    "provenance": { "author": "operator:op_01" },
+    "signature": "ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+  },
+  "registryState": {
+    "package": "cap:follow-entity@0.3.2",
+    "enabled": true,
+    "pinned": true,
+    "maturity": "experimental",
+    "gauntlet_report": "artifact:gauntlet_follow_032",
+    "history": [48211, "registry.install.follow-entity"]
+  },
+  "gauntletReport": {
+    "schema_version": 1,
+    "conformance_class": "DR",
+    "suite": "NEM-10.2 driver-matrix",
+    "suite_version": "0.2.1",
+    "package": "driver:go2@0.2.1",
+    "generated_at": "2026-07-07T17:00:00.000Z",
+    "result": "pass",
+    "cases": [
+      {
+        "id": "D1",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d1_status_normalization"],
+        "measurements": { "heartbeat_age_ms": 82 },
+        "notes": "Normalized Unitree telemetry into NEM status."
+      },
+      {
+        "id": "D2",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d2_safe_state"],
+        "measurements": { "entry_ms": 240 },
+        "notes": "Entered vendor damp inside declared bound."
+      },
+      {
+        "id": "D3",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d3_setpoint_kill"],
+        "measurements": { "zero_command_ms": 94 },
+        "notes": "Setpoint stream loss forced zero velocity."
+      },
+      {
+        "id": "D4",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d4_process_kill"],
+        "measurements": { "damp_ms": 211 },
+        "notes": "Supervisor process loss reached damp."
+      },
+      {
+        "id": "D5",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d5_observables"],
+        "measurements": { "velocity_observed": 1 },
+        "notes": "Declared observables were present."
+      },
+      {
+        "id": "D6",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d6_telemetry_drop"],
+        "measurements": { "fault_ms": 100 },
+        "notes": "Telemetry drop surfaced stale status fault."
+      },
+      {
+        "id": "D7",
+        "result": "pass",
+        "evidence_refs": ["artifact:go2_d7_streams"],
+        "measurements": { "camera_front_hz": 30 },
+        "notes": "Declared streams opened and reported cadence."
+      }
+    ],
+    "report_sha256": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "signature": "ed25519:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+  },
+  "observation": {
+    "streams": ["camera_front"],
+    "labels": ["person"],
+    "confidence": 0.81,
+    "geometry": { "type": "bbox_2d", "frame_id": "camera_front", "xywh": [10, 20, 80, 160] },
+    "artifact_refs": ["artifact:frame_01"]
+  },
+  "attentionContract": {
+    "mission_id": "msn_01J00000000000000000000000",
+    "principal": "agent",
+    "state_filter": ["run.own", "mission.lifecycle", "entity.bound"],
+    "wake_predicate_cel": "event.severity >= WARNING",
+    "budget": { "max_pending": 50 },
+    "digest_version": 2,
+    "predicate_env_version": 1
+  },
+  "anomaly": {
+    "id": "anm_01J00000000000000000000000",
+    "schema_version": 1,
+    "severity": "warning",
+    "mission_id": "msn_01J00000000000000000000000",
+    "run_id": "run_01J00000000000000000000000",
+    "capability": "cap:follow-entity@0.3.2",
+    "driver": "go2@1.4.0",
+    "expected": "Go2 stops within the declared safe-state window.",
+    "observed": "Go2 stopped after 290 ms.",
+    "evidence_refs": ["artifact:replay_run_01"],
+    "suspected_cause": "None.",
+    "owner": "op_01",
+    "closure_criteria": "No action required.",
+    "status": "open"
+  },
+  "replay": {
+    "run_id": "run_01J00000000000000000000000",
+    "events": [
+      {
+        "seq": 48211,
+        "schema_version": 1,
+        "source": "mission-server",
+        "event_type": "run.proposed",
+        "severity": 0,
+        "timestamp": "2026-07-07T17:00:00.000Z",
+        "robot_id": "go2",
+        "mission_id": "msn_01J00000000000000000000000",
+        "run_id": "run_01J00000000000000000000000",
+        "refs": [],
+        "payload": { "verb": "follow" }
+      }
+    ],
+    "authorization_ids": ["auth_01J00000000000000000000000"],
+    "version_pins": {
+      "suite": "0.2.1",
+      "preset": "preset_go2_follow_v1@1.0.0",
+      "capability": "cap:follow-entity@0.3.2",
+      "driver": "go2@1.4.0"
+    },
+    "artifacts": ["artifact:replay_run_01"]
+  }
+}
