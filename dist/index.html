@@ -53,56 +53,12 @@
       }
       .skip-link:focus { top: 14px; }
 
-      .header {
-        border-bottom: 1px solid var(--line);
-        position: sticky;
-        top: 0;
-        z-index: 3;
-      }
-      .header-inner,
-      .section-inner,
-      .footer-inner {
+      .section-inner {
         margin: 0 auto;
         max-width: var(--max);
         padding-left: 24px;
         padding-right: 24px;
       }
-      .header-inner {
-        align-items: center;
-        backdrop-filter: blur(12px);
-        background: rgba(11, 14, 13, 0.9);
-        display: flex;
-        gap: 22px;
-        justify-content: space-between;
-        min-height: 64px;
-      }
-      .wordmark {
-        align-items: center;
-        display: inline-flex;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 13px;
-        font-weight: 700;
-        gap: 9px;
-        letter-spacing: 0.16em;
-        text-decoration: none;
-      }
-      .mark {
-        align-items: center;
-        border: 1px solid var(--green);
-        color: var(--green);
-        display: inline-flex;
-        height: 24px;
-        justify-content: center;
-        width: 24px;
-      }
-      .nav { display: flex; gap: 3px; }
-      .nav a {
-        color: var(--muted);
-        font-size: 13px;
-        padding: 7px 9px;
-        text-decoration: none;
-      }
-      .nav a:hover { background: var(--surface-2); color: var(--text); }
 
       .diagram-section { border-bottom: 1px solid var(--line); }
       .diagram-inner { padding-bottom: 54px; padding-top: 28px; }
@@ -117,21 +73,6 @@
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
-      .action-links {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 28px;
-      }
-      .button {
-        border: 1px solid var(--line-strong);
-        display: inline-flex;
-        font-size: 14px;
-        font-weight: 600;
-        padding: 9px 12px;
-        text-decoration: none;
-      }
-
       .diagram-shell {
         background: rgba(17, 23, 21, 0.84);
         border: 1px solid var(--line-strong);
@@ -193,14 +134,13 @@
         margin-bottom: 34px;
       }
       .section h2 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(2.5rem, 5vw, 4.2rem);
-        font-weight: 400;
-        letter-spacing: -0.065em;
-        line-height: 0.98;
-        margin: 13px 0 0;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 10px 0 0;
       }
-      .section-intro > p { color: var(--muted); font-size: 17px; line-height: 1.65; margin: 0; max-width: 600px; }
+      .section-intro > p { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 0; max-width: 600px; }
 
       .abstraction-list { border-top: 1px solid var(--line); }
       .abstraction { border-bottom: 1px solid var(--line); }
@@ -258,8 +198,8 @@
         gap: 38px;
         grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
       }
-      .status h2 { margin-top: 12px; }
-      .status p { color: var(--muted); font-size: 17px; line-height: 1.65; margin: 22px 0 0; }
+      .status h2 { margin-top: 10px; }
+      .status p { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 18px 0 0; }
       .status-list { border-top: 1px solid var(--line); }
       .status-item { border-bottom: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: 22px 1fr auto; padding: 14px 0; }
       .status-icon { color: var(--green); font-size: 17px; }
@@ -268,11 +208,6 @@
       .status-item span { color: var(--muted); display: block; font-size: 13px; margin-top: 3px; }
       .status-value { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; white-space: nowrap; }
       .status-value.next { color: var(--amber); }
-
-      .footer { color: var(--faint); font-size: 13px; }
-      .footer-inner { align-items: center; display: flex; gap: 18px; justify-content: space-between; padding-bottom: 34px; padding-top: 34px; }
-      .footer .wordmark { color: var(--text); }
-      .footer .mark { height: 20px; width: 20px; }
 
       @media (max-width: 880px) {
         .diagram-inner, .section-intro, .status { grid-template-columns: 1fr; }
@@ -285,16 +220,13 @@
       }
 
       @media (max-width: 600px) {
-        .header-inner, .section-inner, .footer-inner { padding-left: 17px; padding-right: 17px; }
-        .header-inner { align-items: flex-start; flex-direction: column; gap: 4px; padding-bottom: 10px; padding-top: 12px; }
-        .nav { max-width: 100%; overflow-x: auto; width: 100%; }
-        .nav a:first-child { padding-left: 0; }
+        .section-inner { padding-left: 17px; padding-right: 17px; }
         .diagram-inner { padding-bottom: 36px; padding-top: 18px; }
         .diagram-shell { padding: 14px; }
         .diagram-header { align-items: flex-start; flex-direction: column; gap: 4px; }
         .diagram-foot { grid-template-columns: 1fr; }
         .section { padding: 65px 0; }
-        .section h2 { font-size: 3rem; }
+        .section h2 { font-size: 24px; }
         .section-intro { margin-bottom: 27px; }
         .section-intro > p { font-size: 16px; }
         .abstraction summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
@@ -308,7 +240,6 @@
         .status p { font-size: 16px; }
         .status-item { grid-template-columns: 20px 1fr; }
         .status-value { grid-column: 2; }
-        .footer-inner { align-items: flex-start; flex-direction: column; }
       }
 
       @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -317,23 +248,11 @@
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
-    <header class="header">
-      <div class="header-inner">
-        <a class="wordmark" href="./" aria-label="Nemeia home"><span class="mark">N</span>NEMEIA</a>
-        <nav class="nav" aria-label="Page sections">
-          <a href="#how-it-works">How it works</a>
-          <a href="#abstractions">Abstractions</a>
-          <a href="#architecture">Architecture</a>
-          <a href="#status">Status</a>
-        </nav>
-      </div>
-    </header>
-
     <main id="main-content">
       <section class="diagram-section" id="how-it-works" aria-label="How Nemeia works">
         <div class="diagram-inner section-inner">
           <div class="diagram-shell" role="img" aria-label="Nemeia's top-level loop: sense, compose world state, derive affordances, execute an action, record an event, and repeat.">
-            <div class="diagram-header"><span class="diagram-label">THE CORE LOOP</span><span>same model · simulation or reality</span></div>
+            <div class="diagram-header"><span class="diagram-label">NEMEIA / CORE LOOP</span><span>same model · simulation or reality</span></div>
             <div class="diagram">
               <div class="diagram-node" data-tone="sense"><span class="node-meta">01</span><strong>Sense</strong><p>Evidence arrives from sensors, simulators, or an operator.</p><code>camera · LiDAR · audio</code></div>
               <div class="diagram-arrow" aria-hidden="true"></div>
@@ -352,7 +271,7 @@
 
       <section class="section" id="abstractions" aria-labelledby="abstractions-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">01 / Core abstractions</div><h2 id="abstractions-title">Open a primitive to see its job.</h2></div><p>Eight small concepts are enough to describe an interactive world. Each row is collapsible so you can scan the model first, then go deeper only where you need to.</p></div>
+          <div class="section-intro"><div><div class="section-label">01 / Core abstractions</div><h2 id="abstractions-title">Core abstractions</h2></div><p>Eight concepts describe the entities, state, possibilities, actions, processes, and changes in an interactive world. Open a row for its definition and example.</p></div>
           <div class="abstraction-list">
             <details class="abstraction">
               <summary><span class="abstraction-index">01</span><span><span class="abstraction-title">World</span><span class="abstraction-summary">the current state of everything</span></span><span class="toggle" aria-hidden="true"></span></summary>
@@ -392,7 +311,7 @@
 
       <section class="section" id="architecture" aria-labelledby="architecture-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">02 / Architecture</div><h2 id="architecture-title">The runtime stays small. The edges do the work.</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path can sit around action execution when a deployment needs authorization and hard control-plane guarantees.</p></div>
+          <div class="section-intro"><div><div class="section-label">02 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path surrounds action execution when authorization and control-plane guarantees are required.</p></div>
           <div class="architecture-rows">
             <div class="architecture-row"><strong><span>active path</span>Live Go2 world</strong><div class="architecture-flow"><span>Go2 sensors</span><i>→</i><span>standard robot port</span><i>→</i><span>robot-world adapter</span><i>→</i><span>World Runtime</span><i>→</i><span>operator panel</span></div></div>
             <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API</span><i>→</i><span>Mission Server</span><i>→</i><span>signed Authorization</span><i>→</i><span>Supervisor Kernel</span><i>→</i><span>Driver</span></div></div>
@@ -403,7 +322,7 @@
 
       <section class="section" id="status" aria-labelledby="status-title">
         <div class="section-inner status">
-          <div><div class="section-label">03 / Current state</div><h2 id="status-title">The loop works. Perception comes next.</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p><div class="action-links"><a class="button" href="../README.md">Read the README ↗</a><a class="button" href="scene-model.md">Scene model ↗</a></div></div>
+          <div><div class="section-label">03 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
           <div class="status-list" aria-label="Implementation status">
             <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
             <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
@@ -415,6 +334,5 @@
       </section>
     </main>
 
-    <footer class="footer"><div class="footer-inner"><a class="wordmark" href="./"><span class="mark">N</span>NEMEIA</a><span>World Runtime · Apache 2.0</span></div></footer>
   </body>
 </html>
