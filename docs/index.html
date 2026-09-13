@@ -4,34 +4,40 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A simple guide to the abstractions and architecture behind Nemeia.">
-    <meta name="theme-color" content="#0b0e0d">
+    <meta name="theme-color" content="#F6F2E9">
     <title>Nemeia · How it works</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0e0d'/%3E%3Cpath d='M16 48V16h8l16 19V16h8v32h-8L24 29v19z' fill='%237de2a7'/%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2317382A'/%3E%3Cpath d='M16 48V16h8l16 19V16h8v32h-8L24 29v19z' fill='%23F6F2E9'/%3E%3C/svg%3E">
     <style>
       :root {
-        --bg: #0b0e0d;
-        --surface: #111715;
-        --surface-2: #17201c;
-        --line: #2a3530;
-        --line-strong: #43534b;
-        --text: #eef5ef;
-        --muted: #a2afa8;
-        --faint: #718078;
-        --green: #7de2a7;
-        --blue: #90caff;
-        --amber: #f4cd7d;
-        --violet: #c9b9ff;
-        --max: 1040px;
+        --paper: #F6F2E9;
+        --surface: #FFFDF8;
+        --surface-2: #F0EBDD;
+        --ink: #20352A;
+        --pine: #17382A;
+        --forest: #245A40;
+        --moss: #8FA88E;
+        --walnut: #8A6849;
+        --clay: #B86E56;
+        --amber-state: #C5A15A;
+        --slate: #6E8583;
+        --dusk: #81748D;
+        --line: #D9DED3;
+        --line-strong: #B8C5B8;
+        --bg: var(--paper);
+        --text: var(--ink);
+        --muted: #586A5E;
+        --faint: #7B8A7D;
+        --green: var(--forest);
+        --blue: var(--slate);
+        --amber: var(--amber-state);
+        --violet: var(--dusk);
+        --max: 1120px;
       }
 
       * { box-sizing: border-box; }
       html { scroll-behavior: smooth; }
       body {
-        background:
-          linear-gradient(rgba(125, 226, 167, 0.035) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(125, 226, 167, 0.035) 1px, transparent 1px),
-          var(--bg);
-        background-size: 40px 40px;
+        background: var(--bg);
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 16px;
@@ -41,6 +47,8 @@
 
       a { color: inherit; }
       a:hover { color: var(--green); }
+      a:focus-visible,
+      summary:focus-visible { outline: 2px solid var(--forest); outline-offset: 3px; }
 
       .skip-link {
         background: var(--green);
@@ -74,8 +82,9 @@
         text-transform: uppercase;
       }
       .diagram-shell {
-        background: rgba(17, 23, 21, 0.84);
-        border: 1px solid var(--line-strong);
+        background: var(--pine);
+        border: 1px solid var(--walnut);
+        border-radius: 10px;
         padding: 20px;
       }
       .diagram-header {
@@ -86,7 +95,8 @@
         justify-content: space-between;
         padding-bottom: 14px;
       }
-      .diagram-header span:last-child { color: var(--muted); font-size: 12px; }
+      .diagram-header .diagram-label { color: #B7D2BC; }
+      .diagram-header span:last-child { color: rgba(246, 242, 233, 0.68); font-size: 12px; }
       .diagram {
         align-items: stretch;
         display: grid;
@@ -95,22 +105,23 @@
         margin-top: 26px;
       }
       .diagram-node {
-        background: var(--surface-2);
-        border: 1px solid var(--line-strong);
+        background: rgba(246, 242, 233, 0.06);
+        border: 1px solid rgba(246, 242, 233, 0.24);
+        border-radius: 6px;
         display: grid;
         gap: 5px;
-        min-height: 150px;
+        min-height: 136px;
         padding: 13px;
       }
-      .diagram-node[data-tone="sense"] { border-top: 3px solid var(--blue); }
-      .diagram-node[data-tone="world"] { border-top: 3px solid var(--green); }
-      .diagram-node[data-tone="affordance"] { border-top: 3px solid var(--amber); }
-      .diagram-node[data-tone="action"] { border-top: 3px solid var(--green); }
-      .diagram-node[data-tone="event"] { border-top: 3px solid var(--violet); }
-      .diagram-node strong { font-size: 17px; font-weight: 600; }
-      .diagram-node p { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0; }
-      .diagram-node code { color: var(--green); font-size: 11px; margin-top: auto; }
-      .diagram-arrow { align-items: center; color: var(--faint); display: flex; justify-content: center; }
+      .diagram-node[data-tone="sense"] { border-top: 3px solid var(--slate); }
+      .diagram-node[data-tone="world"] { border-top: 3px solid var(--forest); }
+      .diagram-node[data-tone="affordance"] { border-top: 3px solid var(--amber-state); }
+      .diagram-node[data-tone="action"] { border-top: 3px solid var(--forest); }
+      .diagram-node[data-tone="event"] { border-top: 3px solid var(--dusk); }
+      .diagram-node strong { color: var(--paper); font-size: 17px; font-weight: 600; }
+      .diagram-node p { color: rgba(246, 242, 233, 0.76); font-size: 14px; line-height: 1.45; margin: 0; }
+      .diagram-node code { color: #B7D2BC; font-size: 11px; margin-top: auto; }
+      .diagram-arrow { align-items: center; color: rgba(246, 242, 233, 0.48); display: flex; justify-content: center; }
       .diagram-arrow::before { content: "→"; font-size: 20px; }
       .diagram-foot {
         align-items: start;
@@ -121,11 +132,11 @@
         margin-top: 23px;
         padding-top: 16px;
       }
-      .diagram-foot strong { font-size: 13px; font-weight: 600; }
-      .diagram-foot p { color: var(--muted); font-size: 12px; margin: 3px 0 0; }
-      .cycle { color: var(--green); }
+      .diagram-foot strong { color: var(--paper); font-size: 13px; font-weight: 600; }
+      .diagram-foot p { color: rgba(246, 242, 233, 0.68); font-size: 12px; margin: 3px 0 0; }
+      .cycle { color: #B7D2BC; }
 
-      .section { border-bottom: 1px solid var(--line); padding: 82px 0; }
+      .section { border-bottom: 1px solid var(--line); padding: 64px 0; }
       .section-intro {
         align-items: end;
         display: grid;
@@ -134,6 +145,7 @@
         margin-bottom: 34px;
       }
       .section h2 {
+        color: var(--pine);
         font-size: 26px;
         font-weight: 600;
         letter-spacing: -0.02em;
@@ -143,7 +155,8 @@
       .section-intro > p { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 0; max-width: 600px; }
 
       .abstraction-list { border-top: 1px solid var(--line); }
-      .abstraction { border-bottom: 1px solid var(--line); }
+      .abstraction { background: var(--surface); border-bottom: 1px solid var(--line); }
+      .abstraction:last-child { border-bottom: 0; }
       .abstraction summary {
         align-items: center;
         cursor: pointer;
@@ -155,27 +168,27 @@
       }
       .abstraction summary::-webkit-details-marker { display: none; }
       .abstraction summary:hover { color: var(--green); }
-      .abstraction-index { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+      .abstraction-index { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
       .abstraction-title { font-size: 20px; font-weight: 600; }
       .abstraction-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
       .toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
       .toggle::before { content: "+"; }
       details[open] .toggle::before { content: "−"; }
       .abstraction-body {
-        background: rgba(17, 23, 21, 0.72);
+        background: var(--surface-2);
         border-top: 1px solid var(--line);
         display: grid;
         gap: 22px;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px;
         padding: 22px 42px 23px;
       }
-      .detail-label { color: var(--faint); display: block; font-size: 11px; margin-bottom: 6px; }
+      .detail-label { color: var(--walnut); display: block; font-size: 11px; margin-bottom: 6px; }
       .abstraction-body p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
       .abstraction-body code { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
       .source-link { align-self: end; color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; text-decoration: none; }
       .source-link:hover { color: var(--green); }
 
-      .architecture-rows { border-top: 1px solid var(--line); }
+      .architecture-rows { background: var(--surface); border: 1px solid var(--line); border-bottom: 0; }
       .architecture-row {
         align-items: center;
         border-bottom: 1px solid var(--line);
@@ -187,14 +200,15 @@
       .architecture-row > strong { font-size: 14px; font-weight: 600; }
       .architecture-row > strong span { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 400; margin-bottom: 3px; }
       .architecture-flow { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
-      .architecture-flow span { background: var(--surface); border: 1px solid var(--line-strong); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; padding: 8px 10px; }
+      .architecture-flow span { background: var(--paper); border: 1px solid var(--line-strong); border-radius: 6px; color: var(--pine); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; padding: 8px 10px; }
       .architecture-flow i { color: var(--faint); font-style: normal; }
       .architecture-note { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
       .architecture-note code { color: var(--amber); }
 
       .reference-block {
-        background: rgba(17, 23, 21, 0.72);
-        border: 1px solid var(--line-strong);
+        background: var(--pine);
+        border: 1px solid var(--walnut);
+        border-radius: 10px;
         margin: 0;
         overflow-x: auto;
       }
@@ -204,22 +218,22 @@
         padding: 22px 24px;
       }
       .reference-block code {
-        color: var(--text);
+        color: var(--paper);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 13px;
         line-height: 1.6;
         white-space: pre;
       }
       .reference-note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 16px 0 0; }
-      .schema-table-wrap { border: 1px solid var(--line-strong); overflow-x: auto; }
+      .schema-table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
       .schema-table { border-collapse: collapse; min-width: 760px; width: 100%; }
       .schema-table th,
       .schema-table td { border-bottom: 1px solid var(--line); padding: 14px 16px; text-align: left; vertical-align: top; }
-      .schema-table th { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+      .schema-table th { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
       .schema-table td { color: var(--muted); font-size: 14px; line-height: 1.5; }
       .schema-table tr:last-child td { border-bottom: 0; }
-      .schema-table td:first-child { color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: nowrap; }
-      .schema-table td:nth-child(2) { color: var(--amber); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+      .schema-table td:first-child { color: var(--pine); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: nowrap; }
+      .schema-table td:nth-child(2) { color: var(--slate); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
 
       .status {
         align-items: start;
@@ -229,7 +243,7 @@
       }
       .status h2 { margin-top: 10px; }
       .status p { color: var(--muted); font-size: 16px; line-height: 1.6; margin: 18px 0 0; }
-      .status-list { border-top: 1px solid var(--line); }
+      .status-list { background: var(--surface); border: 1px solid var(--line); }
       .status-item { border-bottom: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: 22px 1fr auto; padding: 14px 0; }
       .status-icon { color: var(--green); font-size: 17px; }
       .status-icon.next { color: var(--amber); }
@@ -258,6 +272,8 @@
         .section h2 { font-size: 24px; }
         .section-intro { margin-bottom: 27px; }
         .section-intro > p { font-size: 16px; }
+        .reference-block pre { min-width: 0; padding: 18px 16px; }
+        .reference-block code { font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
         .abstraction summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
         .abstraction-title { font-size: 17px; }
         .abstraction-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
