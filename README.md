@@ -45,6 +45,7 @@ physical action packs to the same actions used in simulation.
 | System | Continuously senses, updates, executes, or emits events. |
 
 See [docs/world-runtime.md](./docs/world-runtime.md) for the full explanation,
+[the architecture website](./docs/) for a visual walkthrough,
 [the visual framework story](http://localhost:5173/framework), and
 [the detailed documentation](http://localhost:5173/docs).
 
