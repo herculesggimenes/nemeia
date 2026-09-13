@@ -3,45 +3,39 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="How Nemeia models interactive physical and simulated worlds for AI agents.">
-    <meta name="theme-color" content="#0a0d0f">
-    <title>Nemeia · World Runtime Architecture</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0d0f'/%3E%3Cpath d='M16 48V16h8l16 19V16h8v32h-8L24 29v19z' fill='%237de2a7'/%3E%3C/svg%3E">
+    <meta name="description" content="A simple guide to the abstractions and architecture behind Nemeia.">
+    <meta name="theme-color" content="#0b0e0d">
+    <title>Nemeia · How it works</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230b0e0d'/%3E%3Cpath d='M16 48V16h8l16 19V16h8v32h-8L24 29v19z' fill='%237de2a7'/%3E%3C/svg%3E">
     <style>
       :root {
-        --bg: #0a0d0f;
-        --surface: #101519;
-        --surface-2: #151c20;
-        --surface-3: #1d272c;
-        --line: #2a363c;
-        --line-bright: #3b4d55;
-        --text: #edf4ef;
-        --muted: #9ba9a3;
-        --soft: #73827c;
+        --bg: #0b0e0d;
+        --surface: #111715;
+        --surface-2: #17201c;
+        --line: #2a3530;
+        --line-strong: #43534b;
+        --text: #eef5ef;
+        --muted: #a2afa8;
+        --faint: #718078;
         --green: #7de2a7;
-        --green-soft: #173a2a;
-        --blue: #8fc8ff;
-        --blue-soft: #172e43;
-        --amber: #f3c879;
-        --amber-soft: #3e2e18;
-        --red: #ff9e99;
-        --max: 1240px;
+        --blue: #90caff;
+        --amber: #f4cd7d;
+        --violet: #c9b9ff;
+        --max: 1040px;
       }
 
       * { box-sizing: border-box; }
-
       html { scroll-behavior: smooth; }
-
       body {
         background:
           linear-gradient(rgba(125, 226, 167, 0.035) 1px, transparent 1px),
           linear-gradient(90deg, rgba(125, 226, 167, 0.035) 1px, transparent 1px),
           var(--bg);
-        background-size: 48px 48px;
+        background-size: 40px 40px;
         color: var(--text);
         font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         font-size: 16px;
-        line-height: 1.6;
+        line-height: 1.55;
         margin: 0;
       }
 
@@ -51,745 +45,413 @@
       .skip-link {
         background: var(--green);
         color: var(--bg);
-        left: 16px;
+        left: 14px;
         padding: 8px 12px;
         position: absolute;
         top: -60px;
         z-index: 10;
       }
+      .skip-link:focus { top: 14px; }
 
-      .skip-link:focus { top: 16px; }
-
-      .site-header {
-        backdrop-filter: blur(14px);
-        background: rgba(10, 13, 15, 0.88);
+      .header {
         border-bottom: 1px solid var(--line);
         position: sticky;
         top: 0;
-        z-index: 5;
+        z-index: 3;
       }
-
       .header-inner,
       .section-inner,
-      .hero-inner,
-      .site-footer {
+      .footer-inner {
         margin: 0 auto;
         max-width: var(--max);
-        padding-left: 28px;
-        padding-right: 28px;
+        padding-left: 24px;
+        padding-right: 24px;
       }
-
       .header-inner {
         align-items: center;
+        backdrop-filter: blur(12px);
+        background: rgba(11, 14, 13, 0.9);
         display: flex;
-        gap: 28px;
+        gap: 22px;
         justify-content: space-between;
-        min-height: 70px;
+        min-height: 64px;
       }
-
       .wordmark {
         align-items: center;
         display: inline-flex;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 700;
-        gap: 10px;
+        gap: 9px;
         letter-spacing: 0.16em;
         text-decoration: none;
       }
-
-      .wordmark-mark {
+      .mark {
         align-items: center;
         border: 1px solid var(--green);
         color: var(--green);
         display: inline-flex;
-        font-size: 13px;
-        height: 25px;
+        height: 24px;
         justify-content: center;
-        line-height: 1;
-        width: 25px;
+        width: 24px;
       }
-
-      .site-nav {
-        display: flex;
-        gap: 4px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        min-width: 0;
-      }
-
-      .site-nav::-webkit-scrollbar { display: none; }
-
-      .site-nav a {
+      .nav { display: flex; gap: 3px; }
+      .nav a {
         color: var(--muted);
         font-size: 13px;
-        padding: 8px 10px;
+        padding: 7px 9px;
         text-decoration: none;
-        white-space: nowrap;
       }
+      .nav a:hover { background: var(--surface-2); color: var(--text); }
 
-      .site-nav a:hover,
-      .site-nav a[aria-current="true"] {
-        background: var(--surface-2);
-        color: var(--text);
-      }
-
-      .hero {
-        border-bottom: 1px solid var(--line);
-        overflow: hidden;
-      }
-
+      .hero { border-bottom: 1px solid var(--line); }
       .hero-inner {
-        align-items: center;
         display: grid;
-        gap: 72px;
-        grid-template-columns: minmax(0, 0.92fr) minmax(440px, 1.08fr);
-        min-height: 700px;
-        padding-bottom: 92px;
-        padding-top: 92px;
+        gap: 42px;
+        grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+        padding-bottom: 68px;
+        padding-top: 76px;
       }
-
       .eyebrow,
-      .section-kicker,
-      .node-label,
-      .step-index,
-      .table-label,
-      .status-label {
+      .section-label,
+      .diagram-label,
+      .node-meta,
+      .detail-label,
+      .source-label {
         color: var(--green);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
       }
-
       .hero h1 {
         font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(3.6rem, 8vw, 7.2rem);
+        font-size: clamp(3.4rem, 7vw, 6.7rem);
         font-weight: 400;
         letter-spacing: -0.075em;
         line-height: 0.92;
-        margin: 24px 0 28px;
-        max-width: 720px;
+        margin: 22px 0 24px;
       }
-
-      .hero h1 em {
-        color: var(--green);
-        font-style: normal;
-      }
-
+      .hero h1 em { color: var(--green); font-style: normal; }
       .hero-copy {
         color: var(--muted);
-        font-size: 20px;
-        line-height: 1.55;
+        font-size: 18px;
+        line-height: 1.6;
         margin: 0;
-        max-width: 580px;
+        max-width: 460px;
       }
-
-      .hero-actions {
+      .hero-links {
         display: flex;
         flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 36px;
+        gap: 10px;
+        margin-top: 28px;
       }
-
       .button {
-        border: 1px solid var(--line-bright);
+        border: 1px solid var(--line-strong);
         display: inline-flex;
         font-size: 14px;
         font-weight: 600;
-        gap: 9px;
-        padding: 11px 15px;
+        padding: 9px 12px;
         text-decoration: none;
       }
-
-      .button-primary {
-        background: var(--green);
-        border-color: var(--green);
-        color: var(--bg);
-      }
-
+      .button-primary { background: var(--green); border-color: var(--green); color: var(--bg); }
       .button-primary:hover { color: var(--bg); }
 
-      .button-arrow { color: currentColor; font-size: 18px; line-height: 1; }
-
-      .hero-visual {
-        border: 1px solid var(--line-bright);
-        min-height: 500px;
+      .diagram-shell {
+        background: rgba(17, 23, 21, 0.84);
+        border: 1px solid var(--line-strong);
         padding: 20px;
-        position: relative;
       }
-
-      .hero-visual::before {
-        background: radial-gradient(circle, rgba(125, 226, 167, 0.18), transparent 68%);
-        content: "";
-        inset: 0;
-        pointer-events: none;
-        position: absolute;
-      }
-
-      .visual-topline {
+      .diagram-header {
         align-items: center;
         border-bottom: 1px solid var(--line);
-        color: var(--soft);
         display: flex;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 12px;
+        gap: 12px;
         justify-content: space-between;
         padding-bottom: 14px;
-        position: relative;
       }
-
-      .signal {
-        align-items: center;
-        color: var(--green);
-        display: inline-flex;
-        gap: 7px;
-      }
-
-      .signal::before {
-        background: var(--green);
-        border-radius: 50%;
-        content: "";
-        height: 7px;
-        width: 7px;
-      }
-
-      .core-loop {
-        display: grid;
-        gap: 8px;
-        margin: 32px auto 0;
-        max-width: 420px;
-        position: relative;
-      }
-
-      .core-node {
-        background: rgba(16, 21, 25, 0.92);
-        border: 1px solid var(--line-bright);
-        display: grid;
-        gap: 1px;
-        padding: 14px 16px;
-      }
-
-      .core-node strong { font-size: 15px; font-weight: 600; }
-      .core-node span { color: var(--muted); font-size: 13px; }
-      .core-node-active { border-color: var(--green); box-shadow: 0 0 0 1px rgba(125, 226, 167, 0.12); }
-      .core-node-active strong { color: var(--green); }
-
-      .core-arrow {
-        color: var(--green);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 18px;
-        height: 21px;
-        line-height: 21px;
-        text-align: center;
-      }
-
-      .loop-caption {
-        border-top: 1px solid var(--line);
-        color: var(--soft);
-        font-size: 12px;
-        margin-top: 26px;
-        padding-top: 15px;
-        position: relative;
-        text-align: center;
-      }
-
-      .hero-foot {
-        align-items: center;
-        border-top: 1px solid var(--line);
-        color: var(--soft);
-        display: flex;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 12px;
-        gap: 18px;
-        justify-content: space-between;
-        margin-top: 56px;
-        padding-top: 17px;
-      }
-
-      .hero-foot span:first-child { color: var(--muted); }
-
-      .section {
-        border-bottom: 1px solid var(--line);
-        padding: 108px 0;
-      }
-
-      .section-heading {
-        align-items: start;
-        display: grid;
-        gap: 32px;
-        grid-template-columns: minmax(250px, 0.75fr) minmax(0, 1fr);
-        margin-bottom: 56px;
-      }
-
-      .section h2 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(2.4rem, 4.5vw, 4.7rem);
-        font-weight: 400;
-        letter-spacing: -0.06em;
-        line-height: 0.98;
-        margin: 15px 0 0;
-      }
-
-      .section-lede {
-        color: var(--muted);
-        font-size: 18px;
-        line-height: 1.65;
-        margin: 14px 0 0;
-        max-width: 660px;
-      }
-
-      .step-grid {
-        border-left: 1px solid var(--line);
-        border-top: 1px solid var(--line);
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-      }
-
-      .step {
-        border-bottom: 1px solid var(--line);
-        border-right: 1px solid var(--line);
-        min-height: 230px;
-        padding: 23px;
-      }
-
-      .step:nth-child(4),
-      .step:nth-child(5),
-      .step:nth-child(6) { background: rgba(21, 28, 32, 0.58); }
-
-      .step-index { color: var(--soft); }
-      .step h3 { font-size: 19px; font-weight: 600; margin: 42px 0 8px; }
-      .step p { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0; max-width: 280px; }
-      .step-code { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; margin-top: 20px; }
-
-      .abstraction-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(4, 1fr);
-      }
-
-      .abstraction {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        min-height: 300px;
-        padding: 22px;
-      }
-
-      .abstraction:hover { border-color: var(--line-bright); }
-      .abstraction-number { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
-      .abstraction h3 { font-size: 20px; font-weight: 600; margin: 45px 0 10px; }
-      .abstraction p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
-      .abstraction code { color: var(--blue); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.6; margin-top: 20px; }
-
-      .architecture {
-        display: grid;
-        gap: 14px;
-      }
-
-      .plane {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        padding: 25px;
-      }
-
-      .plane-active { border-color: var(--green); }
-      .plane-extension { border-color: var(--line-bright); }
-
-      .plane-header {
-        align-items: baseline;
-        border-bottom: 1px solid var(--line);
-        display: flex;
-        gap: 14px;
-        justify-content: space-between;
-        margin-bottom: 25px;
-        padding-bottom: 17px;
-      }
-
-      .plane-header h3 { font-size: 20px; font-weight: 600; margin: 0; }
-      .plane-header p { color: var(--muted); font-size: 13px; margin: 0; text-align: right; }
-
-      .arch-flow {
+      .diagram-header span:last-child { color: var(--muted); font-size: 12px; }
+      .diagram {
         align-items: stretch;
         display: grid;
-        gap: 7px;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+        grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr) 24px minmax(0, 1fr);
+        margin-top: 26px;
       }
-
-      .arch-flow-secondary {
-        grid-template-columns: 1fr 28px 1fr 28px 1fr;
-        margin-top: 9px;
-      }
-
-      .arch-node {
+      .diagram-node {
         background: var(--surface-2);
-        border: 1px solid var(--line-bright);
+        border: 1px solid var(--line-strong);
         display: grid;
-        gap: 6px;
-        min-height: 130px;
-        padding: 15px;
+        gap: 5px;
+        min-height: 150px;
+        padding: 13px;
       }
-
-      .arch-node strong { font-size: 14px; font-weight: 600; }
-      .arch-node span { color: var(--muted); font-size: 12px; line-height: 1.45; }
-      .arch-node code { color: var(--green); font-size: 11px; margin-top: auto; }
-      .arch-connector { align-items: center; color: var(--green); display: flex; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; justify-content: center; }
-
-      .extension-flow {
+      .diagram-node[data-tone="sense"] { border-top: 3px solid var(--blue); }
+      .diagram-node[data-tone="world"] { border-top: 3px solid var(--green); }
+      .diagram-node[data-tone="affordance"] { border-top: 3px solid var(--amber); }
+      .diagram-node[data-tone="action"] { border-top: 3px solid var(--green); }
+      .diagram-node[data-tone="event"] { border-top: 3px solid var(--violet); }
+      .diagram-node strong { font-size: 17px; font-weight: 600; }
+      .diagram-node p { color: var(--muted); font-size: 13px; line-height: 1.45; margin: 0; }
+      .diagram-node code { color: var(--green); font-size: 11px; margin-top: auto; }
+      .diagram-arrow { align-items: center; color: var(--faint); display: flex; justify-content: center; }
+      .diagram-arrow::before { content: "→"; font-size: 20px; }
+      .diagram-foot {
+        align-items: start;
+        border-top: 1px solid var(--line);
         display: grid;
-        gap: 9px;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-      }
-
-      .extension-node {
-        border: 1px dashed var(--line-bright);
-        min-height: 110px;
-        padding: 14px;
-      }
-
-      .extension-node strong { display: block; font-size: 14px; font-weight: 600; }
-      .extension-node span { color: var(--muted); display: block; font-size: 12px; line-height: 1.45; margin-top: 7px; }
-      .extension-note { color: var(--soft); font-size: 12px; margin: 20px 0 0; }
-
-      .layers-grid {
-        display: grid;
-        gap: 12px;
+        gap: 15px;
         grid-template-columns: 1fr 1fr;
+        margin-top: 23px;
+        padding-top: 16px;
       }
+      .diagram-foot strong { font-size: 13px; font-weight: 600; }
+      .diagram-foot p { color: var(--muted); font-size: 12px; margin: 3px 0 0; }
+      .cycle { color: var(--green); }
 
-      .layer {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        padding: 25px;
-      }
-
-      .layer-physical { border-top: 3px solid var(--blue); }
-      .layer-semantic { border-top: 3px solid var(--green); }
-      .layer h3 { font-size: 20px; font-weight: 600; margin: 0; }
-      .layer > p { color: var(--muted); font-size: 15px; margin: 10px 0 22px; }
-      .layer-list { display: grid; gap: 1px; grid-template-columns: repeat(2, 1fr); }
-      .layer-list div { border-top: 1px solid var(--line); color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; padding: 10px 0; }
-      .layer-list div:nth-child(odd) { margin-right: 12px; }
-      .layer-list span { color: var(--soft); display: block; font-family: inherit; font-size: 11px; margin-top: 2px; }
-
-      .observation-callout {
-        background: var(--green-soft);
-        border-left: 3px solid var(--green);
-        color: var(--text);
-        font-size: 15px;
-        margin-top: 12px;
-        padding: 17px 20px;
-      }
-
-      .observation-callout code { color: var(--green); }
-
-      .codebase-grid {
+      .section { border-bottom: 1px solid var(--line); padding: 82px 0; }
+      .section-intro {
+        align-items: end;
         display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(2, 1fr);
+        gap: 32px;
+        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+        margin-bottom: 34px;
       }
-
-      .codebase-group {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        padding: 22px;
+      .section h2 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(2.5rem, 5vw, 4.2rem);
+        font-weight: 400;
+        letter-spacing: -0.065em;
+        line-height: 0.98;
+        margin: 13px 0 0;
       }
+      .section-intro > p { color: var(--muted); font-size: 17px; line-height: 1.65; margin: 0; max-width: 600px; }
 
-      .codebase-group h3 { font-size: 17px; font-weight: 600; margin: 0; }
-      .codebase-group p { color: var(--muted); font-size: 14px; margin: 6px 0 17px; }
-      .path-list { display: grid; gap: 8px; }
-      .path-list a { color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; text-decoration: none; }
-      .path-list a::before { color: var(--soft); content: "↳ "; }
-
-      .status-layout {
+      .abstraction-list { border-top: 1px solid var(--line); }
+      .abstraction { border-bottom: 1px solid var(--line); }
+      .abstraction summary {
+        align-items: center;
+        cursor: pointer;
         display: grid;
-        gap: 50px;
-        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+        gap: 18px;
+        grid-template-columns: 42px minmax(0, 1fr) 28px;
+        list-style: none;
+        padding: 18px 3px;
       }
+      .abstraction summary::-webkit-details-marker { display: none; }
+      .abstraction summary:hover { color: var(--green); }
+      .abstraction-index { color: var(--faint); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+      .abstraction-title { font-size: 20px; font-weight: 600; }
+      .abstraction-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
+      .toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
+      .toggle::before { content: "+"; }
+      details[open] .toggle::before { content: "−"; }
+      .abstraction-body {
+        background: rgba(17, 23, 21, 0.72);
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px;
+        padding: 22px 42px 23px;
+      }
+      .detail-label { color: var(--faint); display: block; font-size: 11px; margin-bottom: 6px; }
+      .abstraction-body p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+      .abstraction-body code { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+      .source-link { align-self: end; color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; text-decoration: none; }
+      .source-link:hover { color: var(--green); }
 
-      .status-layout h2 { margin-top: 12px; }
-      .status-copy { color: var(--muted); font-size: 17px; line-height: 1.65; margin: 24px 0 0; }
+      .architecture-rows { border-top: 1px solid var(--line); }
+      .architecture-row {
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 170px minmax(0, 1fr);
+        padding: 18px 3px;
+      }
+      .architecture-row > strong { font-size: 14px; font-weight: 600; }
+      .architecture-row > strong span { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 400; margin-bottom: 3px; }
+      .architecture-flow { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+      .architecture-flow span { background: var(--surface); border: 1px solid var(--line-strong); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; padding: 8px 10px; }
+      .architecture-flow i { color: var(--faint); font-style: normal; }
+      .architecture-note { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+      .architecture-note code { color: var(--amber); }
+
+      .status {
+        align-items: start;
+        display: grid;
+        gap: 38px;
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      }
+      .status h2 { margin-top: 12px; }
+      .status p { color: var(--muted); font-size: 17px; line-height: 1.65; margin: 22px 0 0; }
       .status-list { border-top: 1px solid var(--line); }
-      .status-row { align-items: start; border-bottom: 1px solid var(--line); display: grid; gap: 14px; grid-template-columns: 24px 1fr auto; padding: 16px 0; }
-      .status-icon { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 17px; line-height: 1.4; }
-      .status-icon-warn { color: var(--amber); }
-      .status-row strong { display: block; font-size: 15px; font-weight: 600; }
-      .status-row span { color: var(--muted); display: block; font-size: 13px; margin-top: 2px; }
-      .status-value { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
-      .status-value-warn { color: var(--amber); }
+      .status-item { border-bottom: 1px solid var(--line); display: grid; gap: 12px; grid-template-columns: 22px 1fr auto; padding: 14px 0; }
+      .status-icon { color: var(--green); font-size: 17px; }
+      .status-icon.next { color: var(--amber); }
+      .status-item strong { display: block; font-size: 14px; font-weight: 600; }
+      .status-item span { color: var(--muted); display: block; font-size: 13px; margin-top: 3px; }
+      .status-value { color: var(--green); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; white-space: nowrap; }
+      .status-value.next { color: var(--amber); }
 
-      .tour-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(3, 1fr);
+      .footer { color: var(--faint); font-size: 13px; }
+      .footer-inner { align-items: center; display: flex; gap: 18px; justify-content: space-between; padding-bottom: 34px; padding-top: 34px; }
+      .footer .wordmark { color: var(--text); }
+      .footer .mark { height: 20px; width: 20px; }
+
+      @media (max-width: 880px) {
+        .hero-inner, .section-intro, .status { grid-template-columns: 1fr; }
+        .hero-inner { padding-bottom: 55px; padding-top: 55px; }
+        .diagram { grid-template-columns: 1fr; }
+        .diagram-arrow { min-height: 20px; }
+        .diagram-arrow::before { content: "↓"; }
+        .diagram-node { min-height: 0; }
+        .abstraction-body { grid-template-columns: 1fr 1fr; }
+        .source-link { align-self: start; grid-column: 1 / -1; }
       }
 
-      .tour-card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        display: flex;
-        flex-direction: column;
-        min-height: 200px;
-        padding: 22px;
-      }
-
-      .tour-card h3 { font-size: 17px; font-weight: 600; margin: 38px 0 8px; }
-      .tour-card p { color: var(--muted); font-size: 14px; margin: 0; }
-      .tour-card a { color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; margin-top: auto; padding-top: 20px; text-decoration: none; }
-
-      .site-footer { align-items: center; color: var(--soft); display: flex; font-size: 13px; gap: 24px; justify-content: space-between; padding-bottom: 42px; padding-top: 42px; }
-      .site-footer a { color: var(--muted); }
-
-      @media (max-width: 980px) {
-        .hero-inner { gap: 48px; grid-template-columns: 1fr; padding-bottom: 70px; padding-top: 70px; }
-        .hero-visual { min-height: 420px; }
-        .abstraction-grid { grid-template-columns: repeat(2, 1fr); }
-        .arch-flow { grid-template-columns: 1fr; }
-        .arch-flow-secondary { grid-template-columns: 1fr; }
-        .arch-connector { min-height: 22px; transform: rotate(90deg); }
-        .extension-flow { grid-template-columns: repeat(2, 1fr); }
-        .status-layout { grid-template-columns: 1fr; }
-      }
-
-      @media (max-width: 720px) {
-        .header-inner, .section-inner, .hero-inner, .site-footer { padding-left: 18px; padding-right: 18px; }
-        .header-inner { align-items: flex-start; flex-direction: column; gap: 5px; padding-bottom: 9px; padding-top: 13px; }
-        .site-nav { max-width: 100%; width: 100%; }
-        .site-nav a:first-child { padding-left: 0; }
-        .hero h1 { font-size: clamp(3.4rem, 17vw, 5.5rem); }
-        .hero-copy { font-size: 18px; }
-        .hero-visual { min-height: 395px; padding: 14px; }
-        .core-loop { margin-top: 25px; }
-        .section { padding: 76px 0; }
-        .section-heading { display: block; margin-bottom: 36px; }
+      @media (max-width: 600px) {
+        .header-inner, .section-inner, .footer-inner { padding-left: 17px; padding-right: 17px; }
+        .header-inner { align-items: flex-start; flex-direction: column; gap: 4px; padding-bottom: 10px; padding-top: 12px; }
+        .nav { max-width: 100%; overflow-x: auto; width: 100%; }
+        .nav a:first-child { padding-left: 0; }
+        .hero h1 { font-size: clamp(3.35rem, 17vw, 5.5rem); }
+        .hero-copy { font-size: 17px; }
+        .diagram-shell { padding: 14px; }
+        .diagram-header { align-items: flex-start; flex-direction: column; gap: 4px; }
+        .diagram-foot { grid-template-columns: 1fr; }
+        .section { padding: 65px 0; }
         .section h2 { font-size: 3rem; }
-        .step-grid, .abstraction-grid, .layers-grid, .codebase-grid, .tour-grid { grid-template-columns: 1fr; }
-        .step { min-height: 0; }
-        .step h3, .abstraction h3, .tour-card h3 { margin-top: 27px; }
-        .plane { padding: 18px; }
-        .plane-header { display: block; }
-        .plane-header p { margin-top: 8px; text-align: left; }
-        .extension-flow { grid-template-columns: 1fr; }
-        .layer-list { grid-template-columns: 1fr; }
-        .layer-list div:nth-child(odd) { margin-right: 0; }
-        .status-row { grid-template-columns: 20px 1fr; }
+        .section-intro { margin-bottom: 27px; }
+        .section-intro > p { font-size: 16px; }
+        .abstraction summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
+        .abstraction-title { font-size: 17px; }
+        .abstraction-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
+        .abstraction-body { grid-template-columns: 1fr; padding: 18px 0 21px 42px; }
+        .source-link { grid-column: auto; }
+        .architecture-row { align-items: start; grid-template-columns: 1fr; gap: 11px; }
+        .architecture-flow span { font-size: 11px; }
+        .status { gap: 30px; }
+        .status p { font-size: 16px; }
+        .status-item { grid-template-columns: 20px 1fr; }
         .status-value { grid-column: 2; }
-        .site-footer { align-items: flex-start; flex-direction: column; }
+        .footer-inner { align-items: flex-start; flex-direction: column; }
       }
 
-      @media (prefers-reduced-motion: reduce) {
-        html { scroll-behavior: auto; }
-      }
+      @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
     </style>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
-    <header class="site-header">
+    <header class="header">
       <div class="header-inner">
-        <a class="wordmark" href="./" aria-label="Nemeia architecture home"><span class="wordmark-mark">N</span>NEMEIA</a>
-        <nav class="site-nav" aria-label="Page sections">
-          <a href="#loop">How it works</a>
+        <a class="wordmark" href="./" aria-label="Nemeia home"><span class="mark">N</span>NEMEIA</a>
+        <nav class="nav" aria-label="Page sections">
+          <a href="#how-it-works">How it works</a>
           <a href="#abstractions">Abstractions</a>
           <a href="#architecture">Architecture</a>
-          <a href="#codebase">Codebase</a>
           <a href="#status">Status</a>
         </nav>
       </div>
     </header>
 
     <main id="main-content">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-inner">
+      <section class="hero" id="how-it-works" aria-labelledby="hero-title">
+        <div class="hero-inner section-inner">
           <div>
             <div class="eyebrow">World Runtime · 0.1</div>
-            <h1 id="hero-title">Give agents a world they can <em>inhabit.</em></h1>
-            <p class="hero-copy">Nemeia turns physical and simulated environments into a shared language of entities, components, relationships, and meaningful actions.</p>
-            <div class="hero-actions">
-              <a class="button button-primary" href="#loop">Trace the core loop <span class="button-arrow">↓</span></a>
-              <a class="button" href="world-runtime.md">Read the runtime notes <span class="button-arrow">↗</span></a>
+            <h1 id="hero-title">A world model for agents that can <em>act.</em></h1>
+            <p class="hero-copy">Nemeia gives an AI agent a structured view of what exists, what each thing can do, and what changed after an action.</p>
+            <div class="hero-links">
+              <a class="button button-primary" href="#abstractions">Explore the abstractions ↓</a>
+              <a class="button" href="world-runtime.md">Runtime notes ↗</a>
             </div>
-            <div class="hero-foot"><span><code>sense → compose → interact → update</code></span><span>Apache 2.0</span></div>
           </div>
 
-          <div class="hero-visual" role="img" aria-label="The Nemeia loop from sensing to world update">
-            <div class="visual-topline"><span>WORLD / LIVE PROJECTION</span><span class="signal">MODEL READY</span></div>
-            <div class="core-loop">
-              <div class="core-node"><strong>Sense</strong><span>camera · LiDAR · audio · pose</span></div>
-              <div class="core-arrow" aria-hidden="true">↓</div>
-              <div class="core-node"><strong>Compose state</strong><span>entities own components</span></div>
-              <div class="core-arrow" aria-hidden="true">↓</div>
-              <div class="core-node core-node-active"><strong>Derive affordances</strong><span>requirements match what is possible now</span></div>
-              <div class="core-arrow" aria-hidden="true">↓</div>
-              <div class="core-node"><strong>Execute action</strong><span>effects · relations · events</span></div>
-              <div class="core-arrow" aria-hidden="true">↓</div>
-              <div class="core-node"><strong>Update world</strong><span>the next state is deterministic</span></div>
+          <div class="diagram-shell" role="img" aria-label="Nemeia's top-level loop: sense, compose world state, derive affordances, execute an action, record an event, and repeat.">
+            <div class="diagram-header"><span class="diagram-label">THE CORE LOOP</span><span>same model · simulation or reality</span></div>
+            <div class="diagram">
+              <div class="diagram-node" data-tone="sense"><span class="node-meta">01</span><strong>Sense</strong><p>Evidence arrives from sensors, simulators, or an operator.</p><code>camera · LiDAR · audio</code></div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node" data-tone="world"><span class="node-meta">02</span><strong>Compose</strong><p>Entities get components that describe state and ability.</p><code>world state</code></div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node" data-tone="affordance"><span class="node-meta">03</span><strong>Derive</strong><p>Requirements match the current state.</p><code>affordances</code></div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node" data-tone="action"><span class="node-meta">04</span><strong>Act</strong><p>An action applies a meaningful change.</p><code>effects · relations</code></div>
+              <div class="diagram-arrow" aria-hidden="true"></div>
+              <div class="diagram-node" data-tone="event"><span class="node-meta">05</span><strong>Record</strong><p>Events make the new state visible and ordered.</p><code>events → repeat</code></div>
             </div>
-            <div class="loop-caption">One model · simulation or reality</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="loop" aria-labelledby="loop-title">
-        <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">01 / The loop</div><h2 id="loop-title">State creates possibility.</h2></div>
-            <p class="section-lede">Nemeia does not begin with a list of commands. It begins with what exists right now. Components describe the world; action requirements match against those components; affordances are the result.</p>
-          </div>
-          <div class="step-grid">
-            <article class="step"><div class="step-index">01 · Sense</div><h3>Observations arrive</h3><p>Sensors, simulators, or operators provide evidence about what is present and how it is changing.</p><code class="step-code">observation →</code></article>
-            <article class="step"><div class="step-index">02 · Compose</div><h3>Entities get meaning</h3><p>A stable identity is given a component map: connection, transform, portable, observable, and more.</p><code class="step-code">entity + components</code></article>
-            <article class="step"><div class="step-index">03 · Relate</div><h3>Facts connect things</h3><p>Directed relationships such as <code>located_in</code>, <code>observes</code>, or <code>supports</code> stay first-class.</p><code class="step-code">subject → predicate → object</code></article>
-            <article class="step"><div class="step-index">04 · Derive</div><h3>Possibilities emerge</h3><p>Actions declare the actor and target components they need. The runtime derives available affordances from current state.</p><code class="step-code">requirements → affordance</code></article>
-            <article class="step"><div class="step-index">05 · Act</div><h3>A meaningful change runs</h3><p>An action can update components, create relationships, return a result, and emit domain events.</p><code class="step-code">action.perform()</code></article>
-            <article class="step"><div class="step-index">06 · Record</div><h3>The world moves forward</h3><p>Events are ordered, snapshots are deterministic, and the next interaction set is derived from the new state.</p><code class="step-code">events → repeat</code></article>
+            <div class="diagram-foot"><div><strong>Systems</strong><p>Continuously sense, update, execute, and emit.</p></div><div><strong class="cycle">↺ The loop continues</strong><p>The next possibilities come from the updated world.</p></div></div>
           </div>
         </div>
       </section>
 
       <section class="section" id="abstractions" aria-labelledby="abstractions-title">
         <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">02 / Core abstractions</div><h2 id="abstractions-title">Small primitives. Composable worlds.</h2></div>
-            <p class="section-lede">The World Runtime keeps the ontology deliberately small. Each abstraction has one job, which makes the same model usable for a robot, a game character, a room, a camera, or a simulated object.</p>
-          </div>
-          <div class="abstraction-grid">
-            <article class="abstraction"><div class="abstraction-number">W · 01</div><h3>World</h3><p>The current collection of entities, relationships, actions, and events.</p><code>world.snapshot()</code></article>
-            <article class="abstraction"><div class="abstraction-number">E · 02</div><h3>Entity</h3><p>A stable identity for one thing. The entity itself is intentionally light; its components carry meaning.</p><code>id · label · type · components</code></article>
-            <article class="abstraction"><div class="abstraction-number">C · 03</div><h3>Component</h3><p>Composable state or ability attached to an entity: locomotion, power, vision, transform, or portable.</p><code>entity.components[name]</code></article>
-            <article class="abstraction"><div class="abstraction-number">R · 04</div><h3>Relationship</h3><p>A directed fact connecting two entities, with optional metadata and provenance.</p><code>subject — predicate — object</code></article>
-            <article class="abstraction"><div class="abstraction-number">F · 05</div><h3>Affordance</h3><p>An action currently available to an actor and optional target, including a reason when it is not available.</p><code>affordancesFor(actor, target)</code></article>
-            <article class="abstraction"><div class="abstraction-number">A · 06</div><h3>Action</h3><p>A meaningful operation that declares requirements and applies effects, relationships, results, and events.</p><code>registerAction() · execute()</code></article>
-            <article class="abstraction"><div class="abstraction-number">S · 07</div><h3>System</h3><p>A continuous process that senses, updates state, executes actions, or emits events.</p><code>sense · update · execute</code></article>
-            <article class="abstraction"><div class="abstraction-number">V · 08</div><h3>Event</h3><p>An ordered record of a world change. Events make the transition visible and replayable.</p><code>seq · timestamp · type · data</code></article>
+          <div class="section-intro"><div><div class="section-label">01 / Core abstractions</div><h2 id="abstractions-title">Open a primitive to see its job.</h2></div><p>Eight small concepts are enough to describe an interactive world. Each row is collapsible so you can scan the model first, then go deeper only where you need to.</p></div>
+          <div class="abstraction-list">
+            <details class="abstraction">
+              <summary><span class="abstraction-index">01</span><span><span class="abstraction-title">World</span><span class="abstraction-summary">the current state of everything</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>The container for current entities, relationships, registered actions, and ordered events.</p></div><div><span class="detail-label">Example</span><code>world.snapshot()<br>→ entities + relationships + actions</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Entity</span><span class="abstraction-summary">a stable identity for one thing</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An ID, label, type, and component map. The entity is intentionally light; its components carry meaning.</p></div><div><span class="detail-label">Example</span><code>robot_01<br>type: core.robot</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Component</span><span class="abstraction-summary">state or ability attached to an entity</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A composable piece of state or capability such as locomotion, transform, observable, power, vision, or audio.</p></div><div><span class="detail-label">Example</span><code>robot_01.components.locomotion<br>→ { state: "ready" }</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Relationship</span><span class="abstraction-summary">a directed fact connecting two entities</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A first-class subject–predicate–object connection, with optional metadata.</p></div><div><span class="detail-label">Example</span><code>robot_01 — located_in — world_local<br>robot_01 — observes — world_local</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Affordance</span><span class="abstraction-summary">what is possible right now</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An action currently available to an actor and optional target, including the reason when it is unavailable.</p></div><div><span class="detail-label">Example</span><code>world.affordancesFor("robot_01")<br>→ connect · observe · map · stop</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Action</span><span class="abstraction-summary">a meaningful operation that changes the world</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An operation with actor and target requirements. It can update components, create relationships, return a result, and emit events.</p></div><div><span class="detail-label">Example</span><code>world.execute({<br>  action_id: "world.map"<br>})</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">07</span><span><span class="abstraction-title">System</span><span class="abstraction-summary">a process that keeps the world moving</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A continuous process that senses, updates, executes, or emits events. Systems connect the model to time and external reality.</p></div><div><span class="detail-label">Example</span><code>sense → update → execute<br>→ emit → repeat</code></div><a class="source-link" href="world-runtime.md">Design notes ↗</a></div>
+            </details>
+            <details class="abstraction">
+              <summary><span class="abstraction-index">08</span><span><span class="abstraction-title">Event</span><span class="abstraction-summary">an ordered record of a world change</span></span><span class="toggle" aria-hidden="true"></span></summary>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A sequence-numbered record with a timestamp, type, involved entities, and event data.</p></div><div><span class="detail-label">Example</span><code>action.started<br>world.mapping_enabled<br>action.completed</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+            </details>
           </div>
         </div>
       </section>
 
       <section class="section" id="architecture" aria-labelledby="architecture-title">
         <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">03 / Architecture</div><h2 id="architecture-title">One world model. Two execution planes.</h2></div>
-            <p class="section-lede">The active path makes the world legible to an operator and an agent. The retained governance suite adds authorization and control-plane guarantees when a deployment needs them.</p>
+          <div class="section-intro"><div><div class="section-label">02 / Architecture</div><h2 id="architecture-title">The runtime stays small. The edges do the work.</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path can sit around action execution when a deployment needs authorization and hard control-plane guarantees.</p></div>
+          <div class="architecture-rows">
+            <div class="architecture-row"><strong><span>active path</span>Live Go2 world</strong><div class="architecture-flow"><span>Go2 sensors</span><i>→</i><span>standard robot port</span><i>→</i><span>robot-world adapter</span><i>→</i><span>World Runtime</span><i>→</i><span>operator panel</span></div></div>
+            <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API</span><i>→</i><span>Mission Server</span><i>→</i><span>signed Authorization</span><i>→</i><span>Supervisor Kernel</span><i>→</i><span>Driver</span></div></div>
           </div>
-
-          <div class="architecture">
-            <article class="plane plane-active">
-              <div class="plane-header"><h3>Active · World Runtime + operator plane</h3><p>the path running in the current slice</p></div>
-              <div class="arch-flow">
-                <div class="arch-node"><span class="node-label">01 · Interface</span><strong>Workbench</strong><span>Modules, Conversation, World, camera, LiDAR, audio, control, stats.</span><code>frontend/components/</code></div>
-                <div class="arch-connector" aria-hidden="true">→</div>
-                <div class="arch-node"><span class="node-label">02 · Projection</span><strong>World panel</strong><span>Projects robot telemetry into Robot + Local environment entities.</span><code>frontend/lib/world/</code></div>
-                <div class="arch-connector" aria-hidden="true">→</div>
-                <div class="arch-node"><span class="node-label">03 · Core</span><strong>World Runtime</strong><span>Derives affordances and executes effects with ordered events.</span><code>world-runtime/</code></div>
-              </div>
-              <div class="arch-flow arch-flow-secondary">
-                <div class="arch-node"><span class="node-label">04 · Boundary</span><strong>Standard robot port</strong><span>Connect, stream toggles, and stop motion stay vendor-neutral.</span><code>RobotWorldPort</code></div>
-                <div class="arch-connector" aria-hidden="true">→</div>
-                <div class="arch-node"><span class="node-label">05 · Adapter</span><strong>Unitree Go2</strong><span>WebRTC, data channel, LiDAR frames, pose, motors, battery, audio.</span><code>driver-go2/</code></div>
-                <div class="arch-connector" aria-hidden="true">↺</div>
-                <div class="arch-node"><span class="node-label">feedback</span><strong>Telemetry</strong><span>New snapshots change component state and available actions.</span><code>state → next affordance</code></div>
-              </div>
-            </article>
-
-            <article class="plane plane-extension">
-              <div class="plane-header"><h3>Retained · Governance extension</h3><p>implemented reference suite · optional to the active core</p></div>
-              <div class="extension-flow">
-                <div class="extension-node"><strong>Mission API</strong><span>Transport-neutral requests for missions, runs, robots, scene, events, anomalies, and replay.</span></div>
-                <div class="extension-node"><strong>Mission Server</strong><span>Policy, approvals, registry state, signed Authorizations, and the Event Log.</span></div>
-                <div class="extension-node"><strong>Supervisor Kernel</strong><span>Verifies Authorizations, owns stop state, clamps ticks, and watches heartbeats.</span></div>
-                <div class="extension-node"><strong>Driver / Capability Host</strong><span>Hardware boundary and sandboxed executors with declared limits.</span></div>
-              </div>
-              <p class="extension-note">Cross-cutting projections: <code>Scene</code> · <code>Attention</code> · <code>Replay</code> · <code>Reports</code> read from the Event Log. The suite is preserved as an optional governance path, not a prerequisite for World Runtime.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" aria-labelledby="layers-title">
-        <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">04 / Scene model</div><h2 id="layers-title">Evidence is not identity.</h2></div>
-            <p class="section-lede">Nemeia keeps physical geometry and semantic meaning separate. An observation can update an entity; it is not the entity. A body can support several semantic interpretations while perception is uncertain.</p>
-          </div>
-          <div class="layers-grid">
-            <article class="layer layer-physical">
-              <h3>Physical layer</h3>
-              <p>Answers geometry, motion, contact, clearance, and simulation questions.</p>
-              <div class="layer-list"><div>World<span>coherent physical snapshot</span></div><div>Body<span>pose, velocity, motion type</span></div><div>Shape<span>collision or sensor geometry</span></div><div>Geometry<span>box, capsule, mesh, point cloud</span></div><div>Material<span>friction, density, restitution</span></div><div>Filter<span>collision categories and masks</span></div><div>Contact<span>touching, normal, impulse</span></div><div>Sensor<span>keepout, frustum, interest region</span></div></div>
-            </article>
-            <article class="layer layer-semantic">
-              <h3>Semantic layer</h3>
-              <p>Answers identity, meaning, provenance, confidence, freshness, and task relevance.</p>
-              <div class="layer-list"><div>Entity<span>stable semantic identity</span></div><div>Observation<span>evidence from a source</span></div><div>Relation<span>explicit semantic fact</span></div><div>Affordance<span>meaningful possibility</span></div><div>Provenance<span>why the system believes it</span></div><div>Confidence<span>how certain the belief is</span></div><div>Freshness<span>when the evidence was current</span></div><div>Task memory<span>mission-specific context</span></div></div>
-            </article>
-          </div>
-          <div class="observation-callout"><strong>Key boundary:</strong> raw camera frames, masks, point clouds, and detector invocations are evidence. The agent should usually receive the compact Scene projection: entities, hazards, free-space summaries, object tracks, and confidence/freshness metadata.</div>
-        </div>
-      </section>
-
-      <section class="section" id="codebase" aria-labelledby="codebase-title">
-        <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">05 / Codebase map</div><h2 id="codebase-title">Find the abstraction in the tree.</h2></div>
-            <p class="section-lede">The repository is split by responsibility. Start with the active center, then follow the boundary outward to hardware, spatial projections, and optional governance.</p>
-          </div>
-          <div class="codebase-grid">
-            <article class="codebase-group"><h3>Active world core</h3><p>Generic world state and the live operator projection.</p><div class="path-list"><a href="../world-runtime/src/world-runtime.ts">world-runtime/src/world-runtime.ts</a><a href="../world-runtime/test/world-runtime.test.ts">world-runtime/test/world-runtime.test.ts</a><a href="../frontend/lib/world/robot-world-runtime.ts">frontend/lib/world/robot-world-runtime.ts</a><a href="../frontend/components/world/world-panel.tsx">frontend/components/world/world-panel.tsx</a></div></article>
-            <article class="codebase-group"><h3>Robot boundary</h3><p>Vendor-specific Go2 transport behind a standard runtime surface.</p><div class="path-list"><a href="../frontend/lib/robots/standard/robot-runtime.ts">frontend/lib/robots/standard/robot-runtime.ts</a><a href="../frontend/lib/robots/unitree/go2-connection.ts">frontend/lib/robots/unitree/go2-connection.ts</a><a href="../frontend/lib/robots/unitree/go2-webrtc.ts">frontend/lib/robots/unitree/go2-webrtc.ts</a><a href="../driver-go2/src/go2-driver.ts">driver-go2/src/go2-driver.ts</a></div></article>
-            <article class="codebase-group"><h3>Spatial projections</h3><p>Semantic scene reduction and deterministic geometry-derived checks.</p><div class="path-list"><a href="../scene/src/scene-projector.ts">scene/src/scene-projector.ts</a><a href="../world-twin/src/world-twin.ts">world-twin/src/world-twin.ts</a><a href="scene-model.md">docs/scene-model.md</a></div></article>
-            <article class="codebase-group"><h3>Operator surfaces</h3><p>Dockable panels for seeing and acting on the live world.</p><div class="path-list"><a href="../frontend/components/workbench/workbench-registry.ts">frontend/components/workbench/workbench-registry.ts</a><a href="../frontend/components/workbench/nemeia-workbench.tsx">frontend/components/workbench/nemeia-workbench.tsx</a><a href="../frontend/components/unitree/unitree-point-cloud-view.tsx">frontend/components/unitree/unitree-point-cloud-view.tsx</a><a href="../frontend/components/thread/conversation-page.tsx">frontend/components/thread/conversation-page.tsx</a></div></article>
-            <article class="codebase-group"><h3>Governance extension</h3><p>Authorization, execution control, replay, attention, policy, and contracts.</p><div class="path-list"><a href="../contracts/registries/README.md">contracts/registries/README.md</a><a href="../mission-api/src/mission-api.ts">mission-api/src/mission-api.ts</a><a href="../mission-server/src/mission-server.ts">mission-server/src/mission-server.ts</a><a href="../supervisor/src/supervisor-kernel.ts">supervisor/src/supervisor-kernel.ts</a><a href="../replay/src/replay-builder.ts">replay/src/replay-builder.ts</a></div></article>
-            <article class="codebase-group"><h3>Context and history</h3><p>Design notes explain the boundaries and the direction of travel.</p><div class="path-list"><a href="world-runtime.md">docs/world-runtime.md</a><a href="runtime.md">docs/runtime.md</a><a href="refreshed-architecture-plan.md">docs/refreshed-architecture-plan.md</a><a href="unitree-integration.md">docs/unitree-integration.md</a><a href="../README.md">README.md</a></div></article>
-          </div>
+          <p class="architecture-note"><code>Event Log</code> is the cross-cutting record. Scene, Attention, Replay, and Reports are projections over it. The governance packages are retained as an optional extension; the World Runtime does not depend on them.</p>
         </div>
       </section>
 
       <section class="section" id="status" aria-labelledby="status-title">
-        <div class="section-inner">
-          <div class="status-layout">
-            <div>
-              <div class="section-kicker">06 / Current state</div>
-              <h2 id="status-title">The loop is real. The world is still gaining meaning.</h2>
-              <p class="status-copy">The first World Runtime slice is implemented and wired to the live Go2 operator surface. The next slice is semantic perception: turn sensor evidence into additional entities and relationships, then bind physical action packs to the same actions used in simulation.</p>
-              <a class="button" href="../README.md">Open the repository README <span class="button-arrow">↗</span></a>
-            </div>
-            <div class="status-list" aria-label="Implementation status">
-              <div class="status-row"><div class="status-icon">✓</div><div><strong>Deterministic world state</strong><span>Entities, component composition, relationships, snapshots, actions, and ordered events.</span></div><div class="status-value">implemented</div></div>
-              <div class="status-row"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
-              <div class="status-row"><div class="status-icon">✓</div><div><strong>Manual affordance execution</strong><span>World panel actions route through the runtime and return a receipt with resulting events.</span></div><div class="status-value">implemented</div></div>
-              <div class="status-row"><div class="status-icon status-icon-warn">△</div><div><strong>Semantic object ingestion</strong><span>The live panel still shows <code>semantics = unknown</code> and “classification not connected.”</span></div><div class="status-value status-value-warn">next</div></div>
-              <div class="status-row"><div class="status-icon status-icon-warn">△</div><div><strong>Physical action packs</strong><span>Generic action meaning is present; physical implementations are the next binding across simulation and hardware.</span></div><div class="status-value status-value-warn">next</div></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" aria-labelledby="tour-title">
-        <div class="section-inner">
-          <div class="section-heading">
-            <div><div class="section-kicker">07 / Start here</div><h2 id="tour-title">A short code tour.</h2></div>
-            <p class="section-lede">Read the abstractions in the order the system uses them. Each stop is a real source or design note in this repository.</p>
-          </div>
-          <div class="tour-grid">
-            <article class="tour-card"><div class="step-index">01 · Model</div><h3>World Runtime</h3><p>See how state is stored, affordances are derived, and actions become events.</p><a href="../world-runtime/src/world-runtime.ts">Open world-runtime.ts ↗</a></article>
-            <article class="tour-card"><div class="step-index">02 · Bridge</div><h3>Robot World Runtime</h3><p>See how a vendor-neutral robot port is projected into the generic world model.</p><a href="../frontend/lib/world/robot-world-runtime.ts">Open robot-world-runtime.ts ↗</a></article>
-            <article class="tour-card"><div class="step-index">03 · Inspect</div><h3>World Panel</h3><p>See the live scene inspector, relationships, manual actions, and receipts.</p><a href="../frontend/components/world/world-panel.tsx">Open world-panel.tsx ↗</a></article>
+        <div class="section-inner status">
+          <div><div class="section-label">03 / Current state</div><h2 id="status-title">The loop works. Perception comes next.</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p><div class="hero-links"><a class="button" href="../README.md">Read the README ↗</a><a class="button" href="scene-model.md">Scene model ↗</a></div></div>
+          <div class="status-list" aria-label="Implementation status">
+            <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
+            <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
+            <div class="status-item"><div class="status-icon">✓</div><div><strong>Manual operator actions</strong><span>World panel actions route through the runtime and return event-backed receipts.</span></div><div class="status-value">implemented</div></div>
+            <div class="status-item"><div class="status-icon next">△</div><div><strong>Semantic perception</strong><span>Camera and LiDAR evidence is not yet producing semantic object entities in the live panel.</span></div><div class="status-value next">next</div></div>
+            <div class="status-item"><div class="status-icon next">△</div><div><strong>Physical action packs</strong><span>Generic action meaning exists; physical implementations are the next binding.</span></div><div class="status-value next">next</div></div>
           </div>
         </div>
       </section>
     </main>
 
-    <footer class="site-footer"><span><a class="wordmark" href="./"><span class="wordmark-mark">N</span>NEMEIA</a></span><span>Sense · compose · interact · update · Apache 2.0</span></footer>
-
-    <script>
-      const sections = [...document.querySelectorAll("main section[id]")];
-      const links = [...document.querySelectorAll(".site-nav a")];
-      const setCurrent = (id) => links.forEach((link) => link.setAttribute("aria-current", String(link.getAttribute("href") === `#${id}`)));
-      const observer = new IntersectionObserver((entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setCurrent(visible.target.id);
-      }, { rootMargin: "-25% 0px -65% 0px", threshold: [0, 0.2, 0.5, 1] });
-      sections.forEach((section) => observer.observe(section));
-    </script>
+    <footer class="footer"><div class="footer-inner"><a class="wordmark" href="./"><span class="mark">N</span>NEMEIA</a><span>World Runtime · Apache 2.0</span></div></footer>
   </body>
 </html>
