@@ -104,15 +104,8 @@
       }
       .nav a:hover { background: var(--surface-2); color: var(--text); }
 
-      .hero { border-bottom: 1px solid var(--line); }
-      .hero-inner {
-        display: grid;
-        gap: 42px;
-        grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
-        padding-bottom: 68px;
-        padding-top: 76px;
-      }
-      .eyebrow,
+      .diagram-section { border-bottom: 1px solid var(--line); }
+      .diagram-inner { padding-bottom: 54px; padding-top: 28px; }
       .section-label,
       .diagram-label,
       .node-meta,
@@ -124,23 +117,7 @@
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
-      .hero h1 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: clamp(3.4rem, 7vw, 6.7rem);
-        font-weight: 400;
-        letter-spacing: -0.075em;
-        line-height: 0.92;
-        margin: 22px 0 24px;
-      }
-      .hero h1 em { color: var(--green); font-style: normal; }
-      .hero-copy {
-        color: var(--muted);
-        font-size: 18px;
-        line-height: 1.6;
-        margin: 0;
-        max-width: 460px;
-      }
-      .hero-links {
+      .action-links {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
@@ -154,8 +131,6 @@
         padding: 9px 12px;
         text-decoration: none;
       }
-      .button-primary { background: var(--green); border-color: var(--green); color: var(--bg); }
-      .button-primary:hover { color: var(--bg); }
 
       .diagram-shell {
         background: rgba(17, 23, 21, 0.84);
@@ -300,8 +275,7 @@
       .footer .mark { height: 20px; width: 20px; }
 
       @media (max-width: 880px) {
-        .hero-inner, .section-intro, .status { grid-template-columns: 1fr; }
-        .hero-inner { padding-bottom: 55px; padding-top: 55px; }
+        .diagram-inner, .section-intro, .status { grid-template-columns: 1fr; }
         .diagram { grid-template-columns: 1fr; }
         .diagram-arrow { min-height: 20px; }
         .diagram-arrow::before { content: "↓"; }
@@ -315,8 +289,7 @@
         .header-inner { align-items: flex-start; flex-direction: column; gap: 4px; padding-bottom: 10px; padding-top: 12px; }
         .nav { max-width: 100%; overflow-x: auto; width: 100%; }
         .nav a:first-child { padding-left: 0; }
-        .hero h1 { font-size: clamp(3.35rem, 17vw, 5.5rem); }
-        .hero-copy { font-size: 17px; }
+        .diagram-inner { padding-bottom: 36px; padding-top: 18px; }
         .diagram-shell { padding: 14px; }
         .diagram-header { align-items: flex-start; flex-direction: column; gap: 4px; }
         .diagram-foot { grid-template-columns: 1fr; }
@@ -357,18 +330,8 @@
     </header>
 
     <main id="main-content">
-      <section class="hero" id="how-it-works" aria-labelledby="hero-title">
-        <div class="hero-inner section-inner">
-          <div>
-            <div class="eyebrow">World Runtime · 0.1</div>
-            <h1 id="hero-title">A world model for agents that can <em>act.</em></h1>
-            <p class="hero-copy">Nemeia gives an AI agent a structured view of what exists, what each thing can do, and what changed after an action.</p>
-            <div class="hero-links">
-              <a class="button button-primary" href="#abstractions">Explore the abstractions ↓</a>
-              <a class="button" href="world-runtime.md">Runtime notes ↗</a>
-            </div>
-          </div>
-
+      <section class="diagram-section" id="how-it-works" aria-label="How Nemeia works">
+        <div class="diagram-inner section-inner">
           <div class="diagram-shell" role="img" aria-label="Nemeia's top-level loop: sense, compose world state, derive affordances, execute an action, record an event, and repeat.">
             <div class="diagram-header"><span class="diagram-label">THE CORE LOOP</span><span>same model · simulation or reality</span></div>
             <div class="diagram">
@@ -440,7 +403,7 @@
 
       <section class="section" id="status" aria-labelledby="status-title">
         <div class="section-inner status">
-          <div><div class="section-label">03 / Current state</div><h2 id="status-title">The loop works. Perception comes next.</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p><div class="hero-links"><a class="button" href="../README.md">Read the README ↗</a><a class="button" href="scene-model.md">Scene model ↗</a></div></div>
+          <div><div class="section-label">03 / Current state</div><h2 id="status-title">The loop works. Perception comes next.</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p><div class="action-links"><a class="button" href="../README.md">Read the README ↗</a><a class="button" href="scene-model.md">Scene model ↗</a></div></div>
           <div class="status-list" aria-label="Implementation status">
             <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
             <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
