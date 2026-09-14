@@ -205,35 +205,77 @@
       .architecture-note { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
       .architecture-note code { color: var(--amber); }
 
-      .reference-block {
+      .contract-list,
+      .schema-list { border-top: 1px solid var(--line); }
+      .contract-item,
+      .schema-item { background: var(--surface); border-bottom: 1px solid var(--line); }
+      .contract-item:last-child,
+      .schema-item:last-child { border-bottom: 0; }
+      .contract-item summary,
+      .schema-item summary {
+        align-items: center;
+        cursor: pointer;
+        display: grid;
+        gap: 18px;
+        grid-template-columns: 42px minmax(0, 1fr) 28px;
+        list-style: none;
+        padding: 18px 3px;
+      }
+      .contract-item summary::-webkit-details-marker,
+      .schema-item summary::-webkit-details-marker { display: none; }
+      .contract-item summary:hover,
+      .schema-item summary:hover { color: var(--green); }
+      .contract-index,
+      .schema-index { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+      .contract-title,
+      .schema-title { font-size: 20px; font-weight: 600; }
+      .contract-summary,
+      .schema-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
+      .contract-toggle,
+      .schema-toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
+      .contract-toggle::before,
+      .schema-toggle::before { content: "+"; }
+      details[open] .contract-toggle::before,
+      details[open] .schema-toggle::before { content: "−"; }
+      .contract-body {
+        background: var(--surface-2);
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+        padding: 22px 42px 23px;
+      }
+      .contract-description p,
+      .schema-description p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+      .contract-description code,
+      .schema-description code { color: var(--green); }
+      .contract-code {
         background: var(--pine);
         border: 1px solid var(--walnut);
-        border-radius: 10px;
-        margin: 0;
+        border-radius: 8px;
         overflow-x: auto;
       }
-      .reference-block pre {
-        margin: 0;
-        min-width: 760px;
-        padding: 22px 24px;
-      }
-      .reference-block code {
+      .contract-code pre { margin: 0; padding: 18px 20px; }
+      .contract-code code {
         color: var(--paper);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 13px;
+        font-size: 12px;
         line-height: 1.6;
         white-space: pre;
       }
       .reference-note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 16px 0 0; }
-      .schema-table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
-      .schema-table { border-collapse: collapse; min-width: 760px; width: 100%; }
-      .schema-table th,
-      .schema-table td { border-bottom: 1px solid var(--line); padding: 14px 16px; text-align: left; vertical-align: top; }
-      .schema-table th { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
-      .schema-table td { color: var(--muted); font-size: 14px; line-height: 1.5; }
-      .schema-table tr:last-child td { border-bottom: 0; }
-      .schema-table td:first-child { color: var(--pine); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13px; white-space: nowrap; }
-      .schema-table td:nth-child(2) { color: var(--slate); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+      .schema-body { background: var(--surface-2); border-top: 1px solid var(--line); padding: 22px 42px 23px; }
+      .schema-description { align-items: baseline; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) auto; margin-bottom: 18px; }
+      .schema-kind { color: var(--slate); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+      .column-table-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow-x: auto; }
+      .column-table { border-collapse: collapse; min-width: 680px; width: 100%; }
+      .column-table th,
+      .column-table td { border-bottom: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
+      .column-table th { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+      .column-table td { color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .column-table tr:last-child td { border-bottom: 0; }
+      .column-table td:first-child { color: var(--pine); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; white-space: nowrap; }
+      .column-table td:nth-child(2) { color: var(--slate); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; white-space: nowrap; }
 
       .status {
         align-items: start;
@@ -260,6 +302,7 @@
         .diagram-node { min-height: 0; }
         .abstraction-body { grid-template-columns: 1fr 1fr; }
         .source-link { align-self: start; grid-column: 1 / -1; }
+        .contract-body { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 600px) {
@@ -272,8 +315,18 @@
         .section h2 { font-size: 24px; }
         .section-intro { margin-bottom: 27px; }
         .section-intro > p { font-size: 16px; }
-        .reference-block pre { min-width: 0; padding: 18px 16px; }
-        .reference-block code { font-size: 12px; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .contract-item summary,
+        .schema-item summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
+        .contract-title,
+        .schema-title { font-size: 17px; }
+        .contract-summary,
+        .schema-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
+        .contract-body { padding: 18px 0 21px 42px; }
+        .contract-code pre { padding: 16px; }
+        .contract-code code { font-size: 11px; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .schema-body { padding: 18px 0 21px 42px; }
+        .schema-description { align-items: start; grid-template-columns: 1fr; gap: 6px; }
+        .schema-kind { font-size: 11px; }
         .abstraction summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
         .abstraction-title { font-size: 17px; }
         .abstraction-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
@@ -367,25 +420,27 @@
 
       <section class="section" id="contracts" aria-labelledby="contracts-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">03 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Reference TypeScript signatures for the service boundaries. The normative payloads and rules remain in the NEM Suite specification.</p></div>
-          <div class="reference-block"><pre><code>type Id = string;
-type Timestamp = string;
-type Json = Record&lt;string, unknown&gt;;
-
-/** Client-facing policy and mission boundary. */
+          <div class="section-intro"><div><div class="section-label">03 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Each boundary is shown as a small TypeScript contract. Open a row to read what it owns and the interface or type that crosses it.</p></div>
+          <div class="contract-list">
+            <details class="contract-item">
+              <summary><span class="contract-index">01</span><span><span class="contract-title">MissionApi</span><span class="contract-summary">client-facing mission and policy boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The stable read/write surface for missions, robots, runs, attention, anomalies, scenes, and registry state. It is the boundary used by clients and the operator panel.</p></div><div class="contract-code"><pre><code>/** Client-facing policy and mission boundary. */
 export interface MissionApi {
   health(): Promise&lt;Health&gt;;                         // GET /health
   createMission(input: CreateMission): Promise&lt;Mission&gt;;
   getMission(missionId: Id): Promise&lt;Mission&gt;;
   completeMission(missionId: Id, result: Json): Promise&lt;Mission&gt;;
+
   listRobots(): Promise&lt;RobotSummary[]&gt;;
   getRobotStatus(robotId: Id): Promise&lt;NormalizedStatus&gt;;
   getRobotVerbs(robotId: Id): Promise&lt;Verb[]&gt;;
+
   proposeRun(input: RunProposal): Promise&lt;Run&gt;;
   getRun(runId: Id): Promise&lt;Run&gt;;
   approveRun(runId: Id, reason?: string): Promise&lt;RunExecution&gt;;
   rejectRun(runId: Id, reason?: string): Promise&lt;Run&gt;;
   replayRun(runId: Id): Promise&lt;Replay&gt;;
+
   stopRobot(robotId: Id): Promise&lt;StopReceipt&gt;;
   clearRobotStop(robotId: Id): Promise&lt;StopReceipt&gt;;
   getScene(since?: Id): Promise&lt;Scene | SceneDelta&gt;;
@@ -396,16 +451,20 @@ export interface MissionApi {
   openAnomaly(input: AnomalyInput): Promise&lt;Anomaly&gt;;
   updateAnomaly(anomalyId: Id, patch: Json): Promise&lt;Anomaly&gt;;
   registry(operation: RegistryOperation): Promise&lt;RegistryState&gt;;
-}
-
-/** Durable ordered evidence. Every projection is derived from this log. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">02</span><span><span class="contract-title">EventLog</span><span class="contract-summary">durable ordered evidence</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The append-only source of truth for state changes, observations, policy decisions, control actions, and replay. Projections are reproducible from this log plus pinned versions.</p></div><div class="contract-code"><pre><code>/** Durable ordered evidence. Every projection is derived from this log. */
 export interface EventLog {
   append(event: EventInput): EventEnvelope;             // durable before return
   read(filter: EventFilter, cursor?: number, limit?: number): EventEnvelope[];
   tail(filter: EventFilter): AsyncIterable&lt;EventEnvelope&gt;;
-}
-
-/** Signed, single-use permission crossing policy into control. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">03</span><span><span class="contract-title">Authorization</span><span class="contract-summary">signed permission crossing policy into control</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The bounded, single-use permission that binds a run to a robot, capability, target snapshot, streams, checks, abort triggers, and an expiry. This is the only artifact that can authorize physical action.</p></div><div class="contract-code"><pre><code>/** Signed, single-use permission crossing policy into control. */
 export type Authorization = {
   id: Id; runId: Id; missionId: Id; robotId: Id;
   grant: StreamGrant | DiscreteGrant;
@@ -415,18 +474,22 @@ export type Authorization = {
   capability: { verb: string; impl: string };
   checks: CheckResult[]; issuedAt: Timestamp; expiresAt: Timestamp;
   signature: string;
-};
-
-/** Millisecond control-plane boundary; no scene or policy dependency. */
+};</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">04</span><span><span class="contract-title">SupervisorKernel</span><span class="contract-summary">millisecond control-plane boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The small, fast control boundary that accepts already-authorized execution, chunks, stop commands, and control events. It has no scene or policy dependency.</p></div><div class="contract-code"><pre><code>/** Millisecond control-plane boundary; no scene or policy dependency. */
 export interface SupervisorKernel {
   status(): KernelStatus;                                  // GET /status
   stop(source?: string): StopReceipt;                      // POST /stop
   execute(authorization: Authorization): ExecuteReceipt;   // POST /execute
   submitChunk(chunk: ActionChunk): ChunkAck;               // chunks/{authId}
   events(after?: number): EventEnvelope[];                 // WS /events
-}
-
-/** Vendor-neutral hardware boundary. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">05</span><span><span class="contract-title">Driver</span><span class="contract-summary">vendor-neutral hardware boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The adapter boundary for a robot or simulator. It normalizes connection, status, setpoints, discrete actions, safe state, streams, and hardware events without exposing vendor details upstream.</p></div><div class="contract-code"><pre><code>/** Vendor-neutral hardware boundary. */
 export interface Driver {
   manifest(): DriverManifest;
   connect(config?: Json): void;
@@ -437,9 +500,11 @@ export interface Driver {
   commandSafeState(): Ack;
   openStream(name: string): AsyncIterable&lt;unknown&gt;;
   events(): DriverEvent[];
-}
-
-/** Sandboxed executor: evidence in, bounded ActionChunks out. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">06</span><span><span class="contract-title">Capability</span><span class="contract-summary">sandboxed executor for bounded actions</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The execution pack that turns evidence into bounded <code>ActionChunk</code> output and observations. It receives an authorization and must support abort, stop, and deterministic termination.</p></div><div class="contract-code"><pre><code>/** Sandboxed executor: evidence in, bounded ActionChunks out. */
 export interface Capability {
   describe(): CapabilityManifest;
   bind(auth: Authorization, target: Json, streams: StreamEndpoints): Ready;
@@ -451,25 +516,31 @@ export interface Capability {
   abort(trigger: AbortTrigger): void;
   stop(): void;
   terminate(): RunResult;
-}
-
-/** Log-backed belief projection and deterministic physics derivation. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">07</span><span><span class="contract-title">SceneProjection</span><span class="contract-summary">log-backed belief and world-twin projection</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The read model that turns observations into a semantic scene, exposes stable entities with provenance, and derives a deterministic World Twin from pinned inputs.</p></div><div class="contract-code"><pre><code>/** Log-backed belief projection and deterministic physics derivation. */
 export interface SceneProjection {
   getScene(): Scene;
   getSceneSince(snapshotId: Id): SceneDelta;
   getEntity(entityId: Id): EntityWithProvenance;
   buildWorldTwin(pin: WorldTwinPin): WorldTwin;
-}
-
-/** Per-mission, per-principal event delivery contract. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">08</span><span><span class="contract-title">AttentionInbox</span><span class="contract-summary">per-mission, per-principal event delivery</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The delivery contract for filtering the event stream into pending counts, digests, and waits. It keeps attention policy separate from the canonical Event Log.</p></div><div class="contract-code"><pre><code>/** Per-mission, per-principal event delivery contract. */
 export interface AttentionInbox {
   contract(): AttentionContract;
   pending(): number;
   drain(input?: DrainInput): Digest;
   wait(input: WaitInput): Promise&lt;Digest&gt;;
-}
-
-/** Organization-owned package and preset state. */
+}</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">09</span><span><span class="contract-title">PolicyRegistry</span><span class="contract-summary">organization-owned package and preset state</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The trust and lifecycle state for packages and presets: installation, pinning, enablement, promotion, demotion, and revocation.</p></div><div class="contract-code"><pre><code>/** Organization-owned package and preset state. */
 export interface PolicyRegistry {
   list(): RegistryState[];
   get(packageId: Id): RegistryState;
@@ -479,34 +550,250 @@ export interface PolicyRegistry {
   promote(packageId: Id): RegistryState;
   demote(packageId: Id): RegistryState;
   revoke(packageId: Id): RegistryState;
-}</code></pre></div>
-          <p class="reference-note"><code>MissionApi</code> is the client surface; <code>Authorization</code> is the only artifact that can cause physical action. The other interfaces are the log, control, hardware, capability, projection, attention, and policy boundaries behind it.</p>
+}</code></pre></div></div>
+            </details>
+          </div>
+          <p class="reference-note"><code>Id</code>, <code>Timestamp</code>, and <code>Json</code> are shared aliases from the NEM Suite specification. <code>MissionApi</code> is the client surface; <code>Authorization</code> is the only artifact that can cause physical action.</p>
         </div>
       </section>
 
       <section class="section" id="tables" aria-labelledby="tables-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">04 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Proposed Postgres v0 inventory. The repository currently uses in-memory and file-backed reference components; no SQL migrations are checked in.</p></div>
-          <div class="schema-table-wrap">
-            <table class="schema-table">
-              <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
-              <tbody>
-                <tr><td>event_log</td><td>append-only source</td><td>Immutable ordered events for state changes, observations, policy decisions, control actions, and replay.</td></tr>
-                <tr><td>missions</td><td>state machine</td><td>Mission identity, lifecycle, principal, robot roster, and the pinned preset version.</td></tr>
-                <tr><td>runs</td><td>state machine</td><td>One proposed operation from proposal through approval, execution, rejection, abort, expiry, or result.</td></tr>
-                <tr><td>authorizations</td><td>signed artifact</td><td>Durable signed permission binding one run to a robot, bounded grant, target snapshot, capability, streams, checks, and expiry.</td></tr>
-                <tr><td>anomalies</td><td>operational record</td><td>Safety or operational mismatch with severity, evidence, suspected cause, owner, closure criteria, and status.</td></tr>
-                <tr><td>registry_state</td><td>trust state</td><td>Organization-owned package enablement, pinning, maturity, gauntlet evidence, and history.</td></tr>
-                <tr><td>idempotency_records</td><td>request cache</td><td>Original responses for repeated mutations keyed by principal, idempotency key, method, and path.</td></tr>
-                <tr><td>scene_projection_snapshots</td><td>materialized projection</td><td>Fast <code>/scene</code> snapshots with source cursor, ontology versions, freshness, robots, and hazards.</td></tr>
-                <tr><td>entity_projection_snapshots</td><td>materialized projection</td><td>Stable entities per scene snapshot, including type, components, affordances, relationships, freshness, and provenance.</td></tr>
-                <tr><td>attention_contracts</td><td>materialized contract</td><td>Per-mission, per-principal filters, wake predicate, budget, digest version, and pinned preset versions.</td></tr>
-                <tr><td>attention_seams</td><td>delivery record</td><td>Digest delivery boundaries: cause, cursor range, digest version, digest reference, and coalescing counts.</td></tr>
-                <tr><td>replay_artifacts</td><td>rebuildable cache</td><td>Optional cached run replay or report output; canonical evidence remains in the Event Log.</td></tr>
-                <tr><td>normalized_status_cache</td><td>read cache</td><td>Latest driver status for robot reads and freshness checks; it is not control authority.</td></tr>
-                <tr><td>artifacts</td><td>binary metadata/ref</td><td>Database-backed references for images, masks, point clouds, audio, video, and other evidence.</td></tr>
-              </tbody>
-            </table>
+          <div class="section-intro"><div><div class="section-label">04 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Each proposed Postgres v0 table is listed independently. Open a row to see its purpose and the columns that make the projection or record queryable.</p></div>
+          <div class="schema-list">
+            <details class="schema-item">
+              <summary><span class="schema-index">01</span><span><span class="schema-title">event_log</span><span class="schema-summary">append-only source</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Immutable ordered events for state changes, observations, policy decisions, control actions, and replay.</p><span class="schema-kind">source of truth</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>seq</td><td>bigint · PK</td><td>Global monotonic cursor used for ordering, replay, and incremental reads.</td></tr>
+                <tr><td>event_id</td><td>text</td><td>Stable identifier for this event envelope.</td></tr>
+                <tr><td>schema_version</td><td>integer</td><td>Version of the event payload contract.</td></tr>
+                <tr><td>source</td><td>text</td><td>Component or adapter that produced the event.</td></tr>
+                <tr><td>event_type</td><td>text</td><td>Semantic event name, such as <code>scene.observation</code>.</td></tr>
+                <tr><td>severity</td><td>smallint</td><td>Normalized severity used by filters and attention delivery.</td></tr>
+                <tr><td>timestamp</td><td>timestamptz</td><td>Time at which the event occurred in the represented world.</td></tr>
+                <tr><td>mission_id</td><td>text · nullable</td><td>Mission context when the event belongs to a mission.</td></tr>
+                <tr><td>run_id</td><td>text · nullable</td><td>Run context for a proposed or executed operation.</td></tr>
+                <tr><td>robot_id</td><td>text · nullable</td><td>Robot or simulator associated with the event.</td></tr>
+                <tr><td>entity_id</td><td>text · nullable</td><td>Semantic entity involved in the event.</td></tr>
+                <tr><td>authorization_id</td><td>text · nullable</td><td>Authorization used or evaluated by the event.</td></tr>
+                <tr><td>refs</td><td>jsonb</td><td>Artifact and related-record references attached to the event.</td></tr>
+                <tr><td>payload</td><td>jsonb</td><td>Event-specific body, kept flexible behind the versioned schema.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Persistence time on the Event Log host.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">02</span><span><span class="schema-title">missions</span><span class="schema-summary">state machine</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Mission identity, lifecycle, principal, robot roster, and the pinned preset version.</p><span class="schema-kind">mission state</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>mission_id</td><td>text · PK</td><td>Stable mission identifier.</td></tr>
+                <tr><td>principal_id</td><td>text</td><td>User, agent, or organization principal that owns the mission.</td></tr>
+                <tr><td>status</td><td>text</td><td>Lifecycle state, such as proposed, active, completed, or cancelled.</td></tr>
+                <tr><td>title</td><td>text</td><td>Human-readable mission label.</td></tr>
+                <tr><td>robot_ids</td><td>jsonb</td><td>Robots assigned to or available for the mission.</td></tr>
+                <tr><td>preset_version</td><td>text</td><td>Policy or package preset pinned when the mission was created.</td></tr>
+                <tr><td>metadata</td><td>jsonb</td><td>Additional mission fields that are not common query keys.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Mission creation time.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Last lifecycle or assignment update.</td></tr>
+                <tr><td>completed_at</td><td>timestamptz · nullable</td><td>Time the mission reached a completed terminal state.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">03</span><span><span class="schema-title">runs</span><span class="schema-summary">state machine</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>One proposed operation from proposal through approval, execution, rejection, abort, expiry, or result.</p><span class="schema-kind">execution state</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>run_id</td><td>text · PK</td><td>Stable operation identifier.</td></tr>
+                <tr><td>mission_id</td><td>text</td><td>Mission that contains the run.</td></tr>
+                <tr><td>principal_id</td><td>text</td><td>Principal that proposed or owns the run.</td></tr>
+                <tr><td>robot_id</td><td>text</td><td>Robot or simulator targeted by the run.</td></tr>
+                <tr><td>status</td><td>text</td><td>Run lifecycle state from proposal to result or terminal failure.</td></tr>
+                <tr><td>verb</td><td>text</td><td>Meaningful action or capability requested by the run.</td></tr>
+                <tr><td>target_entity_id</td><td>text · nullable</td><td>Semantic target selected from the scene.</td></tr>
+                <tr><td>proposal</td><td>jsonb</td><td>Original requested action and parameters.</td></tr>
+                <tr><td>authorization_id</td><td>text · nullable</td><td>Authorization issued for the run, when approved.</td></tr>
+                <tr><td>result</td><td>jsonb · nullable</td><td>Completed result or event-backed receipt.</td></tr>
+                <tr><td>error</td><td>jsonb · nullable</td><td>Structured rejection, abort, expiry, or execution failure.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Proposal creation time.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Last state transition time.</td></tr>
+                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Deadline after which the proposal cannot be approved or executed.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">04</span><span><span class="schema-title">authorizations</span><span class="schema-summary">signed artifact</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Durable signed permission binding one run to a robot, bounded grant, target snapshot, capability, streams, checks, and expiry.</p><span class="schema-kind">control permission</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>authorization_id</td><td>text · PK</td><td>Stable authorization identifier.</td></tr>
+                <tr><td>run_id</td><td>text</td><td>Single run that this permission authorizes.</td></tr>
+                <tr><td>mission_id</td><td>text</td><td>Mission context for the authorization.</td></tr>
+                <tr><td>robot_id</td><td>text</td><td>Only robot allowed to receive the permission.</td></tr>
+                <tr><td>capability_verb</td><td>text</td><td>Meaningful action being authorized.</td></tr>
+                <tr><td>capability_impl</td><td>text</td><td>Bound implementation or action pack identity.</td></tr>
+                <tr><td>grant</td><td>jsonb</td><td>Stream or discrete grant with its bounds.</td></tr>
+                <tr><td>enforcement</td><td>jsonb</td><td>Checks and enforcement modes applied at control time.</td></tr>
+                <tr><td>target_entity_id</td><td>text · nullable</td><td>Entity target captured by the authorization.</td></tr>
+                <tr><td>target_snapshot_id</td><td>text · nullable</td><td>Scene snapshot against which the target was checked.</td></tr>
+                <tr><td>streams_granted</td><td>jsonb</td><td>Sensor or control streams exposed to the capability.</td></tr>
+                <tr><td>abort_triggers</td><td>jsonb</td><td>Conditions that must stop or invalidate execution.</td></tr>
+                <tr><td>checks</td><td>jsonb</td><td>Structured safety, freshness, and policy check results.</td></tr>
+                <tr><td>issued_at</td><td>timestamptz</td><td>Time the authorization was signed and issued.</td></tr>
+                <tr><td>expires_at</td><td>timestamptz</td><td>Hard expiry for the permission.</td></tr>
+                <tr><td>signature</td><td>text</td><td>Signature used by the control boundary to verify the artifact.</td></tr>
+                <tr><td>revoked_at</td><td>timestamptz · nullable</td><td>Time the permission was explicitly revoked, if applicable.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">05</span><span><span class="schema-title">anomalies</span><span class="schema-summary">operational record</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Safety or operational mismatch with severity, evidence, suspected cause, owner, closure criteria, and status.</p><span class="schema-kind">safety record</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>anomaly_id</td><td>text · PK</td><td>Stable anomaly identifier.</td></tr>
+                <tr><td>mission_id</td><td>text</td><td>Mission in which the mismatch was detected.</td></tr>
+                <tr><td>run_id</td><td>text · nullable</td><td>Run associated with the anomaly, when any.</td></tr>
+                <tr><td>robot_id</td><td>text · nullable</td><td>Robot or simulator associated with the anomaly.</td></tr>
+                <tr><td>kind</td><td>text</td><td>Classification of the operational or safety mismatch.</td></tr>
+                <tr><td>severity</td><td>text</td><td>Impact level used for triage and attention.</td></tr>
+                <tr><td>status</td><td>text</td><td>Open, acknowledged, mitigated, or closed state.</td></tr>
+                <tr><td>evidence_refs</td><td>jsonb</td><td>Event and artifact references supporting the finding.</td></tr>
+                <tr><td>suspected_cause</td><td>text</td><td>Current explanation for the mismatch.</td></tr>
+                <tr><td>owner_principal_id</td><td>text · nullable</td><td>Principal responsible for resolution.</td></tr>
+                <tr><td>closure_criteria</td><td>text</td><td>Evidence required before closing the anomaly.</td></tr>
+                <tr><td>opened_at</td><td>timestamptz</td><td>Time the anomaly was recorded.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Last triage or status update.</td></tr>
+                <tr><td>closed_at</td><td>timestamptz · nullable</td><td>Time closure criteria were satisfied.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">06</span><span><span class="schema-title">registry_state</span><span class="schema-summary">trust state</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Organization-owned package enablement, pinning, maturity, gauntlet evidence, and history.</p><span class="schema-kind">package trust</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>package_id</td><td>text · PK</td><td>Stable package or preset identity.</td></tr>
+                <tr><td>organization_id</td><td>text</td><td>Organization that owns the registry state.</td></tr>
+                <tr><td>package_version</td><td>text</td><td>Installed package version.</td></tr>
+                <tr><td>status</td><td>text</td><td>Current trust and lifecycle state.</td></tr>
+                <tr><td>enabled</td><td>boolean</td><td>Whether the package can participate in runtime resolution.</td></tr>
+                <tr><td>pinned</td><td>boolean</td><td>Whether this version is fixed for organization use.</td></tr>
+                <tr><td>maturity</td><td>text</td><td>Release maturity or rollout tier.</td></tr>
+                <tr><td>gauntlet_evidence</td><td>jsonb</td><td>Tests, evaluations, and evidence supporting promotion.</td></tr>
+                <tr><td>history</td><td>jsonb</td><td>Prior lifecycle transitions and operator decisions.</td></tr>
+                <tr><td>installed_at</td><td>timestamptz</td><td>Time the package was installed.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Last registry state update.</td></tr>
+                <tr><td>revoked_at</td><td>timestamptz · nullable</td><td>Time the package was revoked, if applicable.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">07</span><span><span class="schema-title">idempotency_records</span><span class="schema-summary">request cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Original responses for repeated mutations keyed by principal, idempotency key, method, and path.</p><span class="schema-kind">safe retries</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>principal_id</td><td>text · PK part</td><td>Principal namespace for the idempotency key.</td></tr>
+                <tr><td>idempotency_key</td><td>text · PK part</td><td>Client-provided key for one mutation attempt.</td></tr>
+                <tr><td>method</td><td>text</td><td>HTTP method or logical mutation operation.</td></tr>
+                <tr><td>path</td><td>text</td><td>Endpoint or resource path the key was used against.</td></tr>
+                <tr><td>request_hash</td><td>text</td><td>Hash used to reject reuse with a different request body.</td></tr>
+                <tr><td>response_status</td><td>integer</td><td>Original response status code.</td></tr>
+                <tr><td>response_body</td><td>jsonb</td><td>Original response returned for safe replay.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the mutation was first accepted.</td></tr>
+                <tr><td>expires_at</td><td>timestamptz</td><td>Retention deadline for the cached response.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">08</span><span><span class="schema-title">scene_projection_snapshots</span><span class="schema-summary">materialized projection</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Fast <code>/scene</code> snapshots with source cursor, ontology versions, freshness, robots, and hazards.</p><span class="schema-kind">scene read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>scene_snapshot_id</td><td>text · PK</td><td>Stable identity for one materialized scene snapshot.</td></tr>
+                <tr><td>mission_id</td><td>text · nullable</td><td>Mission context for the projection.</td></tr>
+                <tr><td>robot_id</td><td>text</td><td>Robot whose observations contributed to the snapshot.</td></tr>
+                <tr><td>timestamp</td><td>timestamptz</td><td>World time represented by the snapshot.</td></tr>
+                <tr><td>source_cursor</td><td>bigint</td><td>Event Log cursor used to build the projection.</td></tr>
+                <tr><td>ontology_version</td><td>text</td><td>Semantic ontology version used for labels and types.</td></tr>
+                <tr><td>label_map_version</td><td>text</td><td>Label mapping version used by perception.</td></tr>
+                <tr><td>entity_count</td><td>integer</td><td>Number of stable entities included in the snapshot.</td></tr>
+                <tr><td>freshness_ms</td><td>integer</td><td>Age of the newest contributing evidence.</td></tr>
+                <tr><td>projection_jsonb</td><td>jsonb</td><td>Compact scene payload for read queries and transport.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the projection row was materialized.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">09</span><span><span class="schema-title">entity_projection_snapshots</span><span class="schema-summary">materialized projection</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Stable entities per scene snapshot, including type, components, affordances, relationships, freshness, and provenance.</p><span class="schema-kind">entity read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>scene_snapshot_id</td><td>text · PK part</td><td>Scene snapshot that contains the entity.</td></tr>
+                <tr><td>entity_id</td><td>text · PK part</td><td>Stable semantic identity across snapshots.</td></tr>
+                <tr><td>entity_type</td><td>text</td><td>Ontology type, such as robot, person, or object.</td></tr>
+                <tr><td>label</td><td>text</td><td>Human-readable entity label.</td></tr>
+                <tr><td>components</td><td>jsonb</td><td>Composable state and ability components.</td></tr>
+                <tr><td>affordances</td><td>jsonb</td><td>Actions currently available for this entity.</td></tr>
+                <tr><td>relationships</td><td>jsonb</td><td>Directed links to other entities in the snapshot.</td></tr>
+                <tr><td>freshness_ms</td><td>integer</td><td>Age of the evidence supporting this entity.</td></tr>
+                <tr><td>confidence</td><td>numeric(4,3)</td><td>Projection confidence for the entity interpretation.</td></tr>
+                <tr><td>provenance</td><td>jsonb</td><td>Source events, streams, and artifacts used to derive the row.</td></tr>
+                <tr><td>observed_at</td><td>timestamptz</td><td>Time at which the entity evidence was observed.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the entity projection was materialized.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">10</span><span><span class="schema-title">attention_contracts</span><span class="schema-summary">materialized contract</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Per-mission, per-principal filters, wake predicate, budget, digest version, and pinned preset versions.</p><span class="schema-kind">delivery policy</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>attention_contract_id</td><td>text · PK</td><td>Stable delivery contract identity.</td></tr>
+                <tr><td>mission_id</td><td>text</td><td>Mission whose event stream is being filtered.</td></tr>
+                <tr><td>principal_id</td><td>text</td><td>Principal receiving the digest or wait result.</td></tr>
+                <tr><td>filters</td><td>jsonb</td><td>Event types, sources, entities, and severity filters.</td></tr>
+                <tr><td>wake_predicate</td><td>jsonb</td><td>Condition that causes a waiting consumer to wake.</td></tr>
+                <tr><td>budget</td><td>integer</td><td>Maximum event or token budget for one digest.</td></tr>
+                <tr><td>digest_version</td><td>text</td><td>Digest shape pinned for the contract.</td></tr>
+                <tr><td>preset_version</td><td>text</td><td>Preset that defined the delivery policy.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the contract was created.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Last filter, budget, or preset update.</td></tr>
+                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Optional time after which the contract is no longer active.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">11</span><span><span class="schema-title">attention_seams</span><span class="schema-summary">delivery record</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Digest delivery boundaries: cause, cursor range, digest version, digest reference, and coalescing counts.</p><span class="schema-kind">delivery evidence</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>seam_id</td><td>text · PK</td><td>Stable record for one digest boundary.</td></tr>
+                <tr><td>attention_contract_id</td><td>text</td><td>Contract that produced the delivery.</td></tr>
+                <tr><td>cause</td><td>text</td><td>Reason the digest was emitted or the wait ended.</td></tr>
+                <tr><td>cursor_start</td><td>bigint</td><td>First Event Log cursor represented by the digest.</td></tr>
+                <tr><td>cursor_end</td><td>bigint</td><td>Last Event Log cursor represented by the digest.</td></tr>
+                <tr><td>digest_version</td><td>text</td><td>Digest format used for this delivery.</td></tr>
+                <tr><td>digest_ref</td><td>text</td><td>Reference to the stored or reconstructable digest.</td></tr>
+                <tr><td>coalesced_count</td><td>integer</td><td>Number of source events merged into the delivery.</td></tr>
+                <tr><td>delivered_at</td><td>timestamptz</td><td>Time the digest was delivered to the consumer.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the delivery record was persisted.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">12</span><span><span class="schema-title">replay_artifacts</span><span class="schema-summary">rebuildable cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Optional cached run replay or report output; canonical evidence remains in the Event Log.</p><span class="schema-kind">derived output</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>replay_id</td><td>text · PK</td><td>Stable replay request or artifact identity.</td></tr>
+                <tr><td>run_id</td><td>text</td><td>Run reconstructed by the replay.</td></tr>
+                <tr><td>source_cursor_start</td><td>bigint</td><td>First Event Log cursor included in the replay.</td></tr>
+                <tr><td>source_cursor_end</td><td>bigint</td><td>Last Event Log cursor included in the replay.</td></tr>
+                <tr><td>projection_version</td><td>text</td><td>World or report projection version used to rebuild output.</td></tr>
+                <tr><td>status</td><td>text</td><td>Requested, running, completed, or failed replay state.</td></tr>
+                <tr><td>output_ref</td><td>text · nullable</td><td>Reference to the generated artifact or report payload.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Replay creation time.</td></tr>
+                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Optional cache retention deadline.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">13</span><span><span class="schema-title">normalized_status_cache</span><span class="schema-summary">read cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Latest driver status for robot reads and freshness checks; it is not control authority.</p><span class="schema-kind">robot read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>robot_id</td><td>text · PK</td><td>Robot or simulator whose status is cached.</td></tr>
+                <tr><td>status</td><td>jsonb</td><td>Vendor-neutral normalized connection, locomotion, power, and pose state.</td></tr>
+                <tr><td>source</td><td>text</td><td>Driver or adapter that produced the status.</td></tr>
+                <tr><td>observed_at</td><td>timestamptz</td><td>Time the driver observed the status.</td></tr>
+                <tr><td>freshness_ms</td><td>integer</td><td>Age of the status at the time it is read.</td></tr>
+                <tr><td>sequence</td><td>bigint</td><td>Driver-local monotonic status sequence.</td></tr>
+                <tr><td>updated_at</td><td>timestamptz</td><td>Time the cache row was updated.</td></tr>
+              </tbody></table></div></div>
+            </details>
+            <details class="schema-item">
+              <summary><span class="schema-index">14</span><span><span class="schema-title">artifacts</span><span class="schema-summary">binary metadata / ref</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
+              <div class="schema-body"><div class="schema-description"><p>Database-backed references for images, masks, point clouds, audio, video, and other evidence.</p><span class="schema-kind">evidence metadata</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
+                <tr><td>artifact_id</td><td>text · PK</td><td>Stable ref exposed to runtime consumers.</td></tr>
+                <tr><td>artifact_type</td><td>text</td><td>Image, mask, point cloud, audio, video, map, or other evidence kind.</td></tr>
+                <tr><td>content_type</td><td>text</td><td>MIME type of the stored content.</td></tr>
+                <tr><td>size_bytes</td><td>bigint</td><td>Content size for limits and transfer planning.</td></tr>
+                <tr><td>checksum</td><td>text</td><td>Content digest used to verify identity and integrity.</td></tr>
+                <tr><td>created_at</td><td>timestamptz</td><td>Time the artifact reference was registered.</td></tr>
+                <tr><td>source_component_id</td><td>text · nullable</td><td>Component or stream that produced the artifact.</td></tr>
+                <tr><td>thread_id</td><td>text · nullable</td><td>Optional conversation or operator thread context.</td></tr>
+                <tr><td>turn_id</td><td>text · nullable</td><td>Optional turn that requested or produced the artifact.</td></tr>
+                <tr><td>storage_backend</td><td>text</td><td>Backend such as Postgres blob, S3, MinIO, R2, or GCS.</td></tr>
+                <tr><td>storage_key</td><td>text</td><td>Opaque backend key; raw file paths are not exposed to agents.</td></tr>
+                <tr><td>metadata</td><td>jsonb</td><td>Dimensions, frame ids, calibration, labels, or other artifact metadata.</td></tr>
+              </tbody></table></div></div>
+            </details>
           </div>
           <p class="architecture-note"><code>Not separate v0 tables:</code> observations and telemetry are event payloads; <code>label_map.json</code> and <code>types.json</code> are versioned ontology inputs; presets and reports are pinned artifacts or log-backed state. ClickHouse is a later analytical mirror.</p>
         </div>
