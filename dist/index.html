@@ -618,23 +618,32 @@ const snapshot = world.snapshot();
 snapshot.last_event_seq; // resume from this sequence later</code></pre></div></div>
             </details>
             <details class="object-item">
-              <summary><span class="object-index">07</span><span><span class="object-title">ManualInteractionReceipt</span><span class="object-summary">event-backed result returned to the panel</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The result of routing a panel interaction through <code>WorldRuntime.execute</code>. It keeps the request, timing, status, result, error, and newly emitted events together.</p></div><div class="object-code"><pre><code>export type ManualInteractionRequest = {
-  actionId: WorldActionId; // requested world action
-  actorId: string; // entity performing the action
-  input: Record&lt;string, unknown&gt;; // action parameters
-  targetId: string | null; // optional target entity
+              <summary><span class="object-index">07</span><span><span class="object-title">WorldCommand + ActionReceipt</span><span class="object-summary">one action request and its event-backed result</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The generic input and terminal result of <code>WorldRuntime.execute</code>. A discriminated receipt keeps successful results and failures from creating impossible combinations of nullable fields.</p></div><div class="object-code"><pre><code>export type WorldCommand = {
+  commandId: Id; // make one requested action idempotent
+  actionId: string; // select a registered action definition
+  actorId: Id; // identify the entity performing the action
+  targetId?: Id; // identify the optional target entity
+  input?: Json; // carry action-specific validated input
 };
 
-export type ManualInteractionReceipt = {
-  completedAt: string | null; // completion time, if finished
-  error: string | null; // failure message, if any
-  events: WorldEvent[]; // events emitted by this interaction
-  request: ManualInteractionRequest; // original request
-  result: Record&lt;string, unknown&gt; | null; // action result, if successful
-  startedAt: string; // execution start time
-  status: "completed" | "executing" | "failed"; // lifecycle state
-};</code></pre></div></div>
+export type ActionReceipt =
+  | {
+      status: "completed"; // indicate successful terminal execution
+      command: WorldCommand; // preserve the accepted request
+      result: Json; // return the action-defined result
+      events: WorldEvent[]; // return events emitted by the action
+      startedAt: Timestamp; // record when execution began
+      completedAt: Timestamp; // record when execution finished
+    }
+  | {
+      status: "failed"; // indicate failed terminal execution
+      command: WorldCommand; // preserve the accepted request
+      error: DomainError; // return a typed domain failure
+      events: WorldEvent[]; // retain events emitted before failure
+      startedAt: Timestamp; // record when execution began
+      completedAt: Timestamp; // record when execution stopped
+    };</code></pre></div></div>
             </details>
             <details class="object-item">
               <summary><span class="object-index">08</span><span><span class="object-title">RobotWorldPort</span><span class="object-summary">live robot state and controls supplied to the runtime</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
@@ -670,157 +679,171 @@ export type ManualInteractionReceipt = {
           <div class="section-intro"><div><div class="section-label">03 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path surrounds action execution when authorization and control-plane guarantees are required.</p></div>
           <div class="architecture-rows">
             <div class="architecture-row"><strong><span>active path</span>Live Go2 world</strong><div class="architecture-flow"><span>Go2 sensors</span><i>→</i><span>standard robot port</span><i>→</i><span>robot-world adapter</span><i>→</i><span>World Runtime</span><i>→</i><span>operator panel</span></div></div>
-            <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API</span><i>→</i><span>Mission Server</span><i>→</i><span>signed Authorization</span><i>→</i><span>Supervisor Kernel</span><i>→</i><span>Driver</span></div></div>
+            <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API adapter</span><i>→</i><span>Mission Service</span><i>→</i><span>Execution Grant</span><i>→</i><span>Control Kernel</span><i>→</i><span>Robot Driver</span></div></div>
           </div>
-          <p class="architecture-note"><code>Event Log</code> is the cross-cutting record. Scene, Attention, Replay, and Reports are projections over it. The governance packages are retained as an optional extension; the World Runtime does not depend on them.</p>
+          <p class="architecture-note"><code>Event Store</code> is the cross-cutting record. Scene, Attention, Replay, and Reports are projections over it. The governance packages are retained as an optional extension; the World Runtime does not depend on them.</p>
         </div>
       </section>
 
       <section class="section" id="contracts" aria-labelledby="contracts-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">04 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Each boundary is shown as a small TypeScript contract. Open a row to read what it owns and the interface or type that crosses it.</p></div>
+          <div class="section-intro"><div><div class="section-label">04 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Nine small boundaries turn the abstractions into an implementation. Commands change one owner, queries return snapshots, and events record what happened.</p></div>
           <div class="contract-list">
             <details class="contract-item">
-              <summary><span class="contract-index">01</span><span><span class="contract-title">MissionApi</span><span class="contract-summary">client-facing mission and policy boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The stable read/write surface for missions, robots, runs, attention, anomalies, scenes, and registry state. It is the boundary used by clients and the operator panel.</p></div><div class="contract-code"><pre><code>/** Client-facing policy and mission boundary. */
-export interface MissionApi {
-  health(): Promise&lt;Health&gt;;                         // check service reachability and readiness
-  createMission(input: CreateMission): Promise&lt;Mission&gt;; // start a mission with policy and robot context
-  getMission(missionId: Id): Promise&lt;Mission&gt;; // read mission state by id
-  completeMission(missionId: Id, result: Json): Promise&lt;Mission&gt;; // close a mission with its result
-
-  listRobots(): Promise&lt;RobotSummary[]&gt;; // list robots visible to this principal
-  getRobotStatus(robotId: Id): Promise&lt;NormalizedStatus&gt;; // return normalized live status
-  getRobotVerbs(robotId: Id): Promise&lt;Verb[]&gt;; // list actions currently exposed by a robot
-
-  proposeRun(input: RunProposal): Promise&lt;Run&gt;; // create a pending action run
-  getRun(runId: Id): Promise&lt;Run&gt;; // read run state and receipts
-  approveRun(runId: Id, reason?: string): Promise&lt;RunExecution&gt;; // authorize and start an approved run
-  rejectRun(runId: Id, reason?: string): Promise&lt;Run&gt;; // record why a proposed run was rejected
-  replayRun(runId: Id): Promise&lt;Replay&gt;; // rebuild run history from the Event Log
-
-  stopRobot(robotId: Id): Promise&lt;StopReceipt&gt;; // request an immediate safe stop
-  clearRobotStop(robotId: Id): Promise&lt;StopReceipt&gt;; // clear a latched stop condition
-  getScene(since?: Id): Promise&lt;Scene | SceneDelta&gt;; // read the latest semantic scene or delta
-  getEntity(entityId: Id): Promise&lt;EntityWithProvenance&gt;; // read entity state with provenance
-  getAttention(missionId: Id): Promise&lt;AttentionState&gt;; // read pending attention for a mission
-  drainAttention(missionId: Id, cause?: string): Promise&lt;Digest&gt;; // return and acknowledge a digest
-  waitAttention(missionId: Id, input: WaitInput): Promise&lt;Digest&gt;; // wait for matching attention
-  openAnomaly(input: AnomalyInput): Promise&lt;Anomaly&gt;; // record a safety or operational mismatch
-  updateAnomaly(anomalyId: Id, patch: Json): Promise&lt;Anomaly&gt;; // update anomaly status or ownership
-  registry(operation: RegistryOperation): Promise&lt;RegistryState&gt;; // apply a package registry operation
+              <summary><span class="contract-index">01</span><span><span class="contract-title">WorldRuntime</span><span class="contract-summary">canonical state, affordances, and action execution</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The live world model: entities, components, relationships, registered actions, derived affordances, and ordered domain events.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Persistence, transport, robot protocols, policy decisions, and UI-specific projections.</p></div><div class="contract-code"><pre><code>/** Canonical in-process world state and action semantics. */
+export interface WorldRuntime {
+  snapshot(): WorldSnapshot; // return a detached view of current state
+  affordances(query: AffordanceQuery): Affordance[]; // derive actions available now
+  execute(command: WorldCommand): Promise&lt;ActionReceipt&gt;; // validate and run one action
+  events(after?: EventCursor): WorldEvent[]; // read ordered domain events
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">02</span><span><span class="contract-title">EventLog</span><span class="contract-summary">durable ordered evidence</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The append-only source of truth for state changes, observations, policy decisions, control actions, and replay. Projections are reproducible from this log plus pinned versions.</p></div><div class="contract-code"><pre><code>/** Durable ordered evidence. Every projection is derived from this log. */
-export interface EventLog {
-  append(event: EventInput): EventEnvelope; // durably append before acknowledging
-  read(filter: EventFilter, cursor?: number, limit?: number): EventEnvelope[]; // query ordered events from a cursor
-  tail(filter: EventFilter): AsyncIterable&lt;EventEnvelope&gt;; // stream matching events as they arrive
-}</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">03</span><span><span class="contract-title">Authorization</span><span class="contract-summary">signed permission crossing policy into control</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The bounded, single-use permission that binds a run to a robot, capability, target snapshot, streams, checks, abort triggers, and an expiry. This is the only artifact that can authorize physical action.</p></div><div class="contract-code"><pre><code>/** Signed, single-use permission crossing policy into control. */
-export type Authorization = {
-  id: Id; // unique signed authorization id
-  runId: Id; // single run this permission binds
-  missionId: Id; // mission context for audit
-  robotId: Id; // robot allowed to execute
-  grant: StreamGrant | DiscreteGrant; // bounded stream or discrete permission
-  enforcement: EnforcementMap; // checks enforced at control time
-  target?: { // entity and scene snapshot being authorized
-    entityId: Id; // semantic target identity
-    snapshotId: Id; // scene snapshot used for the target check
-  };
-  streamsGranted: string[]; // streams exposed to the capability
-  abortTriggers: AbortTrigger[]; // conditions that invalidate execution
-  capability: { verb: string; impl: string }; // action verb and implementation binding
-  checks: CheckResult[]; // safety, policy, and freshness results
-  issuedAt: Timestamp; // signature issuance time
-  expiresAt: Timestamp; // hard permission expiry
-  signature: string; // proof checked by the control boundary
+              <summary><span class="contract-index">02</span><span><span class="contract-title">MissionService</span><span class="contract-summary">mission, run, approval, and issuance lifecycle</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Mission and run state machines, proposal validation, approval decisions, and signed execution-grant issuance.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>HTTP routing, robot control, scene reduction, attention delivery, and package storage. The API, CLI, and UI are adapters over this boundary.</p></div><div class="contract-code"><pre><code>/** Mission and run lifecycle; transport-neutral. */
+export interface MissionService {
+  createMission(input: CreateMission, meta: CommandMeta): Promise&lt;Mission&gt;; // start a pinned mission
+  getMission(missionId: Id): Promise&lt;Mission&gt;; // read current mission state
+  completeMission(input: CompleteMission, meta: CommandMeta): Promise&lt;Mission&gt;; // close a mission
+  proposeRun(input: ProposeRun, meta: CommandMeta): Promise&lt;Run&gt;; // create a proposed run
+  getRun(runId: Id): Promise&lt;Run&gt;; // read the full run state
+  decideRun(input: DecideRun, meta: CommandMeta): Promise&lt;RunDecision&gt;; // approve or reject once
+}
+
+export type DecideRun =
+  | { runId: Id; decision: "approve"; reason?: string }
+  | { runId: Id; decision: "reject"; reason?: string };
+
+export type RunDecision = {
+  run: Run; // return the resulting run state
+  grant?: ExecutionGrant; // exist only when approval issued control authority
+};
+
+export type CommandMeta = {
+  commandId: Id; // make the mutation idempotent
+  principal: Principal; // carry authenticated authority from the transport edge
 };</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">04</span><span><span class="contract-title">SupervisorKernel</span><span class="contract-summary">millisecond control-plane boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The small, fast control boundary that accepts already-authorized execution, chunks, stop commands, and control events. It has no scene or policy dependency.</p></div><div class="contract-code"><pre><code>/** Millisecond control-plane boundary; no scene or policy dependency. */
-export interface SupervisorKernel {
-  status(): KernelStatus; // read control-plane health and state
-  stop(source?: string): StopReceipt; // latch an immediate safe stop
-  execute(authorization: Authorization): ExecuteReceipt; // hand an authorization to control
-  submitChunk(chunk: ActionChunk): ChunkAck; // send a bounded control chunk
-  events(after?: number): EventEnvelope[]; // read control-plane events after a cursor
-}</code></pre></div></div>
+              <summary><span class="contract-index">03</span><span><span class="contract-title">EventStore</span><span class="contract-summary">durable, append-only evidence</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The only durable sequence of facts. It assigns event order and time, atomically appends one decision, and supports cursor-based reads.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Business rules, projections, streaming transport, and mutable domain state. Tailing can be built over cursor reads.</p></div><div class="contract-code"><pre><code>/** Durable evidence with one write shape and one read shape. */
+export interface EventStore {
+  append(batch: EventBatch): Promise&lt;AppendedBatch&gt;; // durably commit one atomic decision
+  read(query: EventQuery): Promise&lt;EventPage&gt;; // read ordered events after an opaque cursor
+}
+
+export type EventBatch = {
+  events: NewEvent[]; // facts produced by one domain decision
+  expectedCursor?: EventCursor; // reject a stale concurrent writer
+};
+
+export type EventPage = {
+  items: EventEnvelope[]; // return events in ascending sequence order
+  next?: EventCursor; // continue without exposing storage offsets
+};</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">05</span><span><span class="contract-title">Driver</span><span class="contract-summary">vendor-neutral hardware boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The adapter boundary for a robot or simulator. It normalizes connection, status, setpoints, discrete actions, safe state, streams, and hardware events without exposing vendor details upstream.</p></div><div class="contract-code"><pre><code>/** Vendor-neutral hardware boundary. */
-export interface Driver {
-  manifest(): DriverManifest; // describe vendor capabilities and versions
-  connect(config?: Json): void; // establish the hardware or simulator connection
-  disconnect(): void; // release the connection
-  status(): NormalizedStatus; // return vendor-neutral current status
-  setSetpoint(space: string, setpoint: Json): void; // apply a bounded continuous setpoint
-  executeDiscrete(action: string, params: Json, deadlineMs: number): Ack; // execute one discrete action before a deadline
-  commandSafeState(): Ack; // move the driver to its safe state
-  openStream(name: string): AsyncIterable&lt;unknown&gt;; // expose a named sensor or telemetry stream
-  events(): DriverEvent[]; // return driver-originated events
-}</code></pre></div></div>
+              <summary><span class="contract-index">04</span><span><span class="contract-title">ControlKernel</span><span class="contract-summary">signed execution, clamping, watchdog, and stop</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The safety-critical control boundary. It verifies grants, clamps commands, enforces expiry and watchdogs, drives safe state, and owns the stop latch.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Missions, scene state, policy evaluation, capability selection, and audit-only checks. Those facts remain on the run and issuance event.</p></div><div class="contract-code"><pre><code>/** Small control surface with no policy or scene dependency. */
+export interface ControlKernel {
+  status(): Promise&lt;KernelStatus&gt;; // read health, stop state, and active grant
+  execute(grant: ExecutionGrant): Promise&lt;ExecutionReceipt&gt;; // verify and consume one grant
+  submit(chunk: ActionChunk): Promise&lt;ChunkAck&gt;; // accept the latest bounded stream chunk
+  stop(cause: StopCause): Promise&lt;StopReceipt&gt;; // latch stop and enter safe state immediately
+  clearStop(meta: CommandMeta): Promise&lt;StopReceipt&gt;; // clear the latch through an operator path
+  events(after?: EventCursor): Promise&lt;ControlEvent[]&gt;; // read kernel and driver evidence
+}
+
+export type ExecutionGrant = {
+  id: Id; // identify one signed, single-use grant
+  schemaVersion: number; // select the verification schema
+  runId: Id; // carry the causal chain into every control event
+  robotId: Id; // bind authority to exactly one robot
+  command: StreamGrant | DiscreteGrant; // define only kernel-enforceable authority
+  expiresAt: Timestamp; // reject authority after this instant
+  signature: string; // prove issuance by the trusted mission key
+};</code></pre></div></div>
+            </details>
+            <details class="contract-item">
+              <summary><span class="contract-index">05</span><span><span class="contract-title">RobotDriver</span><span class="contract-summary">vendor-neutral hardware adapter</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Connection, normalized status, vendor translation, declared sensor streams, asynchronous hardware events, and the robot-specific safe-state primitive.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Policy, world entities, missions, and command authorization. The kernel is the only caller allowed to command motion.</p></div><div class="contract-code"><pre><code>/** Vendor-neutral robot or simulator boundary. */
+export interface RobotDriver {
+  readonly manifest: DriverManifest; // declare capabilities and measured safety facts
+  connect(config?: Json): Promise&lt;void&gt;; // establish the device connection
+  disconnect(): Promise&lt;void&gt;; // release the device connection
+  status(): Promise&lt;NormalizedStatus&gt;; // return the latest normalized state
+  command(command: DriverCommand): Promise&lt;DriverAck&gt;; // execute a setpoint or discrete command
+  enterSafeState(): Promise&lt;DriverAck&gt;; // invoke the dedicated safety primitive
+  frames(stream: string, signal: AbortSignal): AsyncIterable&lt;DriverFrame&gt;; // yield one declared stream
+  events(signal: AbortSignal): AsyncIterable&lt;DriverEvent&gt;; // yield faults, acks, and warnings
+}
+
+export type DriverCommand =
+  | { kind: "setpoint"; actionSpace: string; value: Json }
+  | { kind: "discrete"; action: string; params: Json; deadlineMs: number };</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">06</span><span><span class="contract-title">Capability</span><span class="contract-summary">sandboxed executor for bounded actions</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The execution pack that turns evidence into bounded <code>ActionChunk</code> output and observations. It receives an authorization and must support abort, stop, and deterministic termination.</p></div><div class="contract-code"><pre><code>/** Sandboxed executor: evidence in, bounded ActionChunks out. */
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The action algorithm: consume bounded evidence and produce chunks, observations, or events. One async run replaces the manual bind/start/frame/emit/stop lifecycle.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Sandboxing, log writes, kernel calls, stream wiring, and termination mechanics. The host owns those concerns and cancels through <code>AbortSignal</code>.</p></div><div class="contract-code"><pre><code>/** Sandboxed algorithm with one input context and one output stream. */
 export interface Capability {
-  describe(): CapabilityManifest; // declare the action pack and its requirements
-  bind(auth: Authorization, target: Json, streams: StreamEndpoints): Ready; // bind authorization, target, and inputs
-  start(): void; // begin bounded execution
-  onFrame(stream: string, frame: unknown): void; // receive one sensor or telemetry frame
-  emitChunk(chunk: ActionChunk): void; // emit the next bounded control chunk
-  emitObservation(observation: Observation): void; // emit semantic evidence
-  emitEvent(type: string, payload: Json): void; // emit an event-backed execution record
-  abort(trigger: AbortTrigger): void; // stop because an abort condition fired
-  stop(): void; // stop execution without producing another chunk
-  terminate(): RunResult; // close execution and return its result
-}</code></pre></div></div>
+  readonly manifest: CapabilityManifest; // declare verbs, inputs, and resource needs
+  run(context: CapabilityContext): AsyncGenerator&lt;CapabilityOutput, RunResult&gt;; // execute until return or cancellation
+}
+
+export type CapabilityContext = {
+  grant: Readonly&lt;ExecutionGrant&gt;; // expose the bounded authority as read-only data
+  target?: TargetBinding; // expose the pinned semantic target when present
+  frames: AsyncIterable&lt;NamedFrame&gt;; // supply only granted sensor inputs
+  acknowledgements: AsyncIterable&lt;ChunkAck&gt;; // report post-clamp control results
+  signal: AbortSignal; // stop work through one cancellation mechanism
+};
+
+export type CapabilityOutput =
+  | { type: "chunk"; chunk: ActionChunk }
+  | { type: "observation"; observation: Observation }
+  | { type: "event"; event: CapabilityEvent };</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">07</span><span><span class="contract-title">SceneProjection</span><span class="contract-summary">log-backed belief and world-twin projection</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The read model that turns observations into a semantic scene, exposes stable entities with provenance, and derives a deterministic World Twin from pinned inputs.</p></div><div class="contract-code"><pre><code>/** Log-backed belief projection and deterministic physics derivation. */
+              <summary><span class="contract-index">07</span><span><span class="contract-title">SceneProjection</span><span class="contract-summary">log-backed semantic belief projection</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The deterministic reduction from observation events to stable semantic entities, relationships, provenance, snapshots, deltas, and target bindings.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Observation writes and physics execution. A World Twin is a pure function of a pinned scene snapshot, so it does not need another stateful service.</p></div><div class="contract-code"><pre><code>/** Read-only semantic projection over the Event Store. */
 export interface SceneProjection {
-  getScene(): Scene; // return the latest semantic scene snapshot
-  getSceneSince(snapshotId: Id): SceneDelta; // return changes after a snapshot
-  getEntity(entityId: Id): EntityWithProvenance; // return an entity with its provenance
-  buildWorldTwin(pin: WorldTwinPin): WorldTwin; // derive deterministic physics from pinned state
+  current(): Promise&lt;SceneSnapshot&gt;; // return the latest semantic snapshot
+  changes(after: SceneCursor): Promise&lt;SceneDelta&gt;; // return added, changed, and removed entities
+  bind(request: TargetBindingRequest): Promise&lt;TargetBinding&gt;; // validate and pin one target
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">08</span><span><span class="contract-title">AttentionInbox</span><span class="contract-summary">per-mission, per-principal event delivery</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The delivery contract for filtering the event stream into pending counts, digests, and waits. It keeps attention policy separate from the canonical Event Log.</p></div><div class="contract-code"><pre><code>/** Per-mission, per-principal event delivery contract. */
-export interface AttentionInbox {
-  contract(): AttentionContract; // return the active delivery contract
-  pending(): number; // count events currently eligible for delivery
-  drain(input?: DrainInput): Digest; // coalesce and acknowledge matching events
-  wait(input: WaitInput): Promise&lt;Digest&gt;; // wait until the wake predicate is satisfied
-}</code></pre></div></div>
+              <summary><span class="contract-index">08</span><span><span class="contract-title">AttentionProjection</span><span class="contract-summary">scoped event delivery and digest cursor</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The cursor and delivery policy for one mission and principal. Status combines the materialized contract with pending state; one receive operation handles immediate drains and waits.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Canonical events, mission state, and transport polling. Delivered bytes and cursor movement remain event-backed.</p></div><div class="contract-code"><pre><code>/** One attention read model and one delivery operation. */
+export interface AttentionProjection {
+  status(scope: AttentionScope): Promise&lt;AttentionState&gt;; // return contract and pending summary together
+  receive(request: AttentionRequest): Promise&lt;AttentionDelivery | null&gt;; // drain now or wait for a digest
+}
+
+export type AttentionRequest = AttentionScope &amp; {
+  waitMs?: number; // use zero for an immediate drain
+  cause: "turn_start" | "wake" | "manual"; // record why delivery occurred
+};</code></pre></div></div>
             </details>
             <details class="contract-item">
-              <summary><span class="contract-index">09</span><span><span class="contract-title">PolicyRegistry</span><span class="contract-summary">organization-owned package and preset state</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The trust and lifecycle state for packages and presets: installation, pinning, enablement, promotion, demotion, and revocation.</p></div><div class="contract-code"><pre><code>/** Organization-owned package and preset state. */
-export interface PolicyRegistry {
-  list(): RegistryState[]; // list package states visible to the organization
-  get(packageId: Id): RegistryState; // read one package trust state
-  install(bundle: PackageBundle): RegistryState; // register a package and its evidence
-  pin(packageId: Id): RegistryState; // pin the package version for use
-  enable(packageId: Id): RegistryState; // make a package eligible for resolution
-  promote(packageId: Id): RegistryState; // advance package maturity
-  demote(packageId: Id): RegistryState; // reduce package maturity
-  revoke(packageId: Id): RegistryState; // remove package trust and eligibility
-}</code></pre></div></div>
+              <summary><span class="contract-index">09</span><span><span class="contract-title">PackageRegistry</span><span class="contract-summary">organization-owned package trust and lifecycle</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
+              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Installed capability and driver bundles, organization-authored trust state, immutable evidence, and audited lifecycle transitions.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Runtime resolution and policy decisions. The Mission Service checks live registry state when issuing a grant.</p></div><div class="contract-code"><pre><code>/** Package evidence plus one explicit transition surface. */
+export interface PackageRegistry {
+  list(filter?: RegistryFilter): Promise&lt;RegistryState[]&gt;; // list package states
+  get(packageId: Id): Promise&lt;RegistryState | null&gt;; // read one package state
+  install(bundle: PackageBundle, meta: CommandMeta): Promise&lt;RegistryState&gt;; // verify and record a bundle
+  transition(input: RegistryTransition, meta: CommandMeta): Promise&lt;RegistryState&gt;; // apply one audited state change
+}
+
+export type RegistryTransition = {
+  packageId: Id; // select the exact package version
+  action: "enable" | "disable" | "pin" | "unpin" | "promote" | "demote" | "revoke"; // select one transition
+  maturity?: Maturity; // set the target level for promotion or demotion
+};</code></pre></div></div>
             </details>
           </div>
-          <p class="reference-note"><code>Id</code>, <code>Timestamp</code>, and <code>Json</code> are shared aliases from the NEM Suite specification. <code>MissionApi</code> is the client surface; <code>Authorization</code> is the only artifact that can cause physical action.</p>
+          <p class="reference-note"><code>CommandMeta</code> carries the idempotency key and authenticated principal for every mutation. HTTP, CLI, and UI adapters map onto these contracts. Replay, reports, anomaly views, and the World Twin remain event-backed or pure modules until they require an independent service boundary.</p>
         </div>
       </section>
 
