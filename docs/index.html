@@ -261,7 +261,8 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;
         line-height: 1.6;
-        white-space: pre;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
       }
       .reference-note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 16px 0 0; }
       .schema-body { background: var(--surface-2); border-top: 1px solid var(--line); padding: 22px 42px 23px; }
@@ -426,130 +427,139 @@
               <summary><span class="contract-index">01</span><span><span class="contract-title">MissionApi</span><span class="contract-summary">client-facing mission and policy boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The stable read/write surface for missions, robots, runs, attention, anomalies, scenes, and registry state. It is the boundary used by clients and the operator panel.</p></div><div class="contract-code"><pre><code>/** Client-facing policy and mission boundary. */
 export interface MissionApi {
-  health(): Promise&lt;Health&gt;;                         // GET /health
-  createMission(input: CreateMission): Promise&lt;Mission&gt;;
-  getMission(missionId: Id): Promise&lt;Mission&gt;;
-  completeMission(missionId: Id, result: Json): Promise&lt;Mission&gt;;
+  health(): Promise&lt;Health&gt;;                         // check service reachability and readiness
+  createMission(input: CreateMission): Promise&lt;Mission&gt;; // start a mission with policy and robot context
+  getMission(missionId: Id): Promise&lt;Mission&gt;; // read mission state by id
+  completeMission(missionId: Id, result: Json): Promise&lt;Mission&gt;; // close a mission with its result
 
-  listRobots(): Promise&lt;RobotSummary[]&gt;;
-  getRobotStatus(robotId: Id): Promise&lt;NormalizedStatus&gt;;
-  getRobotVerbs(robotId: Id): Promise&lt;Verb[]&gt;;
+  listRobots(): Promise&lt;RobotSummary[]&gt;; // list robots visible to this principal
+  getRobotStatus(robotId: Id): Promise&lt;NormalizedStatus&gt;; // return normalized live status
+  getRobotVerbs(robotId: Id): Promise&lt;Verb[]&gt;; // list actions currently exposed by a robot
 
-  proposeRun(input: RunProposal): Promise&lt;Run&gt;;
-  getRun(runId: Id): Promise&lt;Run&gt;;
-  approveRun(runId: Id, reason?: string): Promise&lt;RunExecution&gt;;
-  rejectRun(runId: Id, reason?: string): Promise&lt;Run&gt;;
-  replayRun(runId: Id): Promise&lt;Replay&gt;;
+  proposeRun(input: RunProposal): Promise&lt;Run&gt;; // create a pending action run
+  getRun(runId: Id): Promise&lt;Run&gt;; // read run state and receipts
+  approveRun(runId: Id, reason?: string): Promise&lt;RunExecution&gt;; // authorize and start an approved run
+  rejectRun(runId: Id, reason?: string): Promise&lt;Run&gt;; // record why a proposed run was rejected
+  replayRun(runId: Id): Promise&lt;Replay&gt;; // rebuild run history from the Event Log
 
-  stopRobot(robotId: Id): Promise&lt;StopReceipt&gt;;
-  clearRobotStop(robotId: Id): Promise&lt;StopReceipt&gt;;
-  getScene(since?: Id): Promise&lt;Scene | SceneDelta&gt;;
-  getEntity(entityId: Id): Promise&lt;EntityWithProvenance&gt;;
-  getAttention(missionId: Id): Promise&lt;AttentionState&gt;;
-  drainAttention(missionId: Id, cause?: string): Promise&lt;Digest&gt;;
-  waitAttention(missionId: Id, input: WaitInput): Promise&lt;Digest&gt;;
-  openAnomaly(input: AnomalyInput): Promise&lt;Anomaly&gt;;
-  updateAnomaly(anomalyId: Id, patch: Json): Promise&lt;Anomaly&gt;;
-  registry(operation: RegistryOperation): Promise&lt;RegistryState&gt;;
+  stopRobot(robotId: Id): Promise&lt;StopReceipt&gt;; // request an immediate safe stop
+  clearRobotStop(robotId: Id): Promise&lt;StopReceipt&gt;; // clear a latched stop condition
+  getScene(since?: Id): Promise&lt;Scene | SceneDelta&gt;; // read the latest semantic scene or delta
+  getEntity(entityId: Id): Promise&lt;EntityWithProvenance&gt;; // read entity state with provenance
+  getAttention(missionId: Id): Promise&lt;AttentionState&gt;; // read pending attention for a mission
+  drainAttention(missionId: Id, cause?: string): Promise&lt;Digest&gt;; // return and acknowledge a digest
+  waitAttention(missionId: Id, input: WaitInput): Promise&lt;Digest&gt;; // wait for matching attention
+  openAnomaly(input: AnomalyInput): Promise&lt;Anomaly&gt;; // record a safety or operational mismatch
+  updateAnomaly(anomalyId: Id, patch: Json): Promise&lt;Anomaly&gt;; // update anomaly status or ownership
+  registry(operation: RegistryOperation): Promise&lt;RegistryState&gt;; // apply a package registry operation
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">02</span><span><span class="contract-title">EventLog</span><span class="contract-summary">durable ordered evidence</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The append-only source of truth for state changes, observations, policy decisions, control actions, and replay. Projections are reproducible from this log plus pinned versions.</p></div><div class="contract-code"><pre><code>/** Durable ordered evidence. Every projection is derived from this log. */
 export interface EventLog {
-  append(event: EventInput): EventEnvelope;             // durable before return
-  read(filter: EventFilter, cursor?: number, limit?: number): EventEnvelope[];
-  tail(filter: EventFilter): AsyncIterable&lt;EventEnvelope&gt;;
+  append(event: EventInput): EventEnvelope; // durably append before acknowledging
+  read(filter: EventFilter, cursor?: number, limit?: number): EventEnvelope[]; // query ordered events from a cursor
+  tail(filter: EventFilter): AsyncIterable&lt;EventEnvelope&gt;; // stream matching events as they arrive
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">03</span><span><span class="contract-title">Authorization</span><span class="contract-summary">signed permission crossing policy into control</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The bounded, single-use permission that binds a run to a robot, capability, target snapshot, streams, checks, abort triggers, and an expiry. This is the only artifact that can authorize physical action.</p></div><div class="contract-code"><pre><code>/** Signed, single-use permission crossing policy into control. */
 export type Authorization = {
-  id: Id; runId: Id; missionId: Id; robotId: Id;
-  grant: StreamGrant | DiscreteGrant;
-  enforcement: EnforcementMap;
-  target?: { entityId: Id; snapshotId: Id };
-  streamsGranted: string[]; abortTriggers: AbortTrigger[];
-  capability: { verb: string; impl: string };
-  checks: CheckResult[]; issuedAt: Timestamp; expiresAt: Timestamp;
-  signature: string;
+  id: Id; // unique signed authorization id
+  runId: Id; // single run this permission binds
+  missionId: Id; // mission context for audit
+  robotId: Id; // robot allowed to execute
+  grant: StreamGrant | DiscreteGrant; // bounded stream or discrete permission
+  enforcement: EnforcementMap; // checks enforced at control time
+  target?: { // entity and scene snapshot being authorized
+    entityId: Id; // semantic target identity
+    snapshotId: Id; // scene snapshot used for the target check
+  };
+  streamsGranted: string[]; // streams exposed to the capability
+  abortTriggers: AbortTrigger[]; // conditions that invalidate execution
+  capability: { verb: string; impl: string }; // action verb and implementation binding
+  checks: CheckResult[]; // safety, policy, and freshness results
+  issuedAt: Timestamp; // signature issuance time
+  expiresAt: Timestamp; // hard permission expiry
+  signature: string; // proof checked by the control boundary
 };</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">04</span><span><span class="contract-title">SupervisorKernel</span><span class="contract-summary">millisecond control-plane boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The small, fast control boundary that accepts already-authorized execution, chunks, stop commands, and control events. It has no scene or policy dependency.</p></div><div class="contract-code"><pre><code>/** Millisecond control-plane boundary; no scene or policy dependency. */
 export interface SupervisorKernel {
-  status(): KernelStatus;                                  // GET /status
-  stop(source?: string): StopReceipt;                      // POST /stop
-  execute(authorization: Authorization): ExecuteReceipt;   // POST /execute
-  submitChunk(chunk: ActionChunk): ChunkAck;               // chunks/{authId}
-  events(after?: number): EventEnvelope[];                 // WS /events
+  status(): KernelStatus; // read control-plane health and state
+  stop(source?: string): StopReceipt; // latch an immediate safe stop
+  execute(authorization: Authorization): ExecuteReceipt; // hand an authorization to control
+  submitChunk(chunk: ActionChunk): ChunkAck; // send a bounded control chunk
+  events(after?: number): EventEnvelope[]; // read control-plane events after a cursor
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">05</span><span><span class="contract-title">Driver</span><span class="contract-summary">vendor-neutral hardware boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The adapter boundary for a robot or simulator. It normalizes connection, status, setpoints, discrete actions, safe state, streams, and hardware events without exposing vendor details upstream.</p></div><div class="contract-code"><pre><code>/** Vendor-neutral hardware boundary. */
 export interface Driver {
-  manifest(): DriverManifest;
-  connect(config?: Json): void;
-  disconnect(): void;
-  status(): NormalizedStatus;
-  setSetpoint(space: string, setpoint: Json): void;
-  executeDiscrete(action: string, params: Json, deadlineMs: number): Ack;
-  commandSafeState(): Ack;
-  openStream(name: string): AsyncIterable&lt;unknown&gt;;
-  events(): DriverEvent[];
+  manifest(): DriverManifest; // describe vendor capabilities and versions
+  connect(config?: Json): void; // establish the hardware or simulator connection
+  disconnect(): void; // release the connection
+  status(): NormalizedStatus; // return vendor-neutral current status
+  setSetpoint(space: string, setpoint: Json): void; // apply a bounded continuous setpoint
+  executeDiscrete(action: string, params: Json, deadlineMs: number): Ack; // execute one discrete action before a deadline
+  commandSafeState(): Ack; // move the driver to its safe state
+  openStream(name: string): AsyncIterable&lt;unknown&gt;; // expose a named sensor or telemetry stream
+  events(): DriverEvent[]; // return driver-originated events
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">06</span><span><span class="contract-title">Capability</span><span class="contract-summary">sandboxed executor for bounded actions</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The execution pack that turns evidence into bounded <code>ActionChunk</code> output and observations. It receives an authorization and must support abort, stop, and deterministic termination.</p></div><div class="contract-code"><pre><code>/** Sandboxed executor: evidence in, bounded ActionChunks out. */
 export interface Capability {
-  describe(): CapabilityManifest;
-  bind(auth: Authorization, target: Json, streams: StreamEndpoints): Ready;
-  start(): void;
-  onFrame(stream: string, frame: unknown): void;
-  emitChunk(chunk: ActionChunk): void;
-  emitObservation(observation: Observation): void;
-  emitEvent(type: string, payload: Json): void;
-  abort(trigger: AbortTrigger): void;
-  stop(): void;
-  terminate(): RunResult;
+  describe(): CapabilityManifest; // declare the action pack and its requirements
+  bind(auth: Authorization, target: Json, streams: StreamEndpoints): Ready; // bind authorization, target, and inputs
+  start(): void; // begin bounded execution
+  onFrame(stream: string, frame: unknown): void; // receive one sensor or telemetry frame
+  emitChunk(chunk: ActionChunk): void; // emit the next bounded control chunk
+  emitObservation(observation: Observation): void; // emit semantic evidence
+  emitEvent(type: string, payload: Json): void; // emit an event-backed execution record
+  abort(trigger: AbortTrigger): void; // stop because an abort condition fired
+  stop(): void; // stop execution without producing another chunk
+  terminate(): RunResult; // close execution and return its result
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">07</span><span><span class="contract-title">SceneProjection</span><span class="contract-summary">log-backed belief and world-twin projection</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The read model that turns observations into a semantic scene, exposes stable entities with provenance, and derives a deterministic World Twin from pinned inputs.</p></div><div class="contract-code"><pre><code>/** Log-backed belief projection and deterministic physics derivation. */
 export interface SceneProjection {
-  getScene(): Scene;
-  getSceneSince(snapshotId: Id): SceneDelta;
-  getEntity(entityId: Id): EntityWithProvenance;
-  buildWorldTwin(pin: WorldTwinPin): WorldTwin;
+  getScene(): Scene; // return the latest semantic scene snapshot
+  getSceneSince(snapshotId: Id): SceneDelta; // return changes after a snapshot
+  getEntity(entityId: Id): EntityWithProvenance; // return an entity with its provenance
+  buildWorldTwin(pin: WorldTwinPin): WorldTwin; // derive deterministic physics from pinned state
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">08</span><span><span class="contract-title">AttentionInbox</span><span class="contract-summary">per-mission, per-principal event delivery</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The delivery contract for filtering the event stream into pending counts, digests, and waits. It keeps attention policy separate from the canonical Event Log.</p></div><div class="contract-code"><pre><code>/** Per-mission, per-principal event delivery contract. */
 export interface AttentionInbox {
-  contract(): AttentionContract;
-  pending(): number;
-  drain(input?: DrainInput): Digest;
-  wait(input: WaitInput): Promise&lt;Digest&gt;;
+  contract(): AttentionContract; // return the active delivery contract
+  pending(): number; // count events currently eligible for delivery
+  drain(input?: DrainInput): Digest; // coalesce and acknowledge matching events
+  wait(input: WaitInput): Promise&lt;Digest&gt;; // wait until the wake predicate is satisfied
 }</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">09</span><span><span class="contract-title">PolicyRegistry</span><span class="contract-summary">organization-owned package and preset state</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
               <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The trust and lifecycle state for packages and presets: installation, pinning, enablement, promotion, demotion, and revocation.</p></div><div class="contract-code"><pre><code>/** Organization-owned package and preset state. */
 export interface PolicyRegistry {
-  list(): RegistryState[];
-  get(packageId: Id): RegistryState;
-  install(bundle: PackageBundle): RegistryState;
-  pin(packageId: Id): RegistryState;
-  enable(packageId: Id): RegistryState;
-  promote(packageId: Id): RegistryState;
-  demote(packageId: Id): RegistryState;
-  revoke(packageId: Id): RegistryState;
+  list(): RegistryState[]; // list package states visible to the organization
+  get(packageId: Id): RegistryState; // read one package trust state
+  install(bundle: PackageBundle): RegistryState; // register a package and its evidence
+  pin(packageId: Id): RegistryState; // pin the package version for use
+  enable(packageId: Id): RegistryState; // make a package eligible for resolution
+  promote(packageId: Id): RegistryState; // advance package maturity
+  demote(packageId: Id): RegistryState; // reduce package maturity
+  revoke(packageId: Id): RegistryState; // remove package trust and eligibility
 }</code></pre></div></div>
             </details>
           </div>
