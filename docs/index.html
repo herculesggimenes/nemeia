@@ -203,18 +203,29 @@
       .architecture-note { color: var(--muted); font-size: 13px; margin: 18px 0 0; }
       .architecture-note code { color: var(--amber); }
 
+      .flow-overview { background: var(--surface); border: 1px solid var(--line); border-bottom: 0; margin-bottom: 30px; }
+      .flow-lane { align-items: center; border-bottom: 1px solid var(--line); display: grid; gap: 18px; grid-template-columns: 112px minmax(0, 1fr); padding: 14px 3px; }
+      .flow-lane > strong { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+      .flow-chain { align-items: center; display: flex; flex-wrap: wrap; gap: 7px; }
+      .flow-chain span { color: var(--pine); font-size: 13px; font-weight: 600; }
+      .flow-chain i { color: var(--faint); font-style: normal; }
+
       .contract-list,
       .object-list,
-      .schema-list { border-top: 1px solid var(--line); }
+      .schema-list,
+      .example-list { border-top: 1px solid var(--line); }
       .contract-item,
       .object-item,
-      .schema-item { background: var(--surface); border-bottom: 1px solid var(--line); }
+      .schema-item,
+      .example-item { background: var(--surface); border-bottom: 1px solid var(--line); }
       .contract-item:last-child,
       .object-item:last-child,
-      .schema-item:last-child { border-bottom: 0; }
+      .schema-item:last-child,
+      .example-item:last-child { border-bottom: 0; }
       .contract-item summary,
       .object-item summary,
-      .schema-item summary {
+      .schema-item summary,
+      .example-item summary {
         align-items: center;
         cursor: pointer;
         display: grid;
@@ -225,37 +236,39 @@
       }
       .contract-item summary::-webkit-details-marker,
       .object-item summary::-webkit-details-marker,
-      .schema-item summary::-webkit-details-marker { display: none; }
+      .schema-item summary::-webkit-details-marker,
+      .example-item summary::-webkit-details-marker { display: none; }
       .contract-item summary:hover,
       .object-item summary:hover,
-      .schema-item summary:hover { color: var(--green); }
+      .schema-item summary:hover,
+      .example-item summary:hover { color: var(--green); }
       .contract-index,
       .object-index,
-      .schema-index { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
+      .schema-index,
+      .example-index { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
       .contract-title,
       .object-title,
-      .schema-title { font-size: 20px; font-weight: 600; }
+      .schema-title,
+      .example-title { font-size: 20px; font-weight: 600; }
       .contract-summary,
       .object-summary,
-      .schema-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
+      .schema-summary,
+      .example-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
       .contract-toggle,
       .object-toggle,
-      .schema-toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
+      .schema-toggle,
+      .example-toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
       .contract-toggle::before,
       .object-toggle::before,
-      .schema-toggle::before { content: "+"; }
+      .schema-toggle::before,
+      .example-toggle::before { content: "+"; }
       details[open] .contract-toggle::before,
       details[open] .object-toggle::before,
-      details[open] .schema-toggle::before { content: "−"; }
-      .contract-body {
-        background: var(--surface-2);
-        border-top: 1px solid var(--line);
-        display: grid;
-        gap: 22px;
-        grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
-        padding: 22px 42px 23px;
-      }
-      .object-body {
+      details[open] .schema-toggle::before,
+      details[open] .example-toggle::before { content: "−"; }
+      .contract-body,
+      .object-body,
+      .example-body {
         background: var(--surface-2);
         border-top: 1px solid var(--line);
         display: grid;
@@ -265,26 +278,27 @@
       }
       .contract-description p,
       .object-description p,
-      .schema-description p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+      .schema-description p,
+      .example-description p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
       .detail-label-spaced { margin-top: 18px; }
       .contract-description code,
       .object-description code,
-      .schema-description code { color: var(--green); }
-      .contract-code {
+      .schema-description code,
+      .example-description code { color: var(--green); }
+      .contract-code,
+      .object-code,
+      .example-code {
         background: var(--pine);
         border: 1px solid var(--walnut);
         border-radius: 8px;
         overflow-x: auto;
       }
-      .object-code {
-        background: var(--pine);
-        border: 1px solid var(--walnut);
-        border-radius: 8px;
-        overflow-x: auto;
-      }
-      .contract-code pre { margin: 0; padding: 18px 20px; }
-      .object-code pre { margin: 0; padding: 18px 20px; }
-      .contract-code code {
+      .contract-code pre,
+      .object-code pre,
+      .example-code pre { margin: 0; padding: 18px 20px; }
+      .contract-code code,
+      .object-code code,
+      .example-code code {
         color: var(--paper);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;
@@ -292,14 +306,20 @@
         overflow-wrap: anywhere;
         white-space: pre-wrap;
       }
-      .object-code code {
-        color: var(--paper);
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-        font-size: 12px;
-        line-height: 1.6;
-        overflow-wrap: anywhere;
-        white-space: pre-wrap;
-      }
+      .syntax-code pre { padding-top: 42px; position: relative; }
+      .syntax-code pre::before { color: rgba(246, 242, 233, 0.46); content: attr(data-language); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; letter-spacing: 0.12em; position: absolute; right: 18px; text-transform: uppercase; top: 14px; }
+      .syntax-rendered { counter-reset: code-line; display: block; }
+      .code-line { display: block; min-height: 1.6em; padding-left: 3.4em; position: relative; }
+      .code-line::before { color: rgba(246, 242, 233, 0.28); content: attr(data-line); font-size: 10px; left: 0; position: absolute; text-align: right; top: 0.12em; user-select: none; width: 2.15em; }
+      .code-line:hover { background: rgba(246, 242, 233, 0.035); }
+      .tok-keyword { color: #B7D2BC; }
+      .tok-type { color: #E0C17E; }
+      .tok-string { color: #D9AF98; }
+      .tok-number { color: #B8A8C5; }
+      .tok-comment { color: rgba(246, 242, 233, 0.48); font-style: italic; }
+      .tok-property { color: #9FB9B6; }
+      .tok-literal { color: #D4A16F; }
+      .tok-operator { color: rgba(246, 242, 233, 0.72); }
       .reference-note { color: var(--muted); font-size: 13px; line-height: 1.6; margin: 16px 0 0; }
       .schema-body { background: var(--surface-2); border-top: 1px solid var(--line); padding: 22px 42px 23px; }
       .schema-description { align-items: baseline; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) auto; margin-bottom: 18px; }
@@ -340,6 +360,7 @@
         .abstraction-body { grid-template-columns: 1fr 1fr; }
         .contract-body { grid-template-columns: 1fr; }
         .object-body { grid-template-columns: 1fr; }
+        .example-body { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 600px) {
@@ -354,19 +375,29 @@
         .section-intro > p { font-size: 16px; }
         .contract-item summary,
         .object-item summary,
-        .schema-item summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
+        .schema-item summary,
+        .example-item summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
         .contract-title,
         .object-title,
-        .schema-title { font-size: 17px; }
+        .schema-title,
+        .example-title { font-size: 17px; }
         .contract-summary,
         .object-summary,
-        .schema-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
+        .schema-summary,
+        .example-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
         .contract-body { padding: 18px 0 21px 42px; }
         .contract-code pre { padding: 16px; }
         .contract-code code { font-size: 11px; overflow-wrap: anywhere; white-space: pre-wrap; }
         .object-body { padding: 18px 0 21px 42px; }
         .object-code pre { padding: 16px; }
         .object-code code { font-size: 11px; }
+        .example-body { padding: 18px 0 21px 42px; }
+        .example-code pre { padding: 16px; }
+        .example-code code { font-size: 11px; }
+        .syntax-code pre { padding-top: 40px; }
+        .code-line { padding-left: 2.9em; }
+        .flow-lane { align-items: start; grid-template-columns: 1fr; gap: 6px; }
+        .flow-chain { gap: 6px; }
         .schema-body { padding: 18px 0 21px 42px; }
         .schema-description { align-items: start; grid-template-columns: 1fr; gap: 6px; }
         .schema-kind { font-size: 11px; }
@@ -695,9 +726,16 @@ export type ActionReceipt =
 export interface WorldRuntime {
   snapshot(): WorldSnapshot; // return a detached view of current state
   affordances(query: AffordanceQuery): Affordance[]; // derive actions available now
+  apply(update: WorldUpdate): WorldEvent[]; // accept one trusted system projection
   execute(command: WorldCommand): Promise&lt;ActionReceipt&gt;; // validate and run one action
   events(after?: EventCursor): WorldEvent[]; // read ordered domain events
-}</code></pre></div></div>
+}
+
+export type WorldUpdate =
+  | { type: "entity.upsert"; entity: WorldEntity } // add or replace one entity
+  | { type: "component.set"; entityId: Id; component: string; value: Json } // replace one component
+  | { type: "relationship.upsert"; relationship: WorldRelationship } // add or replace one fact
+  | { type: "relationship.remove"; relationshipId: Id }; // remove one directed fact</code></pre></div></div>
             </details>
             <details class="contract-item">
               <summary><span class="contract-index">02</span><span><span class="contract-title">MissionService</span><span class="contract-summary">mission, run, approval, and issuance lifecycle</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
@@ -715,10 +753,9 @@ export type DecideRun =
   | { runId: Id; decision: "approve"; reason?: string }
   | { runId: Id; decision: "reject"; reason?: string };
 
-export type RunDecision = {
-  run: Run; // return the resulting run state
-  grant?: ExecutionGrant; // exist only when approval issued control authority
-};
+export type RunDecision =
+  | { decision: "approved"; run: Run; grant: ExecutionGrant } // issue control authority
+  | { decision: "rejected"; run: Run; grant?: never }; // make rejection incapable of carrying authority
 
 export type CommandMeta = {
   commandId: Id; // make the mutation idempotent
@@ -1089,9 +1126,183 @@ export type RegistryTransition = {
         </div>
       </section>
 
+      <section class="section" id="example" aria-labelledby="example-title">
+        <div class="section-inner">
+          <div class="section-intro"><div><div class="section-label">06 / End-to-end example</div><h2 id="example-title">Go2 approaches a detected backpack</h2></div><p>One concrete run shows every boundary in motion: evidence becomes an entity, the entity creates an affordance, policy issues bounded authority, and control evidence closes the loop.</p></div>
+
+          <div class="flow-overview" role="img" aria-label="End-to-end information flow from robot perception through world composition, mission decision, physical execution, and attention delivery.">
+            <div class="flow-lane"><strong>Perceive</strong><div class="flow-chain"><span>RobotDriver</span><i>→</i><span>perception system</span><i>→</i><span>EventStore</span><i>→</i><span>SceneProjection</span></div></div>
+            <div class="flow-lane"><strong>Compose</strong><div class="flow-chain"><span>SceneProjection</span><i>→</i><span>WorldRuntime</span><i>→</i><span>Affordance</span></div></div>
+            <div class="flow-lane"><strong>Decide</strong><div class="flow-chain"><span>client</span><i>→</i><span>MissionService</span><i>↔</i><span>PackageRegistry</span><i>→</i><span>ExecutionGrant</span></div></div>
+            <div class="flow-lane"><strong>Act</strong><div class="flow-chain"><span>Capability</span><i>→</i><span>ControlKernel</span><i>→</i><span>RobotDriver</span><i>→</i><span>Go2</span></div></div>
+            <div class="flow-lane"><strong>Observe</strong><div class="flow-chain"><span>control events</span><i>→</i><span>EventStore</span><i>→</i><span>Scene + Attention</span><i>→</i><span>client</span></div></div>
+          </div>
+
+          <div class="example-list">
+            <details class="example-item">
+              <summary><span class="example-index">01</span><span><span class="example-title">Bind the mission</span><span class="example-summary">client → MissionService → EventStore</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The operator creates a mission for one robot and pins the policy preset. The service records <code>mission.created</code> before returning.</p><span class="detail-label detail-label-spaced">State produced</span><p>A mission identity, robot scope, preset version, principal, and event cursor.</p></div><div class="example-code"><pre><code class="language-ts">const mission = await missions.createMission(
+  {
+    robotIds: ["go2_01"], // bind the robot allowed in this mission
+    preset: { id: "warehouse-safe", version: 3 }, // pin policy inputs
+  },
+  {
+    commandId: "cmd_mission_01", // make retries return the same result
+    principal: "operator:hercules", // carry authenticated authority
+  },
+);
+
+// MissionService → EventStore
+// mission.created { missionId, robotIds, preset, principal }</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">02</span><span><span class="example-title">Capture evidence</span><span class="example-summary">RobotDriver → perception system</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The driver yields camera and LiDAR frames. A perception system fuses them into evidence; raw vendor payloads do not enter the world model.</p><span class="detail-label detail-label-spaced">State produced</span><p>A semantic and geometric observation attributed to its producing system and input artifacts.</p></div><div class="example-code"><pre><code class="language-ts">const observation: NewEvent = {
+  eventType: "scene.observation", // identify the reducer that consumes it
+  source: "perception:rgb-lidar@1.2.0", // attribute the producing system
+  robotId: "go2_01", // preserve the observing robot
+  refs: ["artifact:camera_2048", "artifact:lidar_991"], // retain evidence
+  payload: {
+    labels: ["backpack"], // provide semantic evidence
+    confidence: 0.94, // quantify the semantic belief
+    geometry: {
+      type: "bbox_3d", // describe the geometric representation
+      frameId: "map", // place geometry in the shared frame
+      centerM: [2.4, -0.6, 0.35], // locate the observation
+    },
+  },
+};</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">03</span><span><span class="example-title">Reduce the scene</span><span class="example-summary">EventStore → SceneProjection</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The Event Store commits the observation. The Scene Projection associates it with a stable entity and combines semantic and geometric freshness.</p><span class="detail-label detail-label-spaced">State produced</span><p><code>ent_backpack_01</code> with type, confidence, pose, evidence references, and a stable scene cursor.</p></div><div class="example-code"><pre><code class="language-ts">await events.append({
+  events: [observation], // commit one perception decision atomically
+});
+
+const scene = await scenes.current(); // reduce all scene events
+const backpack = scene.entities.find(
+  (entity) =&gt; entity.id === "ent_backpack_01",
+);
+
+backpack.type; // "core.backpack"
+backpack.semantic.confidence; // 0.94
+backpack.geometry.frameId; // "map"
+scene.cursor; // continue later without exposing storage offsets</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">04</span><span><span class="example-title">Compose the world</span><span class="example-summary">SceneProjection → WorldRuntime → Affordance</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>A trusted projection system updates the canonical entity and its relationship to the robot. The runtime derives possibilities from current components instead of storing them as state.</p><span class="detail-label detail-label-spaced">State produced</span><p>A backpack entity, an <code>observes</code> relationship, and an available <code>robot.approach</code> action.</p></div><div class="example-code"><pre><code class="language-ts">runtime.apply({
+  type: "entity.upsert", // project a trusted semantic entity
+  entity: {
+    id: "ent_backpack_01", // preserve scene identity
+    type: "core.backpack", // drive policy and affordance matching
+    label: "red backpack", // provide a human-readable name
+    components: {
+      semantic: { confidence: 0.94 }, // carry current belief
+      transform: { frameId: "map", positionM: [2.4, -0.6, 0.35] }, // carry pose
+      observable: { freshnessMs: 86 }, // bound stale decisions
+    },
+  },
+});
+
+const [approach] = runtime.affordances({
+  actorId: "go2_01", // select the acting entity
+  targetId: "ent_backpack_01", // select the observed target
+});
+
+approach.actionId; // "robot.approach"</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">05</span><span><span class="example-title">Propose the run</span><span class="example-summary">client → SceneProjection → MissionService</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The client requests the meaningful verb. Scene binding checks identity, confidence, freshness, and applicability, then pins the exact target evidence into the run.</p><span class="detail-label detail-label-spaced">State produced</span><p>A proposed run whose target cannot silently move to a different scene snapshot during approval.</p></div><div class="example-code"><pre><code class="language-ts">const target = await scenes.bind({
+  verb: "approach", // map action meaning to a required affordance
+  entityId: "ent_backpack_01", // bind the stable target identity
+  minimumConfidence: 0.8, // reject weak semantic evidence
+  maximumFreshnessMs: 700, // reject stale target state
+});
+
+const run = await missions.proposeRun(
+  {
+    missionId: mission.id, // join the mission causal chain
+    robotId: "go2_01", // select the physical actor
+    verb: "approach", // preserve domain meaning above implementation
+    target, // pin entity, scene cursor, and evidence refs
+    args: { standoffM: 1.2 }, // provide validated action input
+  },
+  { commandId: "cmd_run_01", principal: "agent:mission" },
+);</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">06</span><span><span class="example-title">Issue bounded authority</span><span class="example-summary">PackageRegistry ↔ MissionService → ExecutionGrant</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The service resolves an enabled, pinned capability and rechecks policy at approval time. Audit facts stay on the run and issuance event; only enforceable authority enters the signed grant.</p><span class="detail-label detail-label-spaced">State produced</span><p>A single-use grant bound to one run, robot, command envelope, expiry, and trusted signature.</p></div><div class="example-code"><pre><code class="language-ts">// Client → MissionService
+const decision = await missions.decideRun(
+  { runId: run.id, decision: "approve", reason: "aisle is clear" },
+  { commandId: "cmd_decide_01", principal: "operator:hercules" },
+);
+
+// MissionService → PackageRegistry before signing
+// registry.get("cap:approach-entity@1.0.0") must be enabled and pinned
+
+if (decision.decision !== "approved") throw new Error("run was rejected");
+const grant = decision.grant; // receive authority only from an approved decision
+if (!("stream" in grant.command)) throw new Error("expected stream grant");
+const stream = grant.command.stream; // read the kernel-enforceable envelope
+stream.actionSpace; // "base_velocity_3d"
+stream.limits; // { maxSpeedMps: 0.18, maxYawRps: 0.25 }
+stream.watchdogMs; // 200
+stream.maxDurationMs; // 5_000
+grant.signature; // proof checked only by ControlKernel</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">07</span><span><span class="example-title">Execute through control</span><span class="example-summary">Capability → ControlKernel → RobotDriver → Go2</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The kernel consumes the grant before the capability starts. Capability chunks are advice; the kernel validates, clamps, and forwards them through the driver. Applied values return as acknowledgements.</p><span class="detail-label detail-label-spaced">State produced</span><p>Ordered chunk acknowledgements and driver events that match the values actually applied to the robot.</p></div><div class="example-code"><pre><code class="language-ts">await kernel.execute(grant); // verify signature, expiry, robot, and stop state
+
+for await (const output of capability.run(context)) {
+  if (output.type === "chunk") {
+    const ack = await kernel.submit(output.chunk); // validate and clamp
+    acknowledgementChannel.write(ack); // feed applied values back to the capability
+  }
+
+  if (output.type === "observation") {
+    await events.append({ events: [asEvent(output.observation)] }); // retain evidence
+  }
+}
+
+// Inside ControlKernel after clamping:
+// RobotDriver.command({ kind: "setpoint", actionSpace, value: ack.applied })</code></pre></div></div>
+            </details>
+
+            <details class="example-item">
+              <summary><span class="example-index">08</span><span><span class="example-title">Close the loop</span><span class="example-summary">control events → projections → client</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
+              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>Kernel and driver evidence enters the Event Store. Scene updates can change the world again, while Attention delivers the outcome and exact cursor range to the client.</p><span class="detail-label detail-label-spaced">State produced</span><p>A completed run, updated robot and target state, a durable digest, and a new set of affordances for the next loop.</p></div><div class="example-code"><pre><code class="language-ts">const controlEvents = await kernel.events(controlCursor); // read new control evidence
+await events.append({
+  events: controlEvents.map(asNewEvent), // join evidence to the durable sequence
+});
+
+const delivery = await attention.receive({
+  missionId: mission.id, // scope the attention cursor
+  principal: "agent:mission", // deliver only the caller's view
+  waitMs: 0, // drain immediately at the turn seam
+  cause: "turn_start", // record why delivery occurred
+});
+
+delivery.events; // authorization.completed + driver.safe_state
+delivery.cursorRange; // exact evidence delivered to the client
+runtime.snapshot(); // begin the next affordance cycle</code></pre></div></div>
+            </details>
+          </div>
+        </div>
+      </section>
+
       <section class="section" id="status" aria-labelledby="status-title">
         <div class="section-inner status">
-          <div><div class="section-label">06 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
+          <div><div class="section-label">07 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
           <div class="status-list" aria-label="Implementation status">
             <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
             <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
@@ -1103,5 +1314,131 @@ export type RegistryTransition = {
       </section>
     </main>
 
+    <script>
+      (() => {
+        const keywords = new Set("as async await break case catch class const constructor continue default delete do else export extends finally for from function get if implements import in instanceof interface keyof let new of private protected public readonly return set static super switch this throw try type typeof var void while with yield".split(" "));
+        const literals = new Set(["true", "false", "null", "undefined"]);
+        const builtins = new Set(["AbortSignal", "Array", "AsyncGenerator", "AsyncIterable", "Error", "Map", "Promise", "Readonly", "Record", "Set", "String"]);
+        const operators = ["===", "!==", "=>", "??", "?.", "<=", ">=", "&&", "||", "++", "--", "**", "...", "=", ":", ";", ",", ".", "?", "|", "&", "<", ">", "+", "-", "*", "/", "!", "(", ")", "[", "]", "{", "}"];
+        const backtick = String.fromCharCode(96);
+
+        const escapeHtml = (value) => value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+
+        const token = (kind, value) => '<span class="tok-' + kind + '">' + escapeHtml(value) + "</span>";
+
+        const highlightLine = (line, language, startsInComment) => {
+          let html = "";
+          let index = 0;
+          let inComment = startsInComment;
+
+          while (index < line.length) {
+            if (inComment) {
+              const end = line.indexOf("*/", index);
+              const stop = end === -1 ? line.length : end + 2;
+              html += token("comment", line.slice(index, stop));
+              index = stop;
+              if (end === -1) return { html, inComment: true };
+              inComment = false;
+              continue;
+            }
+
+            if (line.startsWith("//", index)) {
+              html += token("comment", line.slice(index));
+              break;
+            }
+
+            if (line.startsWith("/*", index)) {
+              const end = line.indexOf("*/", index + 2);
+              const stop = end === -1 ? line.length : end + 2;
+              html += token("comment", line.slice(index, stop));
+              index = stop;
+              if (end === -1) return { html, inComment: true };
+              continue;
+            }
+
+            const character = line[index];
+            if (character === '"' || character === "'" || character === backtick) {
+              let stop = index + 1;
+              while (stop < line.length) {
+                if (line[stop] === "\\") {
+                  stop += 2;
+                  continue;
+                }
+                if (line[stop] === character) {
+                  stop += 1;
+                  break;
+                }
+                stop += 1;
+              }
+              const value = line.slice(index, stop);
+              const next = line.slice(stop).trimStart()[0];
+              html += token(language === "json" && next === ":" ? "property" : "string", value);
+              index = stop;
+              continue;
+            }
+
+            if (/[A-Za-z_$]/.test(character)) {
+              const match = line.slice(index).match(/^[A-Za-z_$][A-Za-z0-9_$]*/);
+              const value = match[0];
+              const next = line.slice(index + value.length).trimStart()[0];
+              const kind = keywords.has(value)
+                ? "keyword"
+                : literals.has(value)
+                  ? "literal"
+                  : builtins.has(value) || /^[A-Z]/.test(value)
+                    ? "type"
+                    : next === ":"
+                      ? "property"
+                      : null;
+              html += kind ? token(kind, value) : escapeHtml(value);
+              index += value.length;
+              continue;
+            }
+
+            if (/[0-9]/.test(character)) {
+              const match = line.slice(index).match(/^(?:0x[0-9a-fA-F_]+|[0-9][0-9_]*(?:\.[0-9_]+)?)/);
+              html += token("number", match[0]);
+              index += match[0].length;
+              continue;
+            }
+
+            const operator = operators.find((candidate) => line.startsWith(candidate, index));
+            if (operator) {
+              html += token("operator", operator);
+              index += operator.length;
+              continue;
+            }
+
+            html += escapeHtml(character);
+            index += 1;
+          }
+
+          return { html, inComment };
+        };
+
+        document.querySelectorAll(".contract-code code, .object-code code, .example-code code").forEach((code) => {
+          if (code.classList.contains("syntax-rendered")) return;
+          const source = code.textContent.replace(/^\n/, "").replace(/\n\s*$/, "");
+          const language = code.classList.contains("language-json") ? "json" : "ts";
+          let inComment = false;
+          const rendered = source.split("\n").map((line, lineIndex) => {
+            const result = highlightLine(line, language, inComment);
+            inComment = result.inComment;
+            return '<span class="code-line" data-line="' + (lineIndex + 1) + '">' + (result.html || "&nbsp;") + "</span>";
+          });
+
+          code.innerHTML = rendered.join("");
+          code.classList.add("syntax-rendered");
+          const wrapper = code.closest(".contract-code, .object-code, .example-code");
+          const pre = code.closest("pre");
+          wrapper?.classList.add("syntax-code");
+          if (pre) pre.dataset.language = language === "json" ? "JSON" : "TypeScript";
+        });
+      })();
+    </script>
   </body>
 </html>
