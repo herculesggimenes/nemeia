@@ -179,14 +179,12 @@
         border-top: 1px solid var(--line);
         display: grid;
         gap: 22px;
-        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 150px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         padding: 22px 42px 23px;
       }
       .detail-label { color: var(--walnut); display: block; font-size: 11px; margin-bottom: 6px; }
       .abstraction-body p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
       .abstraction-body code { color: var(--green); display: block; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
-      .source-link { align-self: end; color: var(--blue); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; text-decoration: none; }
-      .source-link:hover { color: var(--green); }
 
       .architecture-rows { background: var(--surface); border: 1px solid var(--line); border-bottom: 0; }
       .architecture-row {
@@ -340,7 +338,6 @@
         .diagram-arrow::before { content: "↓"; }
         .diagram-node { min-height: 0; }
         .abstraction-body { grid-template-columns: 1fr 1fr; }
-        .source-link { align-self: start; grid-column: 1 / -1; }
         .contract-body { grid-template-columns: 1fr; }
         .object-body { grid-template-columns: 1fr; }
       }
@@ -377,7 +374,6 @@
         .abstraction-title { font-size: 17px; }
         .abstraction-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
         .abstraction-body { grid-template-columns: 1fr; padding: 18px 0 21px 42px; }
-        .source-link { grid-column: auto; }
         .architecture-row { align-items: start; grid-template-columns: 1fr; gap: 11px; }
         .architecture-flow span { font-size: 11px; }
         .status { gap: 30px; }
@@ -419,35 +415,35 @@
           <div class="abstraction-list">
             <details class="abstraction">
               <summary><span class="abstraction-index">01</span><span><span class="abstraction-title">World</span><span class="abstraction-summary">the current state of everything</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>The container for current entities, relationships, registered actions, and ordered events.</p></div><div><span class="detail-label">Example</span><code>world.snapshot()<br>→ entities + relationships + actions</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>The container for current entities, relationships, registered actions, and ordered events.</p></div><div><span class="detail-label">Example</span><code>world.snapshot()<br>→ entities + relationships + actions</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Entity</span><span class="abstraction-summary">a stable identity for one thing</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An ID, label, type, and component map. The entity is intentionally light; its components carry meaning.</p></div><div><span class="detail-label">Example</span><code>robot_01<br>type: core.robot</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An ID, label, type, and component map. The entity is intentionally light; its components carry meaning.</p></div><div><span class="detail-label">Example</span><code>robot_01<br>type: core.robot</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Component</span><span class="abstraction-summary">state or ability attached to an entity</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A composable piece of state or capability such as locomotion, transform, observable, power, vision, or audio.</p></div><div><span class="detail-label">Example</span><code>robot_01.components.locomotion<br>→ { state: "ready" }</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A composable piece of state or capability such as locomotion, transform, observable, power, vision, or audio.</p></div><div><span class="detail-label">Example</span><code>robot_01.components.locomotion<br>→ { state: "ready" }</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Relationship</span><span class="abstraction-summary">a directed fact connecting two entities</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A first-class subject–predicate–object connection, with optional metadata.</p></div><div><span class="detail-label">Example</span><code>robot_01 — located_in — world_local<br>robot_01 — observes — world_local</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A first-class subject–predicate–object connection, with optional metadata.</p></div><div><span class="detail-label">Example</span><code>robot_01 — located_in — world_local<br>robot_01 — observes — world_local</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Affordance</span><span class="abstraction-summary">what is possible right now</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An action currently available to an actor and optional target, including the reason when it is unavailable.</p></div><div><span class="detail-label">Example</span><code>world.affordancesFor("robot_01")<br>→ connect · observe · map · stop</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An action currently available to an actor and optional target, including the reason when it is unavailable.</p></div><div><span class="detail-label">Example</span><code>world.affordancesFor("robot_01")<br>→ connect · observe · map · stop</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Action</span><span class="abstraction-summary">a meaningful operation that changes the world</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An operation with actor and target requirements. It can update components, create relationships, return a result, and emit events.</p></div><div><span class="detail-label">Example</span><code>world.execute({<br>  action_id: "world.map"<br>})</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An operation with actor and target requirements. It can update components, create relationships, return a result, and emit events.</p></div><div><span class="detail-label">Example</span><code>world.execute({<br>  action_id: "world.map"<br>})</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">07</span><span><span class="abstraction-title">System</span><span class="abstraction-summary">a process that keeps the world moving</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A continuous process that senses, updates, executes, or emits events. Systems connect the model to time and external reality.</p></div><div><span class="detail-label">Example</span><code>sense → update → execute<br>→ emit → repeat</code></div><a class="source-link" href="world-runtime.md">Design notes ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A continuous process that senses, updates, executes, or emits events. Systems connect the model to time and external reality.</p></div><div><span class="detail-label">Example</span><code>sense → update → execute<br>→ emit → repeat</code></div></div>
             </details>
             <details class="abstraction">
               <summary><span class="abstraction-index">08</span><span><span class="abstraction-title">Event</span><span class="abstraction-summary">an ordered record of a world change</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A sequence-numbered record with a timestamp, type, involved entities, and event data.</p></div><div><span class="detail-label">Example</span><code>action.started<br>world.mapping_enabled<br>action.completed</code></div><a class="source-link" href="../world-runtime/src/world-runtime.ts">Source ↗</a></div>
+              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A sequence-numbered record with a timestamp, type, involved entities, and event data.</p></div><div><span class="detail-label">Example</span><code>action.started<br>world.mapping_enabled<br>action.completed</code></div></div>
             </details>
           </div>
         </div>
@@ -665,7 +661,7 @@ export type ManualInteractionReceipt = {
 };</code></pre></div></div>
             </details>
           </div>
-          <p class="reference-note">The World panel uses the projection layer in <code>frontend/lib/world/robot-world-model.ts</code>; the canonical entities, relationships, actions, affordances, and events live in <code>world-runtime/src/world-runtime.ts</code>.</p>
+          <p class="reference-note">The World panel reads the projected shape; the runtime owns the canonical world objects and emits the events and affordances shown above.</p>
         </div>
       </section>
 
