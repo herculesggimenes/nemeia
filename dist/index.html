@@ -206,12 +206,16 @@
       .architecture-note code { color: var(--amber); }
 
       .contract-list,
+      .object-list,
       .schema-list { border-top: 1px solid var(--line); }
       .contract-item,
+      .object-item,
       .schema-item { background: var(--surface); border-bottom: 1px solid var(--line); }
       .contract-item:last-child,
+      .object-item:last-child,
       .schema-item:last-child { border-bottom: 0; }
       .contract-item summary,
+      .object-item summary,
       .schema-item summary {
         align-items: center;
         cursor: pointer;
@@ -222,20 +226,28 @@
         padding: 18px 3px;
       }
       .contract-item summary::-webkit-details-marker,
+      .object-item summary::-webkit-details-marker,
       .schema-item summary::-webkit-details-marker { display: none; }
       .contract-item summary:hover,
+      .object-item summary:hover,
       .schema-item summary:hover { color: var(--green); }
       .contract-index,
+      .object-index,
       .schema-index { color: var(--walnut); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; }
       .contract-title,
+      .object-title,
       .schema-title { font-size: 20px; font-weight: 600; }
       .contract-summary,
+      .object-summary,
       .schema-summary { color: var(--muted); font-size: 14px; margin-left: 8px; }
       .contract-toggle,
+      .object-toggle,
       .schema-toggle { color: var(--green); font-size: 22px; font-weight: 300; text-align: center; }
       .contract-toggle::before,
+      .object-toggle::before,
       .schema-toggle::before { content: "+"; }
       details[open] .contract-toggle::before,
+      details[open] .object-toggle::before,
       details[open] .schema-toggle::before { content: "−"; }
       .contract-body {
         background: var(--surface-2);
@@ -245,9 +257,20 @@
         grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
         padding: 22px 42px 23px;
       }
+      .object-body {
+        background: var(--surface-2);
+        border-top: 1px solid var(--line);
+        display: grid;
+        gap: 22px;
+        grid-template-columns: minmax(0, 0.55fr) minmax(0, 1.45fr);
+        padding: 22px 42px 23px;
+      }
       .contract-description p,
+      .object-description p,
       .schema-description p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+      .detail-label-spaced { margin-top: 18px; }
       .contract-description code,
+      .object-description code,
       .schema-description code { color: var(--green); }
       .contract-code {
         background: var(--pine);
@@ -255,8 +278,23 @@
         border-radius: 8px;
         overflow-x: auto;
       }
+      .object-code {
+        background: var(--pine);
+        border: 1px solid var(--walnut);
+        border-radius: 8px;
+        overflow-x: auto;
+      }
       .contract-code pre { margin: 0; padding: 18px 20px; }
+      .object-code pre { margin: 0; padding: 18px 20px; }
       .contract-code code {
+        color: var(--paper);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.6;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+      .object-code code {
         color: var(--paper);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         font-size: 12px;
@@ -304,6 +342,7 @@
         .abstraction-body { grid-template-columns: 1fr 1fr; }
         .source-link { align-self: start; grid-column: 1 / -1; }
         .contract-body { grid-template-columns: 1fr; }
+        .object-body { grid-template-columns: 1fr; }
       }
 
       @media (max-width: 600px) {
@@ -317,14 +356,20 @@
         .section-intro { margin-bottom: 27px; }
         .section-intro > p { font-size: 16px; }
         .contract-item summary,
+        .object-item summary,
         .schema-item summary { gap: 11px; grid-template-columns: 31px minmax(0, 1fr) 23px; padding: 16px 0; }
         .contract-title,
+        .object-title,
         .schema-title { font-size: 17px; }
         .contract-summary,
+        .object-summary,
         .schema-summary { display: block; font-size: 13px; margin-left: 0; margin-top: 2px; }
         .contract-body { padding: 18px 0 21px 42px; }
         .contract-code pre { padding: 16px; }
         .contract-code code { font-size: 11px; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .object-body { padding: 18px 0 21px 42px; }
+        .object-code pre { padding: 16px; }
+        .object-code code { font-size: 11px; }
         .schema-body { padding: 18px 0 21px 42px; }
         .schema-description { align-items: start; grid-template-columns: 1fr; gap: 6px; }
         .schema-kind { font-size: 11px; }
@@ -408,9 +453,225 @@
         </div>
       </section>
 
+      <section class="section" id="objects" aria-labelledby="objects-title">
+        <div class="section-inner">
+          <div class="section-intro"><div><div class="section-label">02 / Runtime objects</div><h2 id="objects-title">Runtime objects</h2></div><p>These are the concrete TypeScript shapes behind the abstractions. The operator panel reads a projected <code>RobotWorldView</code>; the runtime keeps the canonical world objects underneath it.</p></div>
+          <div class="object-list">
+            <details class="object-item">
+              <summary><span class="object-index">01</span><span><span class="object-title">RobotWorldView</span><span class="object-summary">the object rendered by the World panel</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The read-only UI projection returned by <code>projectRobotWorld(runtime)</code>. It groups the current entities, their component views, derived actions, and directed relationships into three top-level arrays.</p><span class="detail-label detail-label-spaced">Shape</span><p>The runtime uses snake_case internally; this view uses camelCase ids for the panel.</p></div><div class="object-code"><pre><code>export type RobotWorldView = {
+  actions: WorldActionView[]; // actions available to the robot and world
+  entities: WorldEntityView[]; // current entity projections
+  relationships: WorldRelationshipView[]; // directed entity links
+};
+
+export type WorldEntityView = {
+  components: WorldComponentView[]; // state and abilities attached to the entity
+  id: string; // stable entity identity
+  label: string; // human-readable name
+  type: string; // semantic entity type
+};
+
+export type WorldComponentView = WorldComponentPayload & {
+  id: string; // component key, such as connection or vision
+};
+
+export type WorldComponentPayload = {
+  detail: string; // current value or human-readable detail
+  label: string; // display label
+  state: "active" | "available" | "offline" | "unknown"; // semantic state
+};
+
+export type WorldActionId =
+  | "robot.connect" // attach the robot to the world
+  | "robot.control" // open locomotion controls
+  | "robot.stop" // send a zero-motion stop
+  | "world.listen" // enable live audio observations
+  | "world.map" // enable spatial sensing
+  | "world.observe"; // enable vision observations
+
+export type WorldRelationshipView = {
+  objectId: string; // relationship target
+  predicate: string; // directed relationship name
+  subjectId: string; // relationship source
+};
+
+export type WorldActionView = {
+  actorId: string; // entity that performs the action
+  available: boolean; // whether requirements are currently met
+  description: string; // meaning of the action
+  id: WorldActionId; // stable action identifier
+  label: string; // display label
+  reason: string | null; // why the action is unavailable
+  targetId: string | null; // optional target entity
+};
+
+const worldView: RobotWorldView = {
+  entities: [{
+    id: "robot_01",
+    label: "Robot",
+    type: "core.robot",
+    components: [{
+      id: "connection",
+      label: "Connection",
+      state: "active",
+      detail: "connected"
+    }]
+  }],
+  relationships: [{
+    subjectId: "robot_01",
+    predicate: "located_in",
+    objectId: "world_local"
+  }],
+  actions: [{
+    id: "world.observe",
+    label: "Observe",
+    actorId: "robot_01",
+    targetId: "world_local",
+    available: true,
+    description: "Enable vision and open the live observation surface.",
+    reason: null
+  }]
+};</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">02</span><span><span class="object-title">WorldEntity</span><span class="object-summary">canonical identity plus component map</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The canonical entity stored by <code>WorldRuntime</code>. An entity is intentionally small; components carry the changing state and abilities.</p></div><div class="object-code"><pre><code>export type ComponentMap = Record&lt;string, unknown&gt;; // extensible component storage
+
+export type WorldEntity = {
+  components: ComponentMap; // state and abilities attached to this entity
+  id: string; // stable portable identity
+  label: string; // human-readable name
+  type: string; // semantic type, such as core.robot
+};</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">03</span><span><span class="object-title">WorldRelationship</span><span class="object-summary">directed fact connecting two entities</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>A first-class subject–predicate–object fact. Relationships are validated against existing entities and become part of snapshots and event history.</p></div><div class="object-code"><pre><code>export type WorldRelationship = {
+  components: ComponentMap; // metadata attached to the relationship
+  object_id: string; // target entity id
+  predicate: string; // directed fact, such as located_in
+  subject_id: string; // source entity id
+};
+
+// Example: robot_01 — located_in — world_local</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">04</span><span><span class="object-title">WorldEvent</span><span class="object-summary">ordered record emitted by the runtime</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>Every mutation and action transition becomes an ordered event. Consumers can read events after a sequence number without accessing runtime internals.</p></div><div class="object-code"><pre><code>export type WorldEvent = {
+  data: Record&lt;string, unknown&gt;; // event-specific payload
+  entity_ids: string[]; // entities involved in the event
+  seq: number; // monotonic world-local sequence
+  timestamp: string; // ISO timestamp from the runtime clock
+  type: string; // event name, such as action.completed
+};
+
+world.events({ after: 12 }); // read events after a known cursor</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">05</span><span><span class="object-title">ActionDefinition</span><span class="object-summary">requirements, availability, and effects</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>An action declares the components required by its actor and optional target. The runtime derives affordances before calling <code>perform</code>.</p></div><div class="object-code"><pre><code>export type ActionDefinition = {
+  actor_components: string[]; // components required from the actor
+  available?: (context: ActionContext) =&gt; boolean | string; // dynamic availability check
+  description: string; // meaning of the operation
+  id: string; // stable action identity
+  label: string; // display label
+  perform: (context: ActionContext) =&gt; ActionOutcome | Promise&lt;ActionOutcome&gt;; // apply the action
+  target_components?: string[]; // components required from the target
+};
+
+export type ActionContext = {
+  actor: WorldEntity; // entity performing the action
+  input: Record&lt;string, unknown&gt;; // parameters supplied by the caller
+  target: WorldEntity | null; // optional entity being acted on
+  world: WorldRuntime; // runtime that owns the action
+};
+
+export type ActionEffect = {
+  components?: ComponentMap; // component updates to apply
+  entity_id: string; // entity receiving the update
+};
+
+export type ActionOutcome = {
+  effects?: ActionEffect[]; // component changes to apply
+  events?: Array&lt;{ data?: Record&lt;string, unknown&gt;; entity_ids?: string[]; type: string }&gt;; // events to append
+  relationships?: WorldRelationship[]; // relationships to create or update
+  result?: Record&lt;string, unknown&gt;; // value returned to the caller
+};
+
+export type Affordance = {
+  action_id: string; // candidate action
+  actor_id: string; // entity asking what is possible
+  available: boolean; // requirements and condition result
+  description: string; // action meaning
+  label: string; // display label
+  reason: string | null; // missing component or failed condition
+  target_id: string | null; // optional target considered
+};</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">06</span><span><span class="object-title">WorldSnapshot</span><span class="object-summary">deterministic read of the complete world</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The detached object returned by <code>world.snapshot()</code>. It gives clients, simulations, and persistence a stable view of entities, relationships, action metadata, and the last event cursor.</p></div><div class="object-code"><pre><code>export type WorldSnapshot = {
+  entities: WorldEntity[]; // sorted detached entity copies
+  relationships: WorldRelationship[]; // sorted detached relationship copies
+  actions: Array&lt;Omit&lt;ActionDefinition, "available" | "perform"&gt;&gt;; // safe action metadata
+  last_event_seq: number; // cursor for incremental event reads
+};
+
+const snapshot = world.snapshot();
+snapshot.last_event_seq; // resume from this sequence later</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">07</span><span><span class="object-title">ManualInteractionReceipt</span><span class="object-summary">event-backed result returned to the panel</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The result of routing a panel interaction through <code>WorldRuntime.execute</code>. It keeps the request, timing, status, result, error, and newly emitted events together.</p></div><div class="object-code"><pre><code>export type ManualInteractionRequest = {
+  actionId: WorldActionId; // requested world action
+  actorId: string; // entity performing the action
+  input: Record&lt;string, unknown&gt;; // action parameters
+  targetId: string | null; // optional target entity
+};
+
+export type ManualInteractionReceipt = {
+  completedAt: string | null; // completion time, if finished
+  error: string | null; // failure message, if any
+  events: WorldEvent[]; // events emitted by this interaction
+  request: ManualInteractionRequest; // original request
+  result: Record&lt;string, unknown&gt; | null; // action result, if successful
+  startedAt: string; // execution start time
+  status: "completed" | "executing" | "failed"; // lifecycle state
+};</code></pre></div></div>
+            </details>
+            <details class="object-item">
+              <summary><span class="object-index">08</span><span><span class="object-title">RobotWorldPort</span><span class="object-summary">live robot state and controls supplied to the runtime</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
+              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The narrow adapter passed into <code>createRobotWorldRuntime</code>. It gives the world projection the live Go2 state it needs and exposes only the controls that the registered actions can call.</p></div><div class="object-code"><pre><code>export type RobotWorldPort = Pick&lt;
+  RobotRuntimeSnapshot,
+  | "audioStream" // live audio evidence
+  | "batteryPercent" // current power reading
+  | "cameraEnabled" // camera toggle state
+  | "connectionState" // connection lifecycle
+  | "driverMode" // locomotion mode
+  | "lidarEnabled" // spatial sensor toggle
+  | "lidarFrame" // latest spatial frame
+  | "lidarFrameCount" // received frame count
+  | "robotPose" // latest position and yaw
+  | "runtimePending" // pending sensor commands
+  | "speakerEnabled" // speaker toggle state
+  | "videoStream" // live video evidence
+&gt; &amp; {
+  connect: () =&gt; Promise&lt;void&gt;; // connect the live robot
+  setCameraEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle vision
+  setLidarEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle spatial sensing
+  setSpeakerEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle audio
+  stopMotion: () =&gt; void; // send a zero-motion stop
+};</code></pre></div></div>
+            </details>
+          </div>
+          <p class="reference-note">The World panel uses the projection layer in <code>frontend/lib/world/robot-world-model.ts</code>; the canonical entities, relationships, actions, affordances, and events live in <code>world-runtime/src/world-runtime.ts</code>.</p>
+        </div>
+      </section>
+
       <section class="section" id="architecture" aria-labelledby="architecture-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">02 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path surrounds action execution when authorization and control-plane guarantees are required.</p></div>
+          <div class="section-intro"><div><div class="section-label">03 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path surrounds action execution when authorization and control-plane guarantees are required.</p></div>
           <div class="architecture-rows">
             <div class="architecture-row"><strong><span>active path</span>Live Go2 world</strong><div class="architecture-flow"><span>Go2 sensors</span><i>→</i><span>standard robot port</span><i>→</i><span>robot-world adapter</span><i>→</i><span>World Runtime</span><i>→</i><span>operator panel</span></div></div>
             <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API</span><i>→</i><span>Mission Server</span><i>→</i><span>signed Authorization</span><i>→</i><span>Supervisor Kernel</span><i>→</i><span>Driver</span></div></div>
@@ -421,7 +682,7 @@
 
       <section class="section" id="contracts" aria-labelledby="contracts-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">03 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Each boundary is shown as a small TypeScript contract. Open a row to read what it owns and the interface or type that crosses it.</p></div>
+          <div class="section-intro"><div><div class="section-label">04 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Each boundary is shown as a small TypeScript contract. Open a row to read what it owns and the interface or type that crosses it.</p></div>
           <div class="contract-list">
             <details class="contract-item">
               <summary><span class="contract-index">01</span><span><span class="contract-title">MissionApi</span><span class="contract-summary">client-facing mission and policy boundary</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
@@ -569,7 +830,7 @@ export interface PolicyRegistry {
 
       <section class="section" id="tables" aria-labelledby="tables-title">
         <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">04 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Each proposed Postgres v0 table is listed independently. Open a row to see its purpose and the columns that make the projection or record queryable.</p></div>
+          <div class="section-intro"><div><div class="section-label">05 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Each proposed Postgres v0 table is listed independently. Open a row to see its purpose and the columns that make the projection or record queryable.</p></div>
           <div class="schema-list">
             <details class="schema-item">
               <summary><span class="schema-index">01</span><span><span class="schema-title">event_log</span><span class="schema-summary">append-only source</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
@@ -811,7 +1072,7 @@ export interface PolicyRegistry {
 
       <section class="section" id="status" aria-labelledby="status-title">
         <div class="section-inner status">
-          <div><div class="section-label">05 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
+          <div><div class="section-label">06 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
           <div class="status-list" aria-label="Implementation status">
             <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
             <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
