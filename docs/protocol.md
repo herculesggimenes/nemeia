@@ -80,15 +80,15 @@ are checked design artifacts, not runtime validation or a claim of wire conforma
 
 ## 3. Geometry and evidence
 
-`box3`, `box2`, `pointCloud`, and `mesh` are Nemeia union tags. Their semantics
+`boundingBox3D`, `boundingBox2D`, `pointCloud`, and `mesh` are Nemeia union tags. Their semantics
 are explicitly mapped to external conventions; no external standard defines
 this exact union. A pose is a reusable value, not a shape or collision volume.
 
 | Value | Required meaning |
 | --- | --- |
 | `Pose3` | Position in meters; unit quaternion `[x,y,z,w]`. |
-| `box3` | Coordinate frame, center pose, full positive dimensions in meters. |
-| `box2` | Exact image frame, center and full dimensions in pixels, rotation in radians. |
+| `boundingBox3D` | Coordinate frame, center pose, full positive dimensions in meters. |
+| `boundingBox2D` | Exact image frame, center and full dimensions in pixels, rotation in radians. |
 | `pointCloud` | Coordinate frame and a stored resource with an explicit payload schema. |
 | `mesh` | Coordinate frame, pose, and a stored resource defining vertices and topology. |
 
@@ -106,8 +106,8 @@ report that prior as a sensor measurement.
 
 Coordinate conversion must use the transform sample for the acquisition time.
 Retain those samples on the observation, including the exact parent/child IDs.
-A source version alone cannot reproduce a moving transform. A `box2` cannot
-become `box3` without calibrated depth or another documented inference.
+A source version alone cannot reproduce a moving transform. A `boundingBox2D` cannot
+become `boundingBox3D` without calibrated depth or another documented inference.
 
 `FrameRef` identifies transient input by stream, session, sequence, and capture
 time. It does not promise replayable bytes. `ResourceRef` identifies retained

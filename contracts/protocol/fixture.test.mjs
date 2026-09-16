@@ -26,6 +26,7 @@ test("world fixture preserves evidence and has no dangling relationship", () => 
   assert.equal(snapshot.cursor, delta.to);
   assert.deepEqual(backpack.components["core.geometry"].evidence.observationIds, [observation.id]);
   assert.notEqual(backpack.id, observation.trackId);
+  assert.equal(observation.geometry.value.kind, "boundingBox3D");
   assert.ok(observation.geometry.value.sizeM.every(value => value > 0));
   assert.equal(Math.hypot(...observation.geometry.value.pose.orientation), 1);
 });
@@ -55,6 +56,9 @@ test("each service and database table has its own disclosure; no action controls
   assert.doesNotMatch(html, /<(?:button|form|input)\b/i);
   assert.doesNotMatch(html, /(?:href|src)="(?:world-runtime\/|README\.md|scene-model\.md)/);
   assert.doesNotMatch(html, /MissionService|ExecutionGrant|bbox_3d/);
+  assert.doesNotMatch(html, /\bbox[23]\b/);
+  assert.match(html, /kind: &quot;boundingBox3D&quot;/);
+  assert.match(html, /kind: &quot;boundingBox2D&quot;/);
   assert.match(html, /name="viewport"/);
   assert.match(html, /@media \(max-width: 600px\)/);
   for (const [,script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script);

@@ -27,11 +27,11 @@ export type Vec3 = [number, number, number]; // finite x, y, z
 export type Quaternion = [number, number, number, number]; // x, y, z, w; unit length within 1e-6
 export type Pose3 = { positionM: Vec3; orientation: Quaternion }; // position and rotation in the containing frame
 export type SpatialGeometry =
-  | { kind: "box3"; frameId: Id; pose: Pose3; sizeM: Vec3 } // full positive extents, rotated about the center
+  | { kind: "boundingBox3D"; frameId: Id; pose: Pose3; sizeM: Vec3 } // full positive extents, rotated about the center
   | { kind: "pointCloud"; frameId: Id; resource: ResourceRef } // encoding and layout declared by the resource schema
   | { kind: "mesh"; frameId: Id; pose: Pose3; resource: ResourceRef }; // local vertices transformed by pose
 export type ImageBox = {
-  kind: "box2"; frame: FrameRef; centerPx: Vec2; sizePx: Vec2; angleRad: number;
+  kind: "boundingBox2D"; frame: FrameRef; centerPx: Vec2; sizePx: Vec2; angleRad: number;
 }; // belongs to a particular image; cannot be used as a 3D obstacle
 export type Geometry = SpatialGeometry | ImageBox; // closed union; unknown geometry fails validation
 export type TransformSample = {

@@ -497,16 +497,16 @@ export type Evidence = {
   observedAt: Timestamp; observationIds: Id[];
 }; // freshness is computed against an explicit evaluation time, never persisted as ageMs
 export type Association = { observationId: Id; entityId: Id }; // trusted projector decision, recorded so replay never reruns tracking</code></pre></div></div></details>
-<details class="object-item" id="object-geometry"><summary><span class="object-index">03</span><span><span class="object-title">Pose &amp; Geometry</span><span class="object-summary">ROS-derived meaning, explicit JSON mapping</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Units and axes follow REP-103/105. A box has a center pose and full extents. box3 is Nemeia’s union tag, not a ROS wire type. Incomplete or untransformable geometry stays unknown.</p></div><div class="object-code"><pre><code class="language-ts">export type Vec2 = [number, number]; // finite x, y
+<details class="object-item" id="object-geometry"><summary><span class="object-index">03</span><span><span class="object-title">Pose &amp; Geometry</span><span class="object-summary">ROS-derived meaning, explicit JSON mapping</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Units and axes follow REP-103/105. A box has a center pose and full extents. boundingBox3D is Nemeia’s union tag, not a ROS wire type. Incomplete or untransformable geometry stays unknown.</p></div><div class="object-code"><pre><code class="language-ts">export type Vec2 = [number, number]; // finite x, y
 export type Vec3 = [number, number, number]; // finite x, y, z
 export type Quaternion = [number, number, number, number]; // x, y, z, w; unit length within 1e-6
 export type Pose3 = { positionM: Vec3; orientation: Quaternion }; // position and rotation in the containing frame
 export type SpatialGeometry =
-  | { kind: &quot;box3&quot;; frameId: Id; pose: Pose3; sizeM: Vec3 } // full positive extents, rotated about the center
+  | { kind: &quot;boundingBox3D&quot;; frameId: Id; pose: Pose3; sizeM: Vec3 } // full positive extents, rotated about the center
   | { kind: &quot;pointCloud&quot;; frameId: Id; resource: ResourceRef } // encoding and layout declared by the resource schema
   | { kind: &quot;mesh&quot;; frameId: Id; pose: Pose3; resource: ResourceRef }; // local vertices transformed by pose
 export type ImageBox = {
-  kind: &quot;box2&quot;; frame: FrameRef; centerPx: Vec2; sizePx: Vec2; angleRad: number;
+  kind: &quot;boundingBox2D&quot;; frame: FrameRef; centerPx: Vec2; sizePx: Vec2; angleRad: number;
 }; // belongs to a particular image; cannot be used as a 3D obstacle
 export type Geometry = SpatialGeometry | ImageBox; // closed union; unknown geometry fails validation
 export type TransformSample = {
@@ -746,7 +746,7 @@ export const observation = {
   geometry: {
     observedAt: lidar.capturedAt,
     value: {
-      kind: &quot;box3&quot;, frameId: &quot;map&quot;,
+      kind: &quot;boundingBox3D&quot;, frameId: &quot;map&quot;,
       pose: { positionM: [2.4, -0.6, 0.35], orientation: [0, 0, 0, 1] },
       sizeM: [0.4, 0.3, 0.7], // full measured extents; no invented defaults
     },

@@ -2,7 +2,7 @@
 import type { Change, Execution, Observation, SpatialGeometry } from "./protocol.js";
 
 // @ts-expect-error a 3D box without dimensions is not valid geometry
-const incompleteBox: SpatialGeometry = { kind: "box3", frameId: "map", pose: { positionM: [0, 0, 0], orientation: [0, 0, 0, 1] } };
+const incompleteBox: SpatialGeometry = { kind: "boundingBox3D", frameId: "map", pose: { positionM: [0, 0, 0], orientation: [0, 0, 0, 1] } };
 // @ts-expect-error an observation must include at least one measured facet
 const emptyObservation: Observation = { id: "obs", inputs: [], retained: [], supersedes: [], transforms: [] };
 // @ts-expect-error a power component cannot contain a connection value

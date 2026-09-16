@@ -58,7 +58,7 @@ export const observation = {
   geometry: {
     observedAt: lidar.capturedAt,
     value: {
-      kind: "box3", frameId: "map",
+      kind: "boundingBox3D", frameId: "map",
       pose: { positionM: [2.4, -0.6, 0.35], orientation: [0, 0, 0, 1] },
       sizeM: [0.4, 0.3, 0.7], // full measured extents; no invented defaults
     },
