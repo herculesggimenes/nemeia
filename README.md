@@ -12,25 +12,20 @@ sense -> entities -> components -> available interactions
 ```
 
 A robot, person, room, backpack, camera, or simulated character is an entity.
-Components such as `locomotion`, `transform`, `observable`, `portable`, and
-`audio` give entities state and abilities. Actions declare the components they
+Components such as `core.pose`, `core.geometry`, `core.sensor`, and
+`core.power` describe entities. Actions declare the components they
 need, and the runtime derives the current affordances from the world itself.
 
 ## Status
 
-The first World Runtime slice is implemented:
+Pre-production prototype. The [protocol](./docs/protocol.md) is the canonical
+implementation target, with [checked contracts](./contracts/protocol/protocol.ts),
+an [end-to-end example](./contracts/protocol/example.ts), and a
+[design review](./docs/protocol-review.md). Existing packages are experiments,
+not a completed implementation of that protocol.
 
-- deterministic entity, component, and relationship state;
-- action registration and actor/target requirement matching;
-- live affordance derivation;
-- action execution with component, relationship, and event effects;
-- a vendor-neutral robot runtime boundary;
-- an operator World panel that projects live connection, locomotion, camera,
-  spatial sensing, audio, power, and pose data into a `core.robot` entity.
-
-The next implementation slice is semantic perception: turn camera, LiDAR, and
-scene observations into additional entities and relationships, then bind
-physical action packs to the same actions used in simulation.
+The new design replaces previous contracts outright. There is no requirement
+to preserve old APIs, formats, databases, or archived protocol designs.
 
 ## Core Model
 
@@ -44,7 +39,7 @@ physical action packs to the same actions used in simulation.
 | Action | Applies a meaningful change to the world. |
 | System | Continuously senses, updates, executes, or emits events. |
 
-See [docs/world-runtime.md](./docs/world-runtime.md) for the full explanation,
+See [docs/protocol.md](./docs/protocol.md) for the full explanation,
 [the architecture website](./docs/) for a visual walkthrough,
 [the visual framework story](http://localhost:5173/framework), and
 [the detailed documentation](http://localhost:5173/docs).
@@ -61,11 +56,10 @@ nemeia/
   docs/             framework, architecture, and integration notes
 ```
 
-The earlier authorization-first NEM Suite implementation remains in packages
-such as `mission-api/`, `mission-server/`, `policy/`, `supervisor/`, and
-`replay/`. It is archived as an optional future governance extension; it is not
-required by the World Runtime. See
-[docs/archive/governance/README.md](./docs/archive/governance/README.md).
+Prototype packages such as `mission-api/`, `mission-server/`, `policy/`,
+`supervisor/`, and `replay/` are reviewed experiments. Replace or remove them
+as the canonical protocol's vertical slices land; do not build adapters to
+preserve their current APIs.
 
 ## Run The Operator
 
@@ -79,6 +73,12 @@ The server binds to `0.0.0.0:5173`. Open `http://<host-ip>:5173` from another
 machine on the network, or `http://localhost:5173` on the host.
 
 ## Validate
+
+Check the canonical protocol declarations, example and generated page:
+
+```bash
+npm run check:protocol
+```
 
 Run every package and frontend check:
 

@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="A simple guide to the abstractions and architecture behind Nemeia.">
+    <meta name="description" content="Nemeia's canonical protocol: world objects, service contracts, storage and end-to-end information flow.">
     <meta name="theme-color" content="#F6F2E9">
-    <title>Nemeia · How it works</title>
+    <title>Nemeia · Protocol</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%2317382A'/%3E%3Cpath d='M16 48V16h8l16 19V16h8v32h-8L24 29v19z' fill='%23F6F2E9'/%3E%3C/svg%3E">
     <style>
       :root {
@@ -308,15 +308,15 @@
       }
       .syntax-code pre { padding-top: 42px; position: relative; }
       .syntax-code pre::before { color: rgba(246, 242, 233, 0.46); content: attr(data-language); font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; letter-spacing: 0.12em; position: absolute; right: 18px; text-transform: uppercase; top: 14px; }
-      .syntax-rendered { counter-reset: code-line; display: block; }
-      .code-line { display: block; min-height: 1.6em; padding-left: 3.4em; position: relative; }
+      code.syntax-rendered { counter-reset: code-line; display: block; white-space: normal; }
+      .code-line { display: block; min-height: 1.6em; padding-left: 3.4em; position: relative; white-space: pre-wrap; }
       .code-line::before { color: rgba(246, 242, 233, 0.28); content: attr(data-line); font-size: 10px; left: 0; position: absolute; text-align: right; top: 0.12em; user-select: none; width: 2.15em; }
       .code-line:hover { background: rgba(246, 242, 233, 0.035); }
       .tok-keyword { color: #B7D2BC; }
       .tok-type { color: #E0C17E; }
       .tok-string { color: #D9AF98; }
       .tok-number { color: #B8A8C5; }
-      .tok-comment { color: rgba(246, 242, 233, 0.48); font-style: italic; }
+      .tok-comment { color: #B3BFAE; font-style: italic; }
       .tok-property { color: #9FB9B6; }
       .tok-literal { color: #D4A16F; }
       .tok-operator { color: rgba(246, 242, 233, 0.72); }
@@ -419,900 +419,444 @@
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
 
-    <main id="main-content">
-      <section class="diagram-section" id="how-it-works" aria-label="How Nemeia works">
-        <div class="diagram-inner section-inner">
-          <div class="diagram-shell" role="img" aria-label="Nemeia's top-level loop: sense, compose world state, derive affordances, execute an action, record an event, and repeat.">
-            <div class="diagram-header"><span class="diagram-label">NEMEIA / CORE LOOP</span><span>same model · simulation or reality</span></div>
-            <div class="diagram">
-              <div class="diagram-node" data-tone="sense"><span class="node-meta">01</span><strong>Sense</strong><p>Evidence arrives from sensors, simulators, or an operator.</p><code>camera · LiDAR · audio</code></div>
-              <div class="diagram-arrow" aria-hidden="true"></div>
-              <div class="diagram-node" data-tone="world"><span class="node-meta">02</span><strong>Compose</strong><p>Entities get components that describe state and ability.</p><code>world state</code></div>
-              <div class="diagram-arrow" aria-hidden="true"></div>
-              <div class="diagram-node" data-tone="affordance"><span class="node-meta">03</span><strong>Derive</strong><p>Requirements match the current state.</p><code>affordances</code></div>
-              <div class="diagram-arrow" aria-hidden="true"></div>
-              <div class="diagram-node" data-tone="action"><span class="node-meta">04</span><strong>Act</strong><p>An action applies a meaningful change.</p><code>effects · relations</code></div>
-              <div class="diagram-arrow" aria-hidden="true"></div>
-              <div class="diagram-node" data-tone="event"><span class="node-meta">05</span><strong>Record</strong><p>Events make the new state visible and ordered.</p><code>events → repeat</code></div>
-            </div>
-            <div class="diagram-foot"><div><strong>Systems</strong><p>Continuously sense, update, execute, and emit.</p></div><div><strong class="cycle">↺ The loop continues</strong><p>The next possibilities come from the updated world.</p></div></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="abstractions" aria-labelledby="abstractions-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">01 / Core abstractions</div><h2 id="abstractions-title">Core abstractions</h2></div><p>Eight concepts describe the entities, state, possibilities, actions, processes, and changes in an interactive world. Open a row for its definition and example.</p></div>
-          <div class="abstraction-list">
-            <details class="abstraction">
-              <summary><span class="abstraction-index">01</span><span><span class="abstraction-title">World</span><span class="abstraction-summary">the current state of everything</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>The container for current entities, relationships, registered actions, and ordered events.</p></div><div><span class="detail-label">Example</span><code>world.snapshot()<br>→ entities + relationships + actions</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Entity</span><span class="abstraction-summary">a stable identity for one thing</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An ID, label, type, and component map. The entity is intentionally light; its components carry meaning.</p></div><div><span class="detail-label">Example</span><code>robot_01<br>type: core.robot</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Component</span><span class="abstraction-summary">state or ability attached to an entity</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A composable piece of state or capability such as locomotion, transform, observable, power, vision, or audio.</p></div><div><span class="detail-label">Example</span><code>robot_01.components.locomotion<br>→ { state: "ready" }</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Relationship</span><span class="abstraction-summary">a directed fact connecting two entities</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A first-class subject–predicate–object connection, with optional metadata.</p></div><div><span class="detail-label">Example</span><code>robot_01 — located_in — world_local<br>robot_01 — observes — world_local</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Affordance</span><span class="abstraction-summary">what is possible right now</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An action currently available to an actor and optional target, including the reason when it is unavailable.</p></div><div><span class="detail-label">Example</span><code>world.affordancesFor("robot_01")<br>→ connect · observe · map · stop</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Action</span><span class="abstraction-summary">a meaningful operation that changes the world</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>An operation with actor and target requirements. It can update components, create relationships, return a result, and emit events.</p></div><div><span class="detail-label">Example</span><code>world.execute({<br>  action_id: "world.map"<br>})</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">07</span><span><span class="abstraction-title">System</span><span class="abstraction-summary">a process that keeps the world moving</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A continuous process that senses, updates, executes, or emits events. Systems connect the model to time and external reality.</p></div><div><span class="detail-label">Example</span><code>sense → update → execute<br>→ emit → repeat</code></div></div>
-            </details>
-            <details class="abstraction">
-              <summary><span class="abstraction-index">08</span><span><span class="abstraction-title">Event</span><span class="abstraction-summary">an ordered record of a world change</span></span><span class="toggle" aria-hidden="true"></span></summary>
-              <div class="abstraction-body"><div><span class="detail-label">What it is</span><p>A sequence-numbered record with a timestamp, type, involved entities, and event data.</p></div><div><span class="detail-label">Example</span><code>action.started<br>world.mapping_enabled<br>action.completed</code></div></div>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="objects" aria-labelledby="objects-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">02 / Runtime objects</div><h2 id="objects-title">Runtime objects</h2></div><p>These are the concrete TypeScript shapes behind the abstractions. The operator panel reads a projected <code>RobotWorldView</code>; the runtime keeps the canonical world objects underneath it.</p></div>
-          <div class="object-list">
-            <details class="object-item">
-              <summary><span class="object-index">01</span><span><span class="object-title">RobotWorldView</span><span class="object-summary">the object rendered by the World panel</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The read-only UI projection returned by <code>projectRobotWorld(runtime)</code>. It groups the current entities, their component views, derived actions, and directed relationships into three top-level arrays.</p><span class="detail-label detail-label-spaced">Shape</span><p>The runtime uses snake_case internally; this view uses camelCase ids for the panel.</p></div><div class="object-code"><pre><code>export type RobotWorldView = {
-  actions: WorldActionView[]; // actions available to the robot and world
-  entities: WorldEntityView[]; // current entity projections
-  relationships: WorldRelationshipView[]; // directed entity links
+    <main id="main-content"><section class="diagram-section" id="how-it-works" aria-label="How Nemeia works"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / protocol</h1><p class="reference-note">Canonical implementation target · pre-production · no backward-compatibility requirement</p><div class="diagram-shell" role="img" aria-label="Sensors produce evidence; trusted systems commit world state; clients discover affordances and request actions; executors produce new evidence. All decisions are recorded in one journal."><div class="diagram-header"><span class="diagram-label">CORE LOOP</span><span>same meaning · simulation or hardware</span></div><div class="diagram"><div class="diagram-node" data-tone="sense"><span class="node-meta">01</span><strong>Sense</strong><p>Frames become timestamped observations.</p><code>FrameRef → Observation</code></div><div class="diagram-arrow" aria-hidden="true"></div><div class="diagram-node" data-tone="world"><span class="node-meta">02</span><strong>Compose</strong><p>Associate identities; commit complete changes.</p><code>Entity + Component + Relationship</code></div><div class="diagram-arrow" aria-hidden="true"></div><div class="diagram-node" data-tone="affordance"><span class="node-meta">03</span><strong>Discover</strong><p>Derive what is possible from current evidence.</p><code>Action → Affordance</code></div><div class="diagram-arrow" aria-hidden="true"></div><div class="diagram-node" data-tone="action"><span class="node-meta">04</span><strong>Execute</strong><p>One attempt; local control for hardware.</p><code>ActionRequest → Execution</code></div><div class="diagram-arrow" aria-hidden="true"></div><div class="diagram-node" data-tone="event"><span class="node-meta">05</span><strong>Observe again</strong><p>Measurements, not intent, close the loop.</p><code>Evidence → world changes</code></div></div><div class="diagram-foot"><div><strong>Journal</strong><p>CloudEvents + atomic decisions + resumable cursors</p></div><div><strong>One world</strong><p>UI, Scene, attention and replay are readers of the same state.</p></div></div></div></div></section>
+<section class="section" id="abstractions" aria-labelledby="abstractions-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">01 / Core abstractions</div><h2 id="abstractions-title">Core abstractions</h2></div><p>Eight foundations; no parallel hierarchy of mission, run and authorization objects.</p></div><div class="abstraction-list"><details class="abstraction" id="world"><summary><span class="abstraction-index">01</span><span><span class="abstraction-title">World</span><span class="abstraction-summary">one committed state</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Owns entities, relationships, installed actions and a journal cursor. A snapshot is detached and internally consistent.</p><code>worldId + cursor + entities + relationships + actions</code></div></details>
+<details class="abstraction" id="entity"><summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Entity</span><span class="abstraction-summary">identity, not a class hierarchy</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>An opaque identity, a display label, and typed components. Two backpacks are two entities even when their labels match.</p><code>entity_backpack_01 ≠ entity_backpack_02</code></div></details>
+<details class="abstraction" id="component"><summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Component</span><span class="abstraction-summary">a typed domain value</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>A value plus revision and observation evidence where needed. UI strings and colors are derived separately.</p><code>core.geometry → { version, value, evidence }</code></div></details>
+<details class="abstraction" id="relationship"><summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Relationship</span><span class="abstraction-summary">a directed fact</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>A structural subject–predicate–object tuple. Both endpoints must exist. Removing an entity also removes its incident relationships.</p><code>robot_go2_01 — observes → entity_backpack_01</code></div></details>
+<details class="abstraction" id="affordance"><summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Affordance</span><span class="abstraction-summary">an evaluated possibility</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Derived from components, freshness and action requirements. It is a discovery hint, not authority; dispatch checks again with actual input.</p><code>actor + target + action + evaluatedAt + availability</code></div></details>
+<details class="abstraction" id="action"><summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Action</span><span class="abstraction-summary">meaning independent of implementation</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Declares requirements and input/output schemas. A binding chooses a simulator or physical executor without changing action meaning.</p><code>robot.approach → measured standoff distance</code></div></details>
+<details class="abstraction" id="system"><summary><span class="abstraction-index">07</span><span><span class="abstraction-title">System</span><span class="abstraction-summary">a trusted producer or projector</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Ingests evidence or submits an atomic batch of changes. Association and fusion belong here, not in presentation code.</p><code>ObservationSink → association → WorldWriter</code></div></details>
+<details class="abstraction" id="event"><summary><span class="abstraction-index">08</span><span><span class="abstraction-title">Event</span><span class="abstraction-summary">a committed fact</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>A CloudEvents envelope with typed Nemeia data. Journal position is separate from stable identity. World changes retain complete values.</p><code>CloudEvent + { cursor, recordedAt }</code></div></details></div></div></section>
+<section class="section" id="objects" aria-labelledby="objects-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">02 / Objects &amp; definitions</div><h2 id="objects-title">Objects &amp; definitions</h2></div><p>Complete checked types, including world-view shape, evidence, geometry, execution and transport primitives.</p></div><div class="object-list"><details class="object-item" id="object-world"><summary><span class="object-index">01</span><span><span class="object-title">WorldSnapshot, Entity &amp; Change</span><span class="object-summary">the complete world-view structure</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Scene and RobotWorldView are projections of this snapshot. Component keys determine value types; changes include explicit removals and commit atomically.</p></div><div class="object-code"><pre><code class="language-ts">export type Component&lt;T&gt; = {
+  version: number; // owner-assigned positive revision, increased only when the component changes
+  value: T; // validated against the installed schema for this component key
+  evidence?: Evidence; // required for components derived from observations
 };
-
-export type WorldEntityView = {
-  components: WorldComponentView[]; // state and abilities attached to the entity
-  id: string; // stable entity identity
-  label: string; // human-readable name
-  type: string; // semantic entity type
+export interface ComponentValues {
+  &quot;core.pose&quot;: { frameId: Id; pose: Pose3 };
+  &quot;core.geometry&quot;: SpatialGeometry;
+  &quot;core.semantic&quot;: Semantic;
+  &quot;core.connection&quot;: { state: &quot;offline&quot; | &quot;connecting&quot; | &quot;online&quot; | &quot;fault&quot; };
+  &quot;core.motion&quot;: { state: &quot;idle&quot; | &quot;busy&quot; | &quot;stopped&quot; | &quot;fault&quot; };
+  &quot;core.power&quot;: { batteryPct: number | null }; // null is unknown; zero is an actual reading
+  &quot;core.sensor&quot;: { streams: StreamDescriptor[] };
+}
+export type Components = { [K in keyof ComponentValues]?: Component&lt;ComponentValues[K]&gt; }; // extend through a registered package
+export type Entity = {
+  id: Id; // assigned by trusted association; survives label changes
+  label: string; // human-readable name, never an association key
+  components: Components; // typed domain state; presentation is derived separately
+}; // semantic classification lives in core.semantic; it does not define physical ability
+export type RelationshipKey = { subjectId: Id; predicate: string; objectId: Id }; // structural tuple, never colon concatenation
+export type Relationship = RelationshipKey &amp; { evidence?: Evidence }; // both endpoints must exist
+export type WorldSnapshot = {
+  worldId: Id; // world scope shared by all contained identities and frames
+  cursor: Cursor; // resume after this complete committed decision
+  entities: Entity[]; // complete current entity state
+  relationships: Relationship[]; // directed facts between existing entities
+  actions: ActionDefinition[]; // installed meanings; executor selection remains host-owned
+}; // detached snapshot at one committed cursor; views add presentation without duplicating domain state
+export type ComponentChange = {
+  [K in keyof ComponentValues]: { op: &quot;component.set&quot;; entityId: Id; key: K; component: Component&lt;ComponentValues[K]&gt; }
+}[keyof ComponentValues]; // value type follows the component key
+export type Change =
+  | { op: &quot;entity.put&quot;; entity: Entity } // complete replacement; component updates use component.set
+  | { op: &quot;entity.remove&quot;; entityId: Id } // atomically removes incident relationships
+  | ComponentChange
+  | { op: &quot;component.remove&quot;; entityId: Id; key: keyof ComponentValues }
+  | { op: &quot;relationship.put&quot;; relationship: Relationship }
+  | { op: &quot;relationship.remove&quot;; key: RelationshipKey };
+export type WorldDelta = { from: Cursor; to: Cursor; changes: Change[] }; // ordered changes; includes removals</code></pre></div></div></details>
+<details class="object-item" id="object-evidence"><summary><span class="object-index">02</span><span><span class="object-title">Observation, FrameRef &amp; Resource</span><span class="object-summary">evidence without ambiguous artifacts</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>A frame is a transient sensor sample. A resource is retained bytes with a known schema. Semantic and geometric facets keep independent acquisition times; association uses scoped tracks, never labels.</p></div><div class="object-code"><pre><code class="language-ts">export type FrameRef = {
+  streamId: Id; // identifies the camera, LiDAR, or other source stream
+  sessionId: Id; // new identity when the stream restarts
+  sequence: number; // non-negative safe integer within the stream session
+  capturedAt: Timestamp; // acquisition time in the world's clock domain
+}; // sequence is unique within a stream session; frame references do not promise retained bytes
+export type ResourceRef = { id: Id; schema: SchemaRef }; // stable stored bytes; resolve through ResourceStore
+export type Resource = {
+  id: Id; schema: SchemaRef; mediaType: string; byteLength: number; sha256: string;
+}; // immutable metadata; no filesystem paths or expiring URLs in durable events
+export type Semantic = {
+  hypotheses: { label: string; score: number }[]; // scores in [0,1]; model scores are not graspability or geometry certainty
 };
-
-export type WorldComponentView = WorldComponentPayload & {
-  id: string; // component key, such as connection or vision
+export type Sample&lt;T&gt; = { observedAt: Timestamp; value: T }; // separate observation times for independent facets
+export type Observation = {
+  id: Id; // producer retry identity
+  trackId?: string; // scoped to authenticated source.instanceId; association owns entity IDs
+  inputs: FrameRef[]; // exact sensor inputs; empty for operator assertions
+  retained: ResourceRef[]; // optional retained evidence; [] when frames were not recorded
+  supersedes: Id[]; // observation IDs replaced by fusion; no source-name conventions
+  transforms: TransformSample[]; // exact samples used to convert frames; [] when no conversion occurred
+} &amp; (
+  | { semantic: Sample&lt;Semantic&gt;; geometry?: Sample&lt;Geometry&gt; }
+  | { semantic?: Sample&lt;Semantic&gt;; geometry: Sample&lt;Geometry&gt; }
+); // at least one measured facet; late semantic updates never erase geometry
+export type Evidence = {
+  observedAt: Timestamp; observationIds: Id[];
+}; // freshness is computed against an explicit evaluation time, never persisted as ageMs
+export type Association = { observationId: Id; entityId: Id }; // trusted projector decision, recorded so replay never reruns tracking</code></pre></div></div></details>
+<details class="object-item" id="object-geometry"><summary><span class="object-index">03</span><span><span class="object-title">Pose &amp; Geometry</span><span class="object-summary">ROS-derived meaning, explicit JSON mapping</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Units and axes follow REP-103/105. A box has a center pose and full extents. box3 is Nemeia’s union tag, not a ROS wire type. Incomplete or untransformable geometry stays unknown.</p></div><div class="object-code"><pre><code class="language-ts">export type Vec2 = [number, number]; // finite x, y
+export type Vec3 = [number, number, number]; // finite x, y, z
+export type Quaternion = [number, number, number, number]; // x, y, z, w; unit length within 1e-6
+export type Pose3 = { positionM: Vec3; orientation: Quaternion }; // position and rotation in the containing frame
+export type SpatialGeometry =
+  | { kind: &quot;box3&quot;; frameId: Id; pose: Pose3; sizeM: Vec3 } // full positive extents, rotated about the center
+  | { kind: &quot;pointCloud&quot;; frameId: Id; resource: ResourceRef } // encoding and layout declared by the resource schema
+  | { kind: &quot;mesh&quot;; frameId: Id; pose: Pose3; resource: ResourceRef }; // local vertices transformed by pose
+export type ImageBox = {
+  kind: &quot;box2&quot;; frame: FrameRef; centerPx: Vec2; sizePx: Vec2; angleRad: number;
+}; // belongs to a particular image; cannot be used as a 3D obstacle
+export type Geometry = SpatialGeometry | ImageBox; // closed union; unknown geometry fails validation
+export type TransformSample = {
+  parentFrameId: Id; childFrameId: Id; observedAt: Timestamp; pose: Pose3;
+}; // maps child coordinates into parent; immutable sample retained for replay</code></pre></div></div></details>
+<details class="object-item" id="object-actions"><summary><span class="object-index">04</span><span><span class="object-title">Action, Affordance &amp; Execution</span><span class="object-summary">one action lifecycle</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>One request creates one execution. The host resolves the executor and pins component versions. Accepted is not completed; physical results require measured evidence.</p></div><div class="object-code"><pre><code class="language-ts">export type ActionRef = { name: string; version: number }; // one spelling for action meaning; no second verb registry
+export type Requirement = {
+  component: keyof ComponentValues; maxAgeMs?: number;
+}; // presence plus optional freshness; action-specific checks are pure and versioned
+export type ActionDefinition = {
+  action: ActionRef; // stable action meaning and schema version
+  description: string; // intended outcome, independent of executor implementation
+  input: SchemaRef; // registered request input schema
+  output: SchemaRef; // registered successful result schema
+  actor: Requirement[]; // component presence and freshness required on the actor
+  target: { kind: &quot;none&quot; } | { kind: &quot;required&quot;; components: Requirement[] }; // cardinality is explicit
 };
-
-export type WorldComponentPayload = {
-  detail: string; // current value or human-readable detail
-  label: string; // display label
-  state: "active" | "available" | "offline" | "unknown"; // semantic state
-};
-
-export type WorldActionId =
-  | "robot.connect" // attach the robot to the world
-  | "robot.control" // open locomotion controls
-  | "robot.stop" // send a zero-motion stop
-  | "world.listen" // enable live audio observations
-  | "world.map" // enable spatial sensing
-  | "world.observe"; // enable vision observations
-
-export type WorldRelationshipView = {
-  objectId: string; // relationship target
-  predicate: string; // directed relationship name
-  subjectId: string; // relationship source
-};
-
-export type WorldActionView = {
-  actorId: string; // entity that performs the action
-  available: boolean; // whether requirements are currently met
-  description: string; // meaning of the action
-  id: WorldActionId; // stable action identifier
-  label: string; // display label
-  reason: string | null; // why the action is unavailable
-  targetId: string | null; // optional target entity
-};
-
-const worldView: RobotWorldView = {
-  entities: [{
-    id: "robot_01",
-    label: "Robot",
-    type: "core.robot",
-    components: [{
-      id: "connection",
-      label: "Connection",
-      state: "active",
-      detail: "connected"
-    }]
-  }],
-  relationships: [{
-    subjectId: "robot_01",
-    predicate: "located_in",
-    objectId: "world_local"
-  }],
-  actions: [{
-    id: "world.observe",
-    label: "Observe",
-    actorId: "robot_01",
-    targetId: "world_local",
-    available: true,
-    description: "Enable vision and open the live observation surface.",
-    reason: null
-  }]
-};</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">02</span><span><span class="object-title">WorldEntity</span><span class="object-summary">canonical identity plus component map</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The canonical entity stored by <code>WorldRuntime</code>. An entity is intentionally small; components carry the changing state and abilities.</p></div><div class="object-code"><pre><code>export type ComponentMap = Record&lt;string, unknown&gt;; // extensible component storage
-
-export type WorldEntity = {
-  components: ComponentMap; // state and abilities attached to this entity
-  id: string; // stable portable identity
-  label: string; // human-readable name
-  type: string; // semantic type, such as core.robot
-};</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">03</span><span><span class="object-title">WorldRelationship</span><span class="object-summary">directed fact connecting two entities</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>A first-class subject–predicate–object fact. Relationships are validated against existing entities and become part of snapshots and event history.</p></div><div class="object-code"><pre><code>export type WorldRelationship = {
-  components: ComponentMap; // metadata attached to the relationship
-  object_id: string; // target entity id
-  predicate: string; // directed fact, such as located_in
-  subject_id: string; // source entity id
-};
-
-// Example: robot_01 — located_in — world_local</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">04</span><span><span class="object-title">WorldEvent</span><span class="object-summary">ordered record emitted by the runtime</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>Every mutation and action transition becomes an ordered event. Consumers can read events after a sequence number without accessing runtime internals.</p></div><div class="object-code"><pre><code>export type WorldEvent = {
-  data: Record&lt;string, unknown&gt;; // event-specific payload
-  entity_ids: string[]; // entities involved in the event
-  seq: number; // monotonic world-local sequence
-  timestamp: string; // ISO timestamp from the runtime clock
-  type: string; // event name, such as action.completed
-};
-
-world.events({ after: 12 }); // read events after a known cursor</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">05</span><span><span class="object-title">ActionDefinition</span><span class="object-summary">requirements, availability, and effects</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>An action declares the components required by its actor and optional target. The runtime derives affordances before calling <code>perform</code>.</p></div><div class="object-code"><pre><code>export type ActionDefinition = {
-  actor_components: string[]; // components required from the actor
-  available?: (context: ActionContext) =&gt; boolean | string; // dynamic availability check
-  description: string; // meaning of the operation
-  id: string; // stable action identity
-  label: string; // display label
-  perform: (context: ActionContext) =&gt; ActionOutcome | Promise&lt;ActionOutcome&gt;; // apply the action
-  target_components?: string[]; // components required from the target
-};
-
-export type ActionContext = {
-  actor: WorldEntity; // entity performing the action
-  input: Record&lt;string, unknown&gt;; // parameters supplied by the caller
-  target: WorldEntity | null; // optional entity being acted on
-  world: WorldRuntime; // runtime that owns the action
-};
-
-export type ActionEffect = {
-  components?: ComponentMap; // component updates to apply
-  entity_id: string; // entity receiving the update
-};
-
-export type ActionOutcome = {
-  effects?: ActionEffect[]; // component changes to apply
-  events?: Array&lt;{ data?: Record&lt;string, unknown&gt;; entity_ids?: string[]; type: string }&gt;; // events to append
-  relationships?: WorldRelationship[]; // relationships to create or update
-  result?: Record&lt;string, unknown&gt;; // value returned to the caller
-};
-
 export type Affordance = {
-  action_id: string; // candidate action
-  actor_id: string; // entity asking what is possible
-  available: boolean; // requirements and condition result
-  description: string; // action meaning
-  label: string; // display label
-  reason: string | null; // missing component or failed condition
-  target_id: string | null; // optional target considered
-};</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">06</span><span><span class="object-title">WorldSnapshot</span><span class="object-summary">deterministic read of the complete world</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The detached object returned by <code>world.snapshot()</code>. It gives clients, simulations, and persistence a stable view of entities, relationships, action metadata, and the last event cursor.</p></div><div class="object-code"><pre><code>export type WorldSnapshot = {
-  entities: WorldEntity[]; // sorted detached entity copies
-  relationships: WorldRelationship[]; // sorted detached relationship copies
-  actions: Array&lt;Omit&lt;ActionDefinition, "available" | "perform"&gt;&gt;; // safe action metadata
-  last_event_seq: number; // cursor for incremental event reads
+  action: ActionRef; actorId: Id; targetId?: Id; evaluatedAt: Timestamp; cursor: Cursor;
+  availability: { available: true } | { available: false; reasons: string[] };
+}; // discovery hint; the service re-evaluates with actual input at dispatch
+export type ActionRequest = {
+  requestId: Id; action: ActionRef; actorId: Id; targetId?: Id; input: Json;
+  expectedCursor?: Cursor; // optional optimistic check against the exact world the caller saw
+}; // identity and authority come from RequestContext; clients cannot submit bindings or grants
+export type ComponentPin = { entityId: Id; component: keyof ComponentValues; version: number };
+export type Execution = {
+  id: Id; request: ActionRequest; executor: PackageRef; mode: &quot;state&quot; | &quot;physical&quot;;
+  binding: ComponentPin[]; createdAt: Timestamp;
+} &amp; (
+  | { state: &quot;awaitingApproval&quot; | &quot;accepted&quot; | &quot;running&quot; | &quot;cancelling&quot; }
+  | { state: &quot;succeeded&quot;; finishedAt: Timestamp; output: Json }
+  | { state: &quot;rejected&quot; | &quot;failed&quot;; finishedAt: Timestamp; error: Problem }
+  | { state: &quot;cancelled&quot;; finishedAt: Timestamp; reason: string }
+); // one attempt identity throughout; accepted is not completed
+export type ApproachInput = { standoffM: number }; // positive ground-plane distance to target center; path clearance is a separate check
+export type ApproachOutput = { distanceM: number; observationId: Id }; // measured completion evidence</code></pre></div></div></details>
+<details class="object-item" id="object-events"><summary><span class="object-index">05</span><span><span class="object-title">CloudEvents &amp; journal pages</span><span class="object-summary">standard envelope, local ordering</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>CloudEvents defines the envelope. Nemeia defines data payloads and causal event IDs. Acquisition time is not receipt time; cursors resume within one world, not across arbitrary logs.</p></div><div class="object-code"><pre><code class="language-ts">export type EventPayloads = {
+  &quot;dev.nemeia.world.changed.v1&quot;: { changes: Change[]; associations: Association[] };
+  &quot;dev.nemeia.observation.recorded.v1&quot;: { observation: Observation };
+  &quot;dev.nemeia.execution.changed.v1&quot;: { execution: Execution };
+  &quot;dev.nemeia.control.reported.v1&quot;: { executionId: Id; report: ControlReport };
+  &quot;dev.nemeia.extension.recorded.v1&quot;: { schema: SchemaRef; value: Json };
+}; // Nemeia defines payloads; CloudEvents defines the envelope
+export type NewEvent = {
+  [K in keyof EventPayloads]: {
+    specversion: &quot;1.0&quot;; id: Id; source: string; type: K; time: Timestamp;
+    subject?: string; datacontenttype: &quot;application/json&quot;;
+    data: EventPayloads[K] &amp; { worldId: Id; producer: PackageRef; causes: Id[] };
+  }
+}[keyof EventPayloads]; // CloudEvents 1.0 JSON; source is a URI, causes are globally unique event IDs
+export type Event = { cursor: Cursor; recordedAt: Timestamp; event: NewEvent }; // journal wrapper is not a CloudEvent extension
+export type EventPage = { items: Event[]; next: Cursor; hasMore: boolean }; // next also advances over filtered-out events
+export type EventQuery = { after: Cursor; limit: number; types?: (keyof EventPayloads)[] }; // world scope is fixed by the service</code></pre></div></div></details>
+<details class="object-item" id="object-streams"><summary><span class="object-index">06</span><span><span class="object-title">SensorFrame &amp; RobotStatus</span><span class="object-summary">live device evidence</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Sensor payloads use bounded streams, not high-rate journal writes. Device reception time is not the time status() was called. Sent, device acknowledgement and semantic completion are distinct.</p></div><div class="object-code"><pre><code class="language-ts">export type StreamDescriptor = {
+  id: Id; kind: &quot;image&quot; | &quot;pointCloud&quot; | &quot;audio&quot; | &quot;telemetry&quot;; schema: SchemaRef;
+  frameId?: Id; // required for spatial data; separate from stream identity
+}; // audio sample rate and image dimensions belong to the stream payload schema
+export type SensorFrame = {
+  ref: FrameRef; schema: SchemaRef; data: Uint8Array; // process-local payload; not a JSON event
 };
-
-const snapshot = world.snapshot();
-snapshot.last_event_seq; // resume from this sequence later</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">07</span><span><span class="object-title">WorldCommand + ActionReceipt</span><span class="object-summary">one action request and its event-backed result</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The generic input and terminal result of <code>WorldRuntime.execute</code>. A discriminated receipt keeps successful results and failures from creating impossible combinations of nullable fields.</p></div><div class="object-code"><pre><code>export type WorldCommand = {
-  commandId: Id; // make one requested action idempotent
-  actionId: string; // select a registered action definition
-  actorId: Id; // identify the entity performing the action
-  targetId?: Id; // identify the optional target entity
-  input?: Json; // carry action-specific validated input
+export type RobotStatus = {
+  robotId: Id; receivedAt: Timestamp; // last actual device sample, never the time status() was called
+  connection: &quot;online&quot; | &quot;offline&quot; | &quot;fault&quot;;
+  safeState: &quot;unknown&quot; | &quot;entering&quot; | &quot;confirmed&quot; | &quot;failed&quot;;
 };
-
-export type ActionReceipt =
-  | {
-      status: "completed"; // indicate successful terminal execution
-      command: WorldCommand; // preserve the accepted request
-      result: Json; // return the action-defined result
-      events: WorldEvent[]; // return events emitted by the action
-      startedAt: Timestamp; // record when execution began
-      completedAt: Timestamp; // record when execution finished
-    }
-  | {
-      status: "failed"; // indicate failed terminal execution
-      command: WorldCommand; // preserve the accepted request
-      error: DomainError; // return a typed domain failure
-      events: WorldEvent[]; // retain events emitted before failure
-      startedAt: Timestamp; // record when execution began
-      completedAt: Timestamp; // record when execution stopped
-    };</code></pre></div></div>
-            </details>
-            <details class="object-item">
-              <summary><span class="object-index">08</span><span><span class="object-title">RobotWorldPort</span><span class="object-summary">live robot state and controls supplied to the runtime</span></span><span class="object-toggle" aria-hidden="true"></span></summary>
-              <div class="object-body"><div class="object-description"><span class="detail-label">What it is</span><p>The narrow adapter passed into <code>createRobotWorldRuntime</code>. It gives the world projection the live Go2 state it needs and exposes only the controls that the registered actions can call.</p></div><div class="object-code"><pre><code>export type RobotWorldPort = Pick&lt;
-  RobotRuntimeSnapshot,
-  | "audioStream" // live audio evidence
-  | "batteryPercent" // current power reading
-  | "cameraEnabled" // camera toggle state
-  | "connectionState" // connection lifecycle
-  | "driverMode" // locomotion mode
-  | "lidarEnabled" // spatial sensor toggle
-  | "lidarFrame" // latest spatial frame
-  | "lidarFrameCount" // received frame count
-  | "robotPose" // latest position and yaw
-  | "runtimePending" // pending sensor commands
-  | "speakerEnabled" // speaker toggle state
-  | "videoStream" // live video evidence
-&gt; &amp; {
-  connect: () =&gt; Promise&lt;void&gt;; // connect the live robot
-  setCameraEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle vision
-  setLidarEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle spatial sensing
-  setSpeakerEnabled: (enabled: boolean) =&gt; Promise&lt;void&gt;; // toggle audio
-  stopMotion: () =&gt; void; // send a zero-motion stop
-};</code></pre></div></div>
-            </details>
-          </div>
-          <p class="reference-note">The World panel reads the projected shape; the runtime owns the canonical world objects and emits the events and affordances shown above.</p>
-        </div>
-      </section>
-
-      <section class="section" id="architecture" aria-labelledby="architecture-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">03 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>Adapters translate physical or simulated systems into the same world model. An optional governance path surrounds action execution when authorization and control-plane guarantees are required.</p></div>
-          <div class="architecture-rows">
-            <div class="architecture-row"><strong><span>active path</span>Live Go2 world</strong><div class="architecture-flow"><span>Go2 sensors</span><i>→</i><span>standard robot port</span><i>→</i><span>robot-world adapter</span><i>→</i><span>World Runtime</span><i>→</i><span>operator panel</span></div></div>
-            <div class="architecture-row"><strong><span>optional path</span>Governance</strong><div class="architecture-flow"><span>Mission API adapter</span><i>→</i><span>Mission Service</span><i>→</i><span>Execution Grant</span><i>→</i><span>Control Kernel</span><i>→</i><span>Robot Driver</span></div></div>
-          </div>
-          <p class="architecture-note"><code>Event Store</code> is the cross-cutting record. Scene, Attention, Replay, and Reports are projections over it. The governance packages are retained as an optional extension; the World Runtime does not depend on them.</p>
-        </div>
-      </section>
-
-      <section class="section" id="contracts" aria-labelledby="contracts-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">04 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Nine small boundaries turn the abstractions into an implementation. Commands change one owner, queries return snapshots, and events record what happened.</p></div>
-          <div class="contract-list">
-            <details class="contract-item">
-              <summary><span class="contract-index">01</span><span><span class="contract-title">WorldRuntime</span><span class="contract-summary">canonical state, affordances, and action execution</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The live world model: entities, components, relationships, registered actions, derived affordances, and ordered domain events.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Persistence, transport, robot protocols, policy decisions, and UI-specific projections.</p></div><div class="contract-code"><pre><code>/** Canonical in-process world state and action semantics. */
-export interface WorldRuntime {
-  snapshot(): WorldSnapshot; // return a detached view of current state
-  affordances(query: AffordanceQuery): Affordance[]; // derive actions available now
-  apply(update: WorldUpdate): WorldEvent[]; // accept one trusted system projection
-  execute(command: WorldCommand): Promise&lt;ActionReceipt&gt;; // validate and run one action
-  events(after?: EventCursor): WorldEvent[]; // read ordered domain events
-}
-
-export type WorldUpdate =
-  | { type: "entity.upsert"; entity: WorldEntity } // add or replace one entity
-  | { type: "component.set"; entityId: Id; component: string; value: Json } // replace one component
-  | { type: "relationship.upsert"; relationship: WorldRelationship } // add or replace one fact
-  | { type: "relationship.remove"; relationshipId: Id }; // remove one directed fact</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">02</span><span><span class="contract-title">MissionService</span><span class="contract-summary">mission, run, approval, and issuance lifecycle</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Mission and run state machines, proposal validation, approval decisions, and signed execution-grant issuance.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>HTTP routing, robot control, scene reduction, attention delivery, and package storage. The API, CLI, and UI are adapters over this boundary.</p></div><div class="contract-code"><pre><code>/** Mission and run lifecycle; transport-neutral. */
-export interface MissionService {
-  createMission(input: CreateMission, meta: CommandMeta): Promise&lt;Mission&gt;; // start a pinned mission
-  getMission(missionId: Id): Promise&lt;Mission&gt;; // read current mission state
-  completeMission(input: CompleteMission, meta: CommandMeta): Promise&lt;Mission&gt;; // close a mission
-  proposeRun(input: ProposeRun, meta: CommandMeta): Promise&lt;Run&gt;; // create a proposed run
-  getRun(runId: Id): Promise&lt;Run&gt;; // read the full run state
-  decideRun(input: DecideRun, meta: CommandMeta): Promise&lt;RunDecision&gt;; // approve or reject once
-}
-
-export type DecideRun =
-  | { runId: Id; decision: "approve"; reason?: string }
-  | { runId: Id; decision: "reject"; reason?: string };
-
-export type RunDecision =
-  | { decision: "approved"; run: Run; grant: ExecutionGrant } // issue control authority
-  | { decision: "rejected"; run: Run; grant?: never }; // make rejection incapable of carrying authority
-
-export type CommandMeta = {
-  commandId: Id; // make the mutation idempotent
-  principal: Principal; // carry authenticated authority from the transport edge
-};</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">03</span><span><span class="contract-title">EventStore</span><span class="contract-summary">durable, append-only evidence</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The only durable sequence of facts. It assigns event order and time, atomically appends one decision, and supports cursor-based reads.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Business rules, projections, streaming transport, and mutable domain state. Tailing can be built over cursor reads.</p></div><div class="contract-code"><pre><code>/** Durable evidence with one write shape and one read shape. */
-export interface EventStore {
-  append(batch: EventBatch): Promise&lt;AppendedBatch&gt;; // durably commit one atomic decision
-  read(query: EventQuery): Promise&lt;EventPage&gt;; // read ordered events after an opaque cursor
-}
-
-export type EventBatch = {
-  events: NewEvent[]; // facts produced by one domain decision
-  expectedCursor?: EventCursor; // reject a stale concurrent writer
-};
-
-export type EventPage = {
-  items: EventEnvelope[]; // return events in ascending sequence order
-  next?: EventCursor; // continue without exposing storage offsets
-};</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">04</span><span><span class="contract-title">ControlKernel</span><span class="contract-summary">signed execution, clamping, watchdog, and stop</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The safety-critical control boundary. It verifies grants, clamps commands, enforces expiry and watchdogs, drives safe state, and owns the stop latch.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Missions, scene state, policy evaluation, capability selection, and audit-only checks. Those facts remain on the run and issuance event.</p></div><div class="contract-code"><pre><code>/** Small control surface with no policy or scene dependency. */
-export interface ControlKernel {
-  status(): Promise&lt;KernelStatus&gt;; // read health, stop state, and active grant
-  execute(grant: ExecutionGrant): Promise&lt;ExecutionReceipt&gt;; // verify and consume one grant
-  submit(chunk: ActionChunk): Promise&lt;ChunkAck&gt;; // accept the latest bounded stream chunk
-  stop(cause: StopCause): Promise&lt;StopReceipt&gt;; // latch stop and enter safe state immediately
-  clearStop(meta: CommandMeta): Promise&lt;StopReceipt&gt;; // clear the latch through an operator path
-  events(after?: EventCursor): Promise&lt;ControlEvent[]&gt;; // read kernel and driver evidence
-}
-
-export type ExecutionGrant = {
-  id: Id; // identify one signed, single-use grant
-  schemaVersion: number; // select the verification schema
-  runId: Id; // carry the causal chain into every control event
-  robotId: Id; // bind authority to exactly one robot
-  command: StreamGrant | DiscreteGrant; // define only kernel-enforceable authority
-  expiresAt: Timestamp; // reject authority after this instant
-  signature: string; // prove issuance by the trusted mission key
-};</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">05</span><span><span class="contract-title">RobotDriver</span><span class="contract-summary">vendor-neutral hardware adapter</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Connection, normalized status, vendor translation, declared sensor streams, asynchronous hardware events, and the robot-specific safe-state primitive.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Policy, world entities, missions, and command authorization. The kernel is the only caller allowed to command motion.</p></div><div class="contract-code"><pre><code>/** Vendor-neutral robot or simulator boundary. */
-export interface RobotDriver {
-  readonly manifest: DriverManifest; // declare capabilities and measured safety facts
-  connect(config?: Json): Promise&lt;void&gt;; // establish the device connection
-  disconnect(): Promise&lt;void&gt;; // release the device connection
-  status(): Promise&lt;NormalizedStatus&gt;; // return the latest normalized state
-  command(command: DriverCommand): Promise&lt;DriverAck&gt;; // execute a setpoint or discrete command
-  enterSafeState(): Promise&lt;DriverAck&gt;; // invoke the dedicated safety primitive
-  frames(stream: string, signal: AbortSignal): AsyncIterable&lt;DriverFrame&gt;; // yield one declared stream
-  events(signal: AbortSignal): AsyncIterable&lt;DriverEvent&gt;; // yield faults, acks, and warnings
-}
-
+export type Velocity = { vxMps: number; vyMps: number; yawRadps: number }; // planar motion, finite fields; radians/sec is explicit
 export type DriverCommand =
-  | { kind: "setpoint"; actionSpace: string; value: Json }
-  | { kind: "discrete"; action: string; params: Json; deadlineMs: number };</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">06</span><span><span class="contract-title">Capability</span><span class="contract-summary">sandboxed executor for bounded actions</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The action algorithm: consume bounded evidence and produce chunks, observations, or events. One async run replaces the manual bind/start/frame/emit/stop lifecycle.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Sandboxing, log writes, kernel calls, stream wiring, and termination mechanics. The host owns those concerns and cancels through <code>AbortSignal</code>.</p></div><div class="contract-code"><pre><code>/** Sandboxed algorithm with one input context and one output stream. */
-export interface Capability {
-  readonly manifest: CapabilityManifest; // declare verbs, inputs, and resource needs
-  run(context: CapabilityContext): AsyncGenerator&lt;CapabilityOutput, RunResult&gt;; // execute until return or cancellation
-}
-
-export type CapabilityContext = {
-  grant: Readonly&lt;ExecutionGrant&gt;; // expose the bounded authority as read-only data
-  target?: TargetBinding; // expose the pinned semantic target when present
-  frames: AsyncIterable&lt;NamedFrame&gt;; // supply only granted sensor inputs
-  acknowledgements: AsyncIterable&lt;ChunkAck&gt;; // report post-clamp control results
-  signal: AbortSignal; // stop work through one cancellation mechanism
+  | { kind: &quot;velocity&quot;; value: Velocity }
+  | { kind: &quot;native&quot;; name: string; input: Json; deadlineMs: number };
+export type DriverAck = {
+  command: DriverCommand; sentAt: Timestamp; // actual command sent after any driver-level restriction
+  confirmation: &quot;sent&quot; | &quot;deviceAck&quot;; // neither proves a semantic goal was achieved
+};</code></pre></div></div></details>
+<details class="object-item" id="object-control"><summary><span class="object-index">07</span><span><span class="object-title">ControlAdmission &amp; reports</span><span class="object-summary">local physical authority</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>The host supplies limits. The local gate owns exclusivity, monotonic watchdogs, cancellation and stop. A latch is reported separately from physical safe-state confirmation.</p></div><div class="object-code"><pre><code class="language-ts">export type ControlLimits = {
+  maxLinearMps: number; maxYawRadps: number; watchdogMs: number; maxDurationMs: number;
+}; // finite positive bounds intersected with device and local limits
+export type ControlAdmission = {
+  executionId: Id; robotId: Id; executor: PackageRef; limits: ControlLimits;
+}; // trusted host input after policy; never client JSON or executor-provided authority
+export type ControlReport =
+  | { kind: &quot;sent&quot;; sessionId: Id; sequence: number; requested: Velocity; sent: Velocity; confirmation: &quot;sent&quot; | &quot;deviceAck&quot; }
+  | { kind: &quot;closed&quot;; sessionId: Id; cause: &quot;finished&quot; | &quot;cancelled&quot; | &quot;watchdog&quot; | &quot;deadline&quot; | &quot;fault&quot;; safeState: RobotStatus[&quot;safeState&quot;] }
+  | { kind: &quot;stop&quot;; latch: &quot;set&quot; | &quot;clear&quot;; safeState: RobotStatus[&quot;safeState&quot;] };
+export type StopReceipt = { latched: boolean; safeState: RobotStatus[&quot;safeState&quot;]; recordedAt: Timestamp };</code></pre></div></div></details>
+<details class="object-item" id="object-executor"><summary><span class="object-index">08</span><span><span class="object-title">ExecutorContext &amp; result</span><span class="object-summary">a scoped execution attempt</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>The executor receives a snapshot, cancellation signal, allowed streams and optional scoped control session. It returns a result; the host owns lifecycle and committed changes.</p></div><div class="object-code"><pre><code class="language-ts">export type ExecutorContext = {
+  execution: Execution; snapshot: WorldSnapshot; signal: AbortSignal;
+  control?: ControlSession; // only the host can acquire this scoped physical authority
+  frames: AsyncIterable&lt;SensorFrame&gt;; // bounded latest-frame buffers; host enforces sensor permissions
 };
+export type ExecutorUpdate =
+  | { type: &quot;observation&quot;; observation: Observation }
+  | { type: &quot;progress&quot;; value: Json }; // advisory data; never direct state mutation or terminal execution state
+export type ExecutorResult =
+  | { kind: &quot;state&quot;; changes: Change[]; output: Json }
+  | { kind: &quot;physical&quot;; output: Json }; // measured world changes arrive independently through observation ingestion</code></pre></div></div></details>
+<details class="object-item" id="object-journal"><summary><span class="object-index">09</span><span><span class="object-title">Commit</span><span class="object-summary">one atomic decision</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Request identity, principal, operation, fingerprint, events and original response commit together. Same request returns its original receipt; a changed request conflicts.</p></div><div class="object-code"><pre><code class="language-ts">export type Commit = {
+  requestId: Id; principalId: Id; operation: string; fingerprint: string;
+  expectedCursor: Cursor; events: NewEvent[]; response: Json;
+}; // request reservation, full decision, and original response form one transaction</code></pre></div></div></details>
+<details class="object-item" id="object-governance"><summary><span class="object-index">10</span><span><span class="object-title">Admission &amp; remote grant</span><span class="object-summary">optional deployment features</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>Approval adds a state to the same execution. A remote controller can accept a compact JOSE JWT with execution, robot, limits and epoch claims. Local plugins do not need signed grants.</p></div><div class="object-code"><pre><code class="language-ts">export type AdmissionDecision =
+  | { kind: &quot;allow&quot; }
+  | { kind: &quot;deny&quot;; error: Problem }
+  | { kind: &quot;approvalRequired&quot;; expiresAt: Timestamp };
 
-export type CapabilityOutput =
-  | { type: "chunk"; chunk: ActionChunk }
-  | { type: "observation"; observation: Observation }
-  | { type: "event"; event: CapabilityEvent };</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">07</span><span><span class="contract-title">SceneProjection</span><span class="contract-summary">log-backed semantic belief projection</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The deterministic reduction from observation events to stable semantic entities, relationships, provenance, snapshots, deltas, and target bindings.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Observation writes and physics execution. A World Twin is a pure function of a pinned scene snapshot, so it does not need another stateful service.</p></div><div class="contract-code"><pre><code>/** Read-only semantic projection over the Event Store. */
-export interface SceneProjection {
-  current(): Promise&lt;SceneSnapshot&gt;; // return the latest semantic snapshot
-  changes(after: SceneCursor): Promise&lt;SceneDelta&gt;; // return added, changed, and removed entities
-  bind(request: TargetBindingRequest): Promise&lt;TargetBinding&gt;; // validate and pin one target
-}</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">08</span><span><span class="contract-title">AttentionProjection</span><span class="contract-summary">scoped event delivery and digest cursor</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>The cursor and delivery policy for one mission and principal. Status combines the materialized contract with pending state; one receive operation handles immediate drains and waits.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Canonical events, mission state, and transport polling. Delivered bytes and cursor movement remain event-backed.</p></div><div class="contract-code"><pre><code>/** One attention read model and one delivery operation. */
-export interface AttentionProjection {
-  status(scope: AttentionScope): Promise&lt;AttentionState&gt;; // return contract and pending summary together
-  receive(request: AttentionRequest): Promise&lt;AttentionDelivery | null&gt;; // drain now or wait for a digest
-}
+export type ApprovalRequest = { requestId: Id; executionId: Id; decision: &quot;approve&quot; | &quot;reject&quot;; reason: string };
 
-export type AttentionRequest = AttentionScope &amp; {
-  waitMs?: number; // use zero for an immediate drain
-  cause: "turn_start" | "wake" | "manual"; // record why delivery occurred
-};</code></pre></div></div>
-            </details>
-            <details class="contract-item">
-              <summary><span class="contract-index">09</span><span><span class="contract-title">PackageRegistry</span><span class="contract-summary">organization-owned package trust and lifecycle</span></span><span class="contract-toggle" aria-hidden="true"></span></summary>
-              <div class="contract-body"><div class="contract-description"><span class="detail-label">What it owns</span><p>Installed capability and driver bundles, organization-authored trust state, immutable evidence, and audited lifecycle transitions.</p><span class="detail-label detail-label-spaced">Keeps out</span><p>Runtime resolution and policy decisions. The Mission Service checks live registry state when issuing a grant.</p></div><div class="contract-code"><pre><code>/** Package evidence plus one explicit transition surface. */
-export interface PackageRegistry {
-  list(filter?: RegistryFilter): Promise&lt;RegistryState[]&gt;; // list package states
-  get(packageId: Id): Promise&lt;RegistryState | null&gt;; // read one package state
-  install(bundle: PackageBundle, meta: CommandMeta): Promise&lt;RegistryState&gt;; // verify and record a bundle
-  transition(input: RegistryTransition, meta: CommandMeta): Promise&lt;RegistryState&gt;; // apply one audited state change
-}
-
-export type RegistryTransition = {
-  packageId: Id; // select the exact package version
-  action: "enable" | "disable" | "pin" | "unpin" | "promote" | "demote" | "revoke"; // select one transition
-  maturity?: Maturity; // set the target level for promotion or demotion
-};</code></pre></div></div>
-            </details>
-          </div>
-          <p class="reference-note"><code>CommandMeta</code> carries the idempotency key and authenticated principal for every mutation. HTTP, CLI, and UI adapters map onto these contracts. Replay, reports, anomaly views, and the World Twin remain event-backed or pure modules until they require an independent service boundary.</p>
-        </div>
-      </section>
-
-      <section class="section" id="tables" aria-labelledby="tables-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">05 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Each proposed Postgres v0 table is listed independently. Open a row to see its purpose and the columns that make the projection or record queryable.</p></div>
-          <div class="schema-list">
-            <details class="schema-item">
-              <summary><span class="schema-index">01</span><span><span class="schema-title">event_log</span><span class="schema-summary">append-only source</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Immutable ordered events for state changes, observations, policy decisions, control actions, and replay.</p><span class="schema-kind">source of truth</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>seq</td><td>bigint · PK</td><td>Global monotonic cursor used for ordering, replay, and incremental reads.</td></tr>
-                <tr><td>event_id</td><td>text</td><td>Stable identifier for this event envelope.</td></tr>
-                <tr><td>schema_version</td><td>integer</td><td>Version of the event payload contract.</td></tr>
-                <tr><td>source</td><td>text</td><td>Component or adapter that produced the event.</td></tr>
-                <tr><td>event_type</td><td>text</td><td>Semantic event name, such as <code>scene.observation</code>.</td></tr>
-                <tr><td>severity</td><td>smallint</td><td>Normalized severity used by filters and attention delivery.</td></tr>
-                <tr><td>timestamp</td><td>timestamptz</td><td>Time at which the event occurred in the represented world.</td></tr>
-                <tr><td>mission_id</td><td>text · nullable</td><td>Mission context when the event belongs to a mission.</td></tr>
-                <tr><td>run_id</td><td>text · nullable</td><td>Run context for a proposed or executed operation.</td></tr>
-                <tr><td>robot_id</td><td>text · nullable</td><td>Robot or simulator associated with the event.</td></tr>
-                <tr><td>entity_id</td><td>text · nullable</td><td>Semantic entity involved in the event.</td></tr>
-                <tr><td>authorization_id</td><td>text · nullable</td><td>Authorization used or evaluated by the event.</td></tr>
-                <tr><td>refs</td><td>jsonb</td><td>Artifact and related-record references attached to the event.</td></tr>
-                <tr><td>payload</td><td>jsonb</td><td>Event-specific body, kept flexible behind the versioned schema.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Persistence time on the Event Log host.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">02</span><span><span class="schema-title">missions</span><span class="schema-summary">state machine</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Mission identity, lifecycle, principal, robot roster, and the pinned preset version.</p><span class="schema-kind">mission state</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>mission_id</td><td>text · PK</td><td>Stable mission identifier.</td></tr>
-                <tr><td>principal_id</td><td>text</td><td>User, agent, or organization principal that owns the mission.</td></tr>
-                <tr><td>status</td><td>text</td><td>Lifecycle state, such as proposed, active, completed, or cancelled.</td></tr>
-                <tr><td>title</td><td>text</td><td>Human-readable mission label.</td></tr>
-                <tr><td>robot_ids</td><td>jsonb</td><td>Robots assigned to or available for the mission.</td></tr>
-                <tr><td>preset_version</td><td>text</td><td>Policy or package preset pinned when the mission was created.</td></tr>
-                <tr><td>metadata</td><td>jsonb</td><td>Additional mission fields that are not common query keys.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Mission creation time.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Last lifecycle or assignment update.</td></tr>
-                <tr><td>completed_at</td><td>timestamptz · nullable</td><td>Time the mission reached a completed terminal state.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">03</span><span><span class="schema-title">runs</span><span class="schema-summary">state machine</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>One proposed operation from proposal through approval, execution, rejection, abort, expiry, or result.</p><span class="schema-kind">execution state</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>run_id</td><td>text · PK</td><td>Stable operation identifier.</td></tr>
-                <tr><td>mission_id</td><td>text</td><td>Mission that contains the run.</td></tr>
-                <tr><td>principal_id</td><td>text</td><td>Principal that proposed or owns the run.</td></tr>
-                <tr><td>robot_id</td><td>text</td><td>Robot or simulator targeted by the run.</td></tr>
-                <tr><td>status</td><td>text</td><td>Run lifecycle state from proposal to result or terminal failure.</td></tr>
-                <tr><td>verb</td><td>text</td><td>Meaningful action or capability requested by the run.</td></tr>
-                <tr><td>target_entity_id</td><td>text · nullable</td><td>Semantic target selected from the scene.</td></tr>
-                <tr><td>proposal</td><td>jsonb</td><td>Original requested action and parameters.</td></tr>
-                <tr><td>authorization_id</td><td>text · nullable</td><td>Authorization issued for the run, when approved.</td></tr>
-                <tr><td>result</td><td>jsonb · nullable</td><td>Completed result or event-backed receipt.</td></tr>
-                <tr><td>error</td><td>jsonb · nullable</td><td>Structured rejection, abort, expiry, or execution failure.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Proposal creation time.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Last state transition time.</td></tr>
-                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Deadline after which the proposal cannot be approved or executed.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">04</span><span><span class="schema-title">authorizations</span><span class="schema-summary">signed artifact</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Durable signed permission binding one run to a robot, bounded grant, target snapshot, capability, streams, checks, and expiry.</p><span class="schema-kind">control permission</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>authorization_id</td><td>text · PK</td><td>Stable authorization identifier.</td></tr>
-                <tr><td>run_id</td><td>text</td><td>Single run that this permission authorizes.</td></tr>
-                <tr><td>mission_id</td><td>text</td><td>Mission context for the authorization.</td></tr>
-                <tr><td>robot_id</td><td>text</td><td>Only robot allowed to receive the permission.</td></tr>
-                <tr><td>capability_verb</td><td>text</td><td>Meaningful action being authorized.</td></tr>
-                <tr><td>capability_impl</td><td>text</td><td>Bound implementation or action pack identity.</td></tr>
-                <tr><td>grant</td><td>jsonb</td><td>Stream or discrete grant with its bounds.</td></tr>
-                <tr><td>enforcement</td><td>jsonb</td><td>Checks and enforcement modes applied at control time.</td></tr>
-                <tr><td>target_entity_id</td><td>text · nullable</td><td>Entity target captured by the authorization.</td></tr>
-                <tr><td>target_snapshot_id</td><td>text · nullable</td><td>Scene snapshot against which the target was checked.</td></tr>
-                <tr><td>streams_granted</td><td>jsonb</td><td>Sensor or control streams exposed to the capability.</td></tr>
-                <tr><td>abort_triggers</td><td>jsonb</td><td>Conditions that must stop or invalidate execution.</td></tr>
-                <tr><td>checks</td><td>jsonb</td><td>Structured safety, freshness, and policy check results.</td></tr>
-                <tr><td>issued_at</td><td>timestamptz</td><td>Time the authorization was signed and issued.</td></tr>
-                <tr><td>expires_at</td><td>timestamptz</td><td>Hard expiry for the permission.</td></tr>
-                <tr><td>signature</td><td>text</td><td>Signature used by the control boundary to verify the artifact.</td></tr>
-                <tr><td>revoked_at</td><td>timestamptz · nullable</td><td>Time the permission was explicitly revoked, if applicable.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">05</span><span><span class="schema-title">anomalies</span><span class="schema-summary">operational record</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Safety or operational mismatch with severity, evidence, suspected cause, owner, closure criteria, and status.</p><span class="schema-kind">safety record</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>anomaly_id</td><td>text · PK</td><td>Stable anomaly identifier.</td></tr>
-                <tr><td>mission_id</td><td>text</td><td>Mission in which the mismatch was detected.</td></tr>
-                <tr><td>run_id</td><td>text · nullable</td><td>Run associated with the anomaly, when any.</td></tr>
-                <tr><td>robot_id</td><td>text · nullable</td><td>Robot or simulator associated with the anomaly.</td></tr>
-                <tr><td>kind</td><td>text</td><td>Classification of the operational or safety mismatch.</td></tr>
-                <tr><td>severity</td><td>text</td><td>Impact level used for triage and attention.</td></tr>
-                <tr><td>status</td><td>text</td><td>Open, acknowledged, mitigated, or closed state.</td></tr>
-                <tr><td>evidence_refs</td><td>jsonb</td><td>Event and artifact references supporting the finding.</td></tr>
-                <tr><td>suspected_cause</td><td>text</td><td>Current explanation for the mismatch.</td></tr>
-                <tr><td>owner_principal_id</td><td>text · nullable</td><td>Principal responsible for resolution.</td></tr>
-                <tr><td>closure_criteria</td><td>text</td><td>Evidence required before closing the anomaly.</td></tr>
-                <tr><td>opened_at</td><td>timestamptz</td><td>Time the anomaly was recorded.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Last triage or status update.</td></tr>
-                <tr><td>closed_at</td><td>timestamptz · nullable</td><td>Time closure criteria were satisfied.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">06</span><span><span class="schema-title">registry_state</span><span class="schema-summary">trust state</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Organization-owned package enablement, pinning, maturity, gauntlet evidence, and history.</p><span class="schema-kind">package trust</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>package_id</td><td>text · PK</td><td>Stable package or preset identity.</td></tr>
-                <tr><td>organization_id</td><td>text</td><td>Organization that owns the registry state.</td></tr>
-                <tr><td>package_version</td><td>text</td><td>Installed package version.</td></tr>
-                <tr><td>status</td><td>text</td><td>Current trust and lifecycle state.</td></tr>
-                <tr><td>enabled</td><td>boolean</td><td>Whether the package can participate in runtime resolution.</td></tr>
-                <tr><td>pinned</td><td>boolean</td><td>Whether this version is fixed for organization use.</td></tr>
-                <tr><td>maturity</td><td>text</td><td>Release maturity or rollout tier.</td></tr>
-                <tr><td>gauntlet_evidence</td><td>jsonb</td><td>Tests, evaluations, and evidence supporting promotion.</td></tr>
-                <tr><td>history</td><td>jsonb</td><td>Prior lifecycle transitions and operator decisions.</td></tr>
-                <tr><td>installed_at</td><td>timestamptz</td><td>Time the package was installed.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Last registry state update.</td></tr>
-                <tr><td>revoked_at</td><td>timestamptz · nullable</td><td>Time the package was revoked, if applicable.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">07</span><span><span class="schema-title">idempotency_records</span><span class="schema-summary">request cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Original responses for repeated mutations keyed by principal, idempotency key, method, and path.</p><span class="schema-kind">safe retries</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>principal_id</td><td>text · PK part</td><td>Principal namespace for the idempotency key.</td></tr>
-                <tr><td>idempotency_key</td><td>text · PK part</td><td>Client-provided key for one mutation attempt.</td></tr>
-                <tr><td>method</td><td>text</td><td>HTTP method or logical mutation operation.</td></tr>
-                <tr><td>path</td><td>text</td><td>Endpoint or resource path the key was used against.</td></tr>
-                <tr><td>request_hash</td><td>text</td><td>Hash used to reject reuse with a different request body.</td></tr>
-                <tr><td>response_status</td><td>integer</td><td>Original response status code.</td></tr>
-                <tr><td>response_body</td><td>jsonb</td><td>Original response returned for safe replay.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the mutation was first accepted.</td></tr>
-                <tr><td>expires_at</td><td>timestamptz</td><td>Retention deadline for the cached response.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">08</span><span><span class="schema-title">scene_projection_snapshots</span><span class="schema-summary">materialized projection</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Fast <code>/scene</code> snapshots with source cursor, ontology versions, freshness, robots, and hazards.</p><span class="schema-kind">scene read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>scene_snapshot_id</td><td>text · PK</td><td>Stable identity for one materialized scene snapshot.</td></tr>
-                <tr><td>mission_id</td><td>text · nullable</td><td>Mission context for the projection.</td></tr>
-                <tr><td>robot_id</td><td>text</td><td>Robot whose observations contributed to the snapshot.</td></tr>
-                <tr><td>timestamp</td><td>timestamptz</td><td>World time represented by the snapshot.</td></tr>
-                <tr><td>source_cursor</td><td>bigint</td><td>Event Log cursor used to build the projection.</td></tr>
-                <tr><td>ontology_version</td><td>text</td><td>Semantic ontology version used for labels and types.</td></tr>
-                <tr><td>label_map_version</td><td>text</td><td>Label mapping version used by perception.</td></tr>
-                <tr><td>entity_count</td><td>integer</td><td>Number of stable entities included in the snapshot.</td></tr>
-                <tr><td>freshness_ms</td><td>integer</td><td>Age of the newest contributing evidence.</td></tr>
-                <tr><td>projection_jsonb</td><td>jsonb</td><td>Compact scene payload for read queries and transport.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the projection row was materialized.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">09</span><span><span class="schema-title">entity_projection_snapshots</span><span class="schema-summary">materialized projection</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Stable entities per scene snapshot, including type, components, affordances, relationships, freshness, and provenance.</p><span class="schema-kind">entity read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>scene_snapshot_id</td><td>text · PK part</td><td>Scene snapshot that contains the entity.</td></tr>
-                <tr><td>entity_id</td><td>text · PK part</td><td>Stable semantic identity across snapshots.</td></tr>
-                <tr><td>entity_type</td><td>text</td><td>Ontology type, such as robot, person, or object.</td></tr>
-                <tr><td>label</td><td>text</td><td>Human-readable entity label.</td></tr>
-                <tr><td>components</td><td>jsonb</td><td>Composable state and ability components.</td></tr>
-                <tr><td>affordances</td><td>jsonb</td><td>Actions currently available for this entity.</td></tr>
-                <tr><td>relationships</td><td>jsonb</td><td>Directed links to other entities in the snapshot.</td></tr>
-                <tr><td>freshness_ms</td><td>integer</td><td>Age of the evidence supporting this entity.</td></tr>
-                <tr><td>confidence</td><td>numeric(4,3)</td><td>Projection confidence for the entity interpretation.</td></tr>
-                <tr><td>provenance</td><td>jsonb</td><td>Source events, streams, and artifacts used to derive the row.</td></tr>
-                <tr><td>observed_at</td><td>timestamptz</td><td>Time at which the entity evidence was observed.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the entity projection was materialized.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">10</span><span><span class="schema-title">attention_contracts</span><span class="schema-summary">materialized contract</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Per-mission, per-principal filters, wake predicate, budget, digest version, and pinned preset versions.</p><span class="schema-kind">delivery policy</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>attention_contract_id</td><td>text · PK</td><td>Stable delivery contract identity.</td></tr>
-                <tr><td>mission_id</td><td>text</td><td>Mission whose event stream is being filtered.</td></tr>
-                <tr><td>principal_id</td><td>text</td><td>Principal receiving the digest or wait result.</td></tr>
-                <tr><td>filters</td><td>jsonb</td><td>Event types, sources, entities, and severity filters.</td></tr>
-                <tr><td>wake_predicate</td><td>jsonb</td><td>Condition that causes a waiting consumer to wake.</td></tr>
-                <tr><td>budget</td><td>integer</td><td>Maximum event or token budget for one digest.</td></tr>
-                <tr><td>digest_version</td><td>text</td><td>Digest shape pinned for the contract.</td></tr>
-                <tr><td>preset_version</td><td>text</td><td>Preset that defined the delivery policy.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the contract was created.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Last filter, budget, or preset update.</td></tr>
-                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Optional time after which the contract is no longer active.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">11</span><span><span class="schema-title">attention_seams</span><span class="schema-summary">delivery record</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Digest delivery boundaries: cause, cursor range, digest version, digest reference, and coalescing counts.</p><span class="schema-kind">delivery evidence</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>seam_id</td><td>text · PK</td><td>Stable record for one digest boundary.</td></tr>
-                <tr><td>attention_contract_id</td><td>text</td><td>Contract that produced the delivery.</td></tr>
-                <tr><td>cause</td><td>text</td><td>Reason the digest was emitted or the wait ended.</td></tr>
-                <tr><td>cursor_start</td><td>bigint</td><td>First Event Log cursor represented by the digest.</td></tr>
-                <tr><td>cursor_end</td><td>bigint</td><td>Last Event Log cursor represented by the digest.</td></tr>
-                <tr><td>digest_version</td><td>text</td><td>Digest format used for this delivery.</td></tr>
-                <tr><td>digest_ref</td><td>text</td><td>Reference to the stored or reconstructable digest.</td></tr>
-                <tr><td>coalesced_count</td><td>integer</td><td>Number of source events merged into the delivery.</td></tr>
-                <tr><td>delivered_at</td><td>timestamptz</td><td>Time the digest was delivered to the consumer.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the delivery record was persisted.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">12</span><span><span class="schema-title">replay_artifacts</span><span class="schema-summary">rebuildable cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Optional cached run replay or report output; canonical evidence remains in the Event Log.</p><span class="schema-kind">derived output</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>replay_id</td><td>text · PK</td><td>Stable replay request or artifact identity.</td></tr>
-                <tr><td>run_id</td><td>text</td><td>Run reconstructed by the replay.</td></tr>
-                <tr><td>source_cursor_start</td><td>bigint</td><td>First Event Log cursor included in the replay.</td></tr>
-                <tr><td>source_cursor_end</td><td>bigint</td><td>Last Event Log cursor included in the replay.</td></tr>
-                <tr><td>projection_version</td><td>text</td><td>World or report projection version used to rebuild output.</td></tr>
-                <tr><td>status</td><td>text</td><td>Requested, running, completed, or failed replay state.</td></tr>
-                <tr><td>output_ref</td><td>text · nullable</td><td>Reference to the generated artifact or report payload.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Replay creation time.</td></tr>
-                <tr><td>expires_at</td><td>timestamptz · nullable</td><td>Optional cache retention deadline.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">13</span><span><span class="schema-title">normalized_status_cache</span><span class="schema-summary">read cache</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Latest driver status for robot reads and freshness checks; it is not control authority.</p><span class="schema-kind">robot read model</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>robot_id</td><td>text · PK</td><td>Robot or simulator whose status is cached.</td></tr>
-                <tr><td>status</td><td>jsonb</td><td>Vendor-neutral normalized connection, locomotion, power, and pose state.</td></tr>
-                <tr><td>source</td><td>text</td><td>Driver or adapter that produced the status.</td></tr>
-                <tr><td>observed_at</td><td>timestamptz</td><td>Time the driver observed the status.</td></tr>
-                <tr><td>freshness_ms</td><td>integer</td><td>Age of the status at the time it is read.</td></tr>
-                <tr><td>sequence</td><td>bigint</td><td>Driver-local monotonic status sequence.</td></tr>
-                <tr><td>updated_at</td><td>timestamptz</td><td>Time the cache row was updated.</td></tr>
-              </tbody></table></div></div>
-            </details>
-            <details class="schema-item">
-              <summary><span class="schema-index">14</span><span><span class="schema-title">artifacts</span><span class="schema-summary">binary metadata / ref</span></span><span class="schema-toggle" aria-hidden="true"></span></summary>
-              <div class="schema-body"><div class="schema-description"><p>Database-backed references for images, masks, point clouds, audio, video, and other evidence.</p><span class="schema-kind">evidence metadata</span></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Column</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>
-                <tr><td>artifact_id</td><td>text · PK</td><td>Stable ref exposed to runtime consumers.</td></tr>
-                <tr><td>artifact_type</td><td>text</td><td>Image, mask, point cloud, audio, video, map, or other evidence kind.</td></tr>
-                <tr><td>content_type</td><td>text</td><td>MIME type of the stored content.</td></tr>
-                <tr><td>size_bytes</td><td>bigint</td><td>Content size for limits and transfer planning.</td></tr>
-                <tr><td>checksum</td><td>text</td><td>Content digest used to verify identity and integrity.</td></tr>
-                <tr><td>created_at</td><td>timestamptz</td><td>Time the artifact reference was registered.</td></tr>
-                <tr><td>source_component_id</td><td>text · nullable</td><td>Component or stream that produced the artifact.</td></tr>
-                <tr><td>thread_id</td><td>text · nullable</td><td>Optional conversation or operator thread context.</td></tr>
-                <tr><td>turn_id</td><td>text · nullable</td><td>Optional turn that requested or produced the artifact.</td></tr>
-                <tr><td>storage_backend</td><td>text</td><td>Backend such as Postgres blob, S3, MinIO, R2, or GCS.</td></tr>
-                <tr><td>storage_key</td><td>text</td><td>Opaque backend key; raw file paths are not exposed to agents.</td></tr>
-                <tr><td>metadata</td><td>jsonb</td><td>Dimensions, frame ids, calibration, labels, or other artifact metadata.</td></tr>
-              </tbody></table></div></div>
-            </details>
-          </div>
-          <p class="architecture-note"><code>Not separate v0 tables:</code> observations and telemetry are event payloads; <code>label_map.json</code> and <code>types.json</code> are versioned ontology inputs; presets and reports are pinned artifacts or log-backed state. ClickHouse is a later analytical mirror.</p>
-        </div>
-      </section>
-
-      <section class="section" id="example" aria-labelledby="example-title">
-        <div class="section-inner">
-          <div class="section-intro"><div><div class="section-label">06 / End-to-end example</div><h2 id="example-title">Go2 approaches a detected backpack</h2></div><p>One concrete run shows every boundary in motion: evidence becomes an entity, the entity creates an affordance, policy issues bounded authority, and control evidence closes the loop.</p></div>
-
-          <div class="flow-overview" role="img" aria-label="End-to-end information flow from robot perception through world composition, mission decision, physical execution, and attention delivery.">
-            <div class="flow-lane"><strong>Perceive</strong><div class="flow-chain"><span>RobotDriver</span><i>→</i><span>perception system</span><i>→</i><span>EventStore</span><i>→</i><span>SceneProjection</span></div></div>
-            <div class="flow-lane"><strong>Compose</strong><div class="flow-chain"><span>SceneProjection</span><i>→</i><span>WorldRuntime</span><i>→</i><span>Affordance</span></div></div>
-            <div class="flow-lane"><strong>Decide</strong><div class="flow-chain"><span>client</span><i>→</i><span>MissionService</span><i>↔</i><span>PackageRegistry</span><i>→</i><span>ExecutionGrant</span></div></div>
-            <div class="flow-lane"><strong>Act</strong><div class="flow-chain"><span>Capability</span><i>→</i><span>ControlKernel</span><i>→</i><span>RobotDriver</span><i>→</i><span>Go2</span></div></div>
-            <div class="flow-lane"><strong>Observe</strong><div class="flow-chain"><span>control events</span><i>→</i><span>EventStore</span><i>→</i><span>Scene + Attention</span><i>→</i><span>client</span></div></div>
-          </div>
-
-          <div class="example-list">
-            <details class="example-item">
-              <summary><span class="example-index">01</span><span><span class="example-title">Bind the mission</span><span class="example-summary">client → MissionService → EventStore</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The operator creates a mission for one robot and pins the policy preset. The service records <code>mission.created</code> before returning.</p><span class="detail-label detail-label-spaced">State produced</span><p>A mission identity, robot scope, preset version, principal, and event cursor.</p></div><div class="example-code"><pre><code class="language-ts">const mission = await missions.createMission(
-  {
-    robotIds: ["go2_01"], // bind the robot allowed in this mission
-    preset: { id: "warehouse-safe", version: 3 }, // pin policy inputs
-  },
-  {
-    commandId: "cmd_mission_01", // make retries return the same result
-    principal: "operator:hercules", // carry authenticated authority
-  },
-);
-
-// MissionService → EventStore
-// mission.created { missionId, robotIds, preset, principal }</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">02</span><span><span class="example-title">Capture evidence</span><span class="example-summary">RobotDriver → perception system</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The driver yields camera and LiDAR frames. A perception system fuses them into evidence; raw vendor payloads do not enter the world model.</p><span class="detail-label detail-label-spaced">State produced</span><p>A semantic and geometric observation attributed to its producing system and input artifacts.</p></div><div class="example-code"><pre><code class="language-ts">const observation: NewEvent = {
-  eventType: "scene.observation", // identify the reducer that consumes it
-  source: "perception:rgb-lidar@1.2.0", // attribute the producing system
-  robotId: "go2_01", // preserve the observing robot
-  refs: ["artifact:camera_2048", "artifact:lidar_991"], // retain evidence
-  payload: {
-    labels: ["backpack"], // provide semantic evidence
-    confidence: 0.94, // quantify the semantic belief
-    geometry: {
-      type: "bbox_3d", // describe the geometric representation
-      frameId: "map", // place geometry in the shared frame
-      centerM: [2.4, -0.6, 0.35], // locate the observation
+export type RemoteGrantClaims = {
+  iss: string; aud: string; jti: Id; iat: number; exp: number; // JWT claims; times are NumericDate seconds
+  executionId: Id; robotId: Id; executor: PackageRef; epoch: Id; limits: ControlLimits;
+}; // Nemeia's private claims bind admission to a particular controller and execution
+export type RemoteGrant = string; // compact JWS JWT, EdDSA/Ed25519 via JOSE library; protected header carries kid and typ</code></pre></div></div></details>
+<details class="object-item" id="object-common"><summary><span class="object-index">11</span><span><span class="object-title">Identity, schemas &amp; failures</span><span class="object-summary">shared primitives</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>IDs are opaque. Package hashes pin implementation; schema references pin value meaning. HTTP errors use RFC 9457. RequestContext is injected by authentication, never supplied in request JSON.</p></div><div class="object-code"><pre><code class="language-ts">export type Id = string; // opaque, globally unique identity; never derive an entity ID from its label
+export type Cursor = string; // opaque position in one world's journal; compare for equality only
+export type Timestamp = string; // RFC 3339 UTC with milliseconds; reject invalid or future evidence times
+export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }; // finite JSON only
+export type SchemaRef = { name: string; version: number }; // exact registered payload schema
+export type PackageRef = { name: string; version: string; sha256: string }; // immutable implementation pin
+export type Source = { instanceId: Id; package: PackageRef }; // authenticated producer instance and code
+export type Problem = {
+  type: string; // RFC 9457 problem-type URI; stable machine-readable meaning
+  title: string; // short name for this problem type
+  status: number; // HTTP status; 400, 401, 403, 404, 409, 500, 503, or 504
+  detail: string; // occurrence-specific explanation; never parse for behavior
+  instance?: string; // URI identifying this failure occurrence
+}; // application/problem+json; use extensions only when a consumer needs them
+export type Result&lt;T&gt; = { ok: true; value: T } | { ok: false; error: Problem }; // SDK result; HTTP maps errors to status
+export type RequestContext = { principalId: Id; source: Source }; // supplied by the authenticated host, never JSON input</code></pre></div></div></details></div></div></section>
+<section class="section" id="architecture" aria-labelledby="architecture-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">03 / Architecture</div><h2 id="architecture-title">Architecture</h2></div><p>One state owner, one execution owner and one physical control authority. Optional modules do not redefine the core.</p></div><div class="architecture-rows"><div class="architecture-row"><strong>Core host</strong><div>Client / agent → WorldService → executor → journal + world</div></div><div class="architecture-row"><strong>Perception</strong><div>RobotDriver → ObservationSink → association / projector → WorldWriter</div></div><div class="architecture-row"><strong>Physical host</strong><div>Executor → ControlGate / Session → RobotDriver → device</div></div><div class="architecture-row"><strong>Readers</strong><div>WorldSnapshot + events → UI / Scene / attention / replay</div></div><div class="architecture-row"><strong>Optional</strong><div>Admission / approval · remote JOSE grant · retained resources · prediction</div></div></div><p class="architecture-note">Start with one modular host and one database. Interfaces express ownership, not microservices. Keep local control independent of the world database. The host uses OS supervision and sandboxing; it is not a new operating system.</p></div></section>
+<section class="section" id="contracts" aria-labelledby="contracts-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">04 / Service contracts</div><h2 id="contracts-title">Service contracts</h2></div><p>Open each boundary independently. Types above are shared; comments describe each method. These are host-side interfaces, not a list of separately deployed servers.</p></div><div class="contract-list"><details class="contract-item" id="contract-worldservice"><summary><span class="contract-index">01</span><span><span class="contract-title">WorldService</span><span class="contract-summary">public domain API</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Reads world state, derives affordances and owns the execution lifecycle. The service instance fixes world scope. Authentication supplies context; HTTP/CLI are adapters, not separate policy engines.</p></div><div class="contract-code"><pre><code class="language-ts">export interface WorldService {
+  snapshot(context: RequestContext): Promise&lt;Result&lt;WorldSnapshot&gt;&gt;; // atomically return authorized state and its resume cursor
+  changes(after: Cursor, context: RequestContext): Promise&lt;Result&lt;WorldDelta&gt;&gt;; // return changes or cursor-expired error; never silently restart
+  affordances(input: { actorId: Id; targetId?: Id }, context: RequestContext): Promise&lt;Result&lt;Affordance[]&gt;&gt;; // derive possibilities from current components
+  dispatch(request: ActionRequest, context: RequestContext): Promise&lt;Result&lt;Execution&gt;&gt;; // validate, record, then start once
+  execution(id: Id, context: RequestContext): Promise&lt;Result&lt;Execution&gt;&gt;; // read current attempt state
+  cancel(id: Id, context: RequestContext): Promise&lt;Result&lt;Execution&gt;&gt;; // idempotently request cancellation
+  events(query: EventQuery, context: RequestContext): Promise&lt;Result&lt;EventPage&gt;&gt;; // poll the durable sequence with access scope
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-observationsink"><summary><span class="contract-index">02</span><span><span class="contract-title">ObservationSink</span><span class="contract-summary">trusted perception ingress</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Validates producer evidence and deduplicates observation identity before journaling. Retained resources must exist before their references are acknowledged.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ObservationSink {
+  ingest(observation: Observation, context: RequestContext): Promise&lt;Result&lt;{ eventId: Id }&gt;&gt;; // deduplicate then record evidence
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-worldwriter"><summary><span class="contract-index">03</span><span><span class="contract-title">WorldWriter</span><span class="contract-summary">trusted atomic changes</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Checks schema, ownership, component versions and the prospective final state. A stale cursor conflicts. One invalid change rejects the whole batch.</p></div><div class="contract-code"><pre><code class="language-ts">export interface WorldWriter {
+  commit(input: { requestId: Id; expectedCursor: Cursor; causes: Id[]; changes: Change[]; associations: Association[] }, context: RequestContext): Promise&lt;Result&lt;WorldDelta&gt;&gt;; // atomically commit changes and association decisions; [] when unrelated to perception
+} // trusted systems only; validate the entire batch before state, events, and cursor commit together</code></pre></div></div></details>
+<details class="contract-item" id="contract-actionexecutor"><summary><span class="contract-index">04</span><span><span class="contract-title">ActionExecutor</span><span class="contract-summary">one pinned implementation</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Executes one action attempt with a Promise result, AbortSignal and progress callback. State mode proposes changes; physical mode reports measured output. Worker isolation is a host responsibility.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ActionExecutor {
+  readonly package: PackageRef; // pin implementation independently of action meaning
+  readonly mode: &quot;state&quot; | &quot;physical&quot;; // binding selects transactional changes or local physical control
+  run(context: ExecutorContext, emit: (update: ExecutorUpdate) =&gt; Promise&lt;void&gt;): Promise&lt;ExecutorResult&gt;; // run once; emit bounded progress/evidence and return one terminal result
+} // host captures the result, termination, and cancellation; no generator return value to lose</code></pre></div></div></details>
+<details class="contract-item" id="contract-robotdriver"><summary><span class="contract-index">05</span><span><span class="contract-title">RobotDriver</span><span class="contract-summary">device transport adapter</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Owns vendor protocols and normalized sensor/status payloads. Only the gate invokes motion commands. Existing Go2 transport or a ROS action adapter can implement the boundary.</p></div><div class="contract-code"><pre><code class="language-ts">export interface RobotDriver {
+  readonly package: PackageRef; // immutable driver implementation pin
+  readonly streams: StreamDescriptor[]; // available sensor channels and payload schemas
+  connect(): Promise&lt;Result&lt;RobotStatus&gt;&gt;; // vendor configuration stays in the adapter
+  disconnect(): Promise&lt;void&gt;; // stop before disconnecting an active controller
+  status(): Promise&lt;RobotStatus&gt;; // cached normalized device evidence with an honest timestamp
+  frames(streamId: Id, signal: AbortSignal): AsyncIterable&lt;SensorFrame&gt;; // disconnect ends the iterator
+  command(command: DriverCommand): Promise&lt;Result&lt;DriverAck&gt;&gt;; // only the local control gate invokes this
+  safeState(): Promise&lt;Result&lt;RobotStatus&gt;&gt;; // dedicated path, independent of world, journal, and agent
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-controlgate"><summary><span class="contract-index">06</span><span><span class="contract-title">ControlGate</span><span class="contract-summary">required for physical motion</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Acquires one session per robot, enforces local caps and stops without depending on the world database or agent. This is a local authority boundary, not an optional governance feature.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ControlGate {
+  open(admission: ControlAdmission): Promise&lt;Result&lt;ControlSession&gt;&gt;; // one active session per robot; no hidden queue
+  stop(robotId: Id): Promise&lt;StopReceipt&gt;; // latch immediately and trigger safe state; independent of storage availability
+  clearStop(robotId: Id, context: RequestContext): Promise&lt;Result&lt;StopReceipt&gt;&gt;; // operator-only; never restarts motion
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-controlsession"><summary><span class="contract-index">07</span><span><span class="contract-title">ControlSession</span><span class="contract-summary">bounded planar motion</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Sequences commands, rejects old/changed duplicates and enforces a local watchdog. Closing enters safe state. Normal completion releases the session without setting the emergency latch.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ControlSession {
+  readonly id: Id; // local session identity; invalid after close or controller restart
+  submit(sequence: number, value: Velocity): Promise&lt;Result&lt;ControlReport&gt;&gt;; // sequence starts at 1; ack follows dispatch to driver
+  close(reason: &quot;finished&quot; | &quot;cancelled&quot;): Promise&lt;Result&lt;ControlReport&gt;&gt;; // idempotently enter safe state and revoke session
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-journal"><summary><span class="contract-index">08</span><span><span class="contract-title">Journal</span><span class="contract-summary">transactional durable profile</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Persists complete decisions and original command receipts. Reads ordered pages. A database adapter supplies transactions and unique constraints; no custom consensus protocol is needed.</p></div><div class="contract-code"><pre><code class="language-ts">export interface Journal {
+  commit(input: Commit): Promise&lt;Result&lt;{ cursor: Cursor; response: Json }&gt;&gt;; // same ID + fingerprint returns the original commit
+  read(query: EventQuery): Promise&lt;Result&lt;EventPage&gt;&gt;; // world-scoped, exclusive cursor, ascending commit order
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-resourcestore"><summary><span class="contract-index">09</span><span><span class="contract-title">ResourceStore</span><span class="contract-summary">only when bytes are retained</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Stores immutable content and encoding metadata. Durable events contain IDs, not filesystem paths or expiring download URLs. Missing bytes are an explicit error.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ResourceStore {
+  put(input: { schema: SchemaRef; mediaType: string; bytes: Uint8Array }): Promise&lt;Result&lt;Resource&gt;&gt;; // persist before returning reference
+  describe(id: Id): Promise&lt;Result&lt;Resource&gt;&gt;; // metadata or explicit unavailable/expired result
+  read(id: Id): Promise&lt;Result&lt;Uint8Array&gt;&gt;; // retention policy may remove bytes without erasing provenance
+}</code></pre></div></div></details>
+<details class="contract-item" id="contract-admissionpolicy"><summary><span class="contract-index">10</span><span><span class="contract-title">AdmissionPolicy</span><span class="contract-summary">optional policy hook</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Allows, denies or requests approval using the same request and snapshot. Recheck current evidence and policy before approving. Local physical limits remain mandatory regardless of this hook.</p></div><div class="contract-code"><pre><code class="language-ts">export interface AdmissionPolicy {
+  evaluate(request: ActionRequest, snapshot: WorldSnapshot, context: RequestContext): Promise&lt;AdmissionDecision&gt;; // decide admission using current evidence and authenticated caller
+} // optional module; approval repeats current checks before acceptance; it does not duplicate execution state</code></pre></div></div></details>
+<details class="contract-item" id="contract-approvalservice"><summary><span class="contract-index">11</span><span><span class="contract-title">ApprovalService</span><span class="contract-summary">optional human decision</span></span><span class="contract-toggle" aria-hidden="true"></span></summary><div class="contract-body"><div class="contract-description"><p>Decides the existing execution; it does not introduce a second Run or Authorization lifecycle. Authenticate the approver and apply the same durable retry rule.</p></div><div class="contract-code"><pre><code class="language-ts">export interface ApprovalService {
+  decide(request: ApprovalRequest, context: RequestContext): Promise&lt;Result&lt;Execution&gt;&gt;; // same attempt; server authenticates approver
+}</code></pre></div></div></details></div></div></section>
+<section class="section" id="tables" aria-labelledby="tables-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">05 / Database tables</div><h2 id="tables-title">Database tables</h2></div><p>Two core tables. Add caches or retained bytes only when needed. Physical controllers keep their own local state and receipts; these are logical schemas, not deployed migrations.</p></div><div class="schema-list"><details class="schema-item" id="table-events"><summary><span class="schema-index">01</span><span><span class="schema-title">events</span><span class="schema-summary">core · committed CloudEvents</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Authoritative decision journal. Position identifies a commit; ordinal orders events within it. Allocate positions under a per-world transaction lock. Readers never split a commit across pages.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>world_id</td><td>text</td><td>World scope; opaque ID.</td></tr><tr><td>position</td><td>bigint</td><td>Positive per-world commit position; not a public numeric cursor.</td></tr><tr><td>ordinal</td><td>integer</td><td>Zero-based order within the committed decision.</td></tr><tr><td>event_id</td><td>text</td><td>Globally unique CloudEvent identity.</td></tr><tr><td>envelope</td><td>jsonb</td><td>Complete CloudEvents JSON, including typed data and original time.</td></tr><tr><td>recorded_at</td><td>timestamptz</td><td>Receiving journal time; does not overwrite acquisition or event time.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (world_id, position, ordinal); UNIQUE (event_id). All events and the command receipt commit in one transaction. Retain full validated envelopes; IDs match envelope.id.</p></div></details>
+<details class="schema-item" id="table-command_receipts"><summary><span class="schema-index">02</span><span><span class="schema-title">command_receipts</span><span class="schema-summary">core · retry identity and original response</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>One request commits once. Authenticate before serving a receipt. Same identity and body returns the original response, not a new execution.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>world_id</td><td>text</td><td>World scope.</td></tr><tr><td>request_id</td><td>text</td><td>Caller retry identity.</td></tr><tr><td>principal_id</td><td>text</td><td>Authenticated caller; cannot be replaced by a body field.</td></tr><tr><td>operation</td><td>text</td><td>Domain operation, such as execution.dispatch.</td></tr><tr><td>fingerprint</td><td>text</td><td>SHA-256 of canonical operation, body, principal and world.</td></tr><tr><td>response</td><td>jsonb</td><td>Original validated response, including assigned execution identity.</td></tr><tr><td>position</td><td>bigint</td><td>Last committed position in the same transaction.</td></tr><tr><td>created_at</td><td>timestamptz</td><td>Receipt creation time.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (world_id, request_id). Compare principal, operation and fingerprint on conflict. Keep for world lifetime; commit atomically with events.</p></div></details>
+<details class="schema-item" id="table-world_checkpoints"><summary><span class="schema-index">03</span><span><span class="schema-title">world_checkpoints</span><span class="schema-summary">optional · startup acceleration</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Disposable snapshot of a committed world. Not a second authority or mutable scene store.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>world_id</td><td>text</td><td>World identity.</td></tr><tr><td>position</td><td>bigint</td><td>Last completely reduced commit.</td></tr><tr><td>reducer</td><td>jsonb</td><td>Pinned reducer package and state schema.</td></tr><tr><td>snapshot</td><td>jsonb</td><td>WorldSnapshot plus internal projection state needed to resume association.</td></tr><tr><td>created_at</td><td>timestamptz</td><td>Checkpoint time, not sensor time.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (world_id). Snapshot cursor and position must agree. Rebuild from events when reducer/schema pin changes.</p></div></details>
+<details class="schema-item" id="table-execution_index"><summary><span class="schema-index">04</span><span><span class="schema-title">execution_index</span><span class="schema-summary">optional · query acceleration</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Current executions reduced from execution.changed events. Never write business decisions directly to this cache.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>world_id</td><td>text</td><td>World scope.</td></tr><tr><td>execution_id</td><td>text</td><td>Stable attempt identity.</td></tr><tr><td>position</td><td>bigint</td><td>Commit position last applied to this execution.</td></tr><tr><td>execution</td><td>jsonb</td><td>Full discriminated Execution value.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (world_id, execution_id). Apply in commit order; rebuild from journal. Index actor/state only if queries need it.</p></div></details>
+<details class="schema-item" id="table-resources"><summary><span class="schema-index">05</span><span><span class="schema-title">resources</span><span class="schema-summary">optional · retained media metadata</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>References immutable retained bytes. Upload and verify bytes before acknowledging a ResourceRef. Never store live frame handles as durable resources.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>id</td><td>text</td><td>Stable resource identity.</td></tr><tr><td>schema</td><td>jsonb</td><td>Exact payload layout/encoding schema reference.</td></tr><tr><td>media_type</td><td>text</td><td>MIME type.</td></tr><tr><td>byte_length</td><td>bigint</td><td>Non-negative content length.</td></tr><tr><td>sha256</td><td>text</td><td>Verified content digest.</td></tr><tr><td>storage_key</td><td>text</td><td>Private object-storage key, never a durable signed URL.</td></tr><tr><td>created_at</td><td>timestamptz</td><td>Storage completion time.</td></tr><tr><td>expires_at</td><td>timestamptz, nullable</td><td>Retention deadline; null if retained indefinitely.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (id). Bytes and metadata immutable. Verify hash and size on ingestion; missing/expired bytes produce explicit errors. Storage keys are private to the store.</p></div></details>
+<details class="schema-item" id="table-deliveries"><summary><span class="schema-index">06</span><span><span class="schema-title">deliveries</span><span class="schema-summary">optional · durable attention output</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Use only when exact delivered bytes must survive restart. Ordinary clients can read events and manage their own cursor.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>world_id</td><td>text</td><td>World scope.</td></tr><tr><td>consumer_id</td><td>text</td><td>Authenticated delivery scope and filter identity.</td></tr><tr><td>delivery_id</td><td>text</td><td>Stable retry identity.</td></tr><tr><td>from_position</td><td>bigint</td><td>Exclusive previous delivery boundary.</td></tr><tr><td>to_position</td><td>bigint</td><td>Last scanned commit, including filtered-out events.</td></tr><tr><td>formatter</td><td>jsonb</td><td>Pinned deterministic formatter or model configuration.</td></tr><tr><td>body</td><td>bytea</td><td>Exact delivered UTF-8 bytes; not an ephemeral Map reference.</td></tr><tr><td>created_at</td><td>timestamptz</td><td>Delivery creation time.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (world_id, consumer_id, delivery_id); UNIQUE (world_id, consumer_id, from_position). Lock consumer, write bytes and advance to_position atomically. Retry returns the same bytes.</p></div></details>
+<details class="schema-item" id="table-control_state"><summary><span class="schema-index">07</span><span><span class="schema-title">control_state</span><span class="schema-summary">physical host · durable local latch</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Local controller state, independent of the world database. Startup defaults to latched/unknown; stop must still attempt device safe state if storage fails.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>robot_id</td><td>text</td><td>Controlled device.</td></tr><tr><td>epoch</td><td>text</td><td>Current controller incarnation; invalidates old remote grants.</td></tr><tr><td>stop_latched</td><td>boolean</td><td>Durable stop intent; startup failure defaults true.</td></tr><tr><td>active_execution_id</td><td>text, nullable</td><td>Current exclusive owner; null when idle.</td></tr><tr><td>safe_state</td><td>text</td><td>unknown, entering, confirmed or failed; needs device evidence.</td></tr><tr><td>updated_at</td><td>timestamptz</td><td>Record update time; not a monotonic watchdog clock.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (robot_id). Atomically acquire exclusive active execution. Clearing the latch requires an operator and fresh device status. Restart changes epoch and never restores motion.</p></div></details>
+<details class="schema-item" id="table-control_receipts"><summary><span class="schema-index">08</span><span><span class="schema-title">control_receipts</span><span class="schema-summary">physical host · no accidental re-actuation</span></span><span class="schema-toggle" aria-hidden="true"></span></summary><div class="schema-body"><div class="schema-description"><p>Local admission and latest command receipt. An exact transport retry returns the receipt, not another movement. Uncertain restart outcomes fail safely.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td>robot_id</td><td>text</td><td>Device scope.</td></tr><tr><td>execution_id</td><td>text</td><td>Admitted execution identity.</td></tr><tr><td>epoch</td><td>text</td><td>Controller incarnation at admission.</td></tr><tr><td>admission</td><td>jsonb</td><td>Pinned executor and effective limits.</td></tr><tr><td>grant_id</td><td>text, nullable</td><td>Consumed JWT jti, only for remote admission.</td></tr><tr><td>last_sequence</td><td>bigint</td><td>Latest accepted sequence; zero before the first command.</td></tr><tr><td>last_command</td><td>jsonb, nullable</td><td>Latest requested and sent command values.</td></tr><tr><td>last_ack</td><td>jsonb, nullable</td><td>Recorded dispatch confirmation; null when outcome is uncertain.</td></tr><tr><td>terminal_report</td><td>jsonb, nullable</td><td>Closed/failed/stop outcome; immutable once reconciled.</td></tr></tbody></table></div><p class="reference-note">PRIMARY KEY (robot_id, execution_id). Persist admission before actuation. Never automatically retry an uncertain physical send. Duplicate latest sequence does not renew the watchdog; older sequences fail.</p></div></details></div></div></section>
+<section class="section" id="example" aria-labelledby="example-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">06 / End-to-end information flow</div><h2 id="example-title">End-to-end information flow</h2></div><p>Go2 approaches a detected backpack. The trace uses the exact types above and makes every boundary visible. It does not execute hardware commands.</p></div><div class="example-list"><details class="example-item" id="example-setup"><summary><span class="example-index">01</span><span><span class="example-title">Install meaning and read the world</span><span class="example-summary">WorldSnapshot + action catalog</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The world already contains a robot and its measured pose. This is an illustrative, type-checked fixture, not a live robot trace. No mission or remote authorization service is required.</p></div><div class="example-code"><pre><code class="language-ts">export const perception: PackageRef = {
+  name: &quot;perception.rgb-lidar&quot;, version: &quot;1.2.0&quot;, sha256: &quot;a&quot;.repeat(64),
+}; // illustrative immutable package pin, not a hash of a published build
+export const executor: PackageRef = {
+  name: &quot;go2.approach&quot;, version: &quot;1.0.0&quot;, sha256: &quot;b&quot;.repeat(64),
+};
+export const host: PackageRef = {
+  name: &quot;nemeia.host&quot;, version: &quot;1.0.0&quot;, sha256: &quot;c&quot;.repeat(64),
+}; // illustrative host build; completion events are host-produced, not executor-authored
+export const approach: ActionDefinition = {
+  action: { name: &quot;robot.approach&quot;, version: 1 },
+  description: &quot;Approach a tracked target to a measured standoff distance.&quot;,
+  input: { name: &quot;robot.approach.input&quot;, version: 1 },
+  output: { name: &quot;robot.approach.output&quot;, version: 1 },
+  actor: [{ component: &quot;core.pose&quot;, maxAgeMs: 200 }, { component: &quot;core.connection&quot; }],
+  target: { kind: &quot;required&quot;, components: [{ component: &quot;core.geometry&quot;, maxAgeMs: 500 }] },
+}; // actual dispatch also checks connection, path, policy, and input against the installed implementation
+export const robot: Entity = {
+  id: &quot;robot_go2_01&quot;, label: &quot;Go2&quot;, components: {
+    &quot;core.connection&quot;: { version: 1, value: { state: &quot;online&quot; } },
+    &quot;core.pose&quot;: {
+      version: 1, value: { frameId: &quot;map&quot;, pose: { positionM: [0, 0, 0], orientation: [0, 0, 0, 1] } },
+      evidence: { observedAt: &quot;2026-09-15T12:00:00.000Z&quot;, observationIds: [&quot;obs_robot_pose_01&quot;] },
     },
   },
-};</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">03</span><span><span class="example-title">Reduce the scene</span><span class="example-summary">EventStore → SceneProjection</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The Event Store commits the observation. The Scene Projection associates it with a stable entity and combines semantic and geometric freshness.</p><span class="detail-label detail-label-spaced">State produced</span><p><code>ent_backpack_01</code> with type, confidence, pose, evidence references, and a stable scene cursor.</p></div><div class="example-code"><pre><code class="language-ts">await events.append({
-  events: [observation], // commit one perception decision atomically
-});
-
-const scene = await scenes.current(); // reduce all scene events
-const backpack = scene.entities.find(
-  (entity) =&gt; entity.id === "ent_backpack_01",
-);
-
-backpack.type; // "core.backpack"
-backpack.semantic.confidence; // 0.94
-backpack.geometry.frameId; // "map"
-scene.cursor; // continue later without exposing storage offsets</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">04</span><span><span class="example-title">Compose the world</span><span class="example-summary">SceneProjection → WorldRuntime → Affordance</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>A trusted projection system updates the canonical entity and its relationship to the robot. The runtime derives possibilities from current components instead of storing them as state.</p><span class="detail-label detail-label-spaced">State produced</span><p>A backpack entity, an <code>observes</code> relationship, and an available <code>robot.approach</code> action.</p></div><div class="example-code"><pre><code class="language-ts">runtime.apply({
-  type: "entity.upsert", // project a trusted semantic entity
-  entity: {
-    id: "ent_backpack_01", // preserve scene identity
-    type: "core.backpack", // drive policy and affordance matching
-    label: "red backpack", // provide a human-readable name
-    components: {
-      semantic: { confidence: 0.94 }, // carry current belief
-      transform: { frameId: "map", positionM: [2.4, -0.6, 0.35] }, // carry pose
-      observable: { freshnessMs: 86 }, // bound stale decisions
+}; // initial robot evidence already exists in the fixture's journal
+export const initial: WorldSnapshot = {
+  worldId: &quot;world_lab&quot;, cursor: &quot;c_40&quot;, entities: [robot], relationships: [], actions: [approach],
+}; // cursors and IDs are readable placeholders, not values to parse</code></pre></div></div></details>
+<details class="example-item" id="example-observation"><summary><span class="example-index">02</span><span><span class="example-title">Receive camera and LiDAR evidence</span><span class="example-summary">FrameRef → Observation</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Perception reports a tracked object with full geometry and semantic evidence. Frames need not be retained. When an adapter transforms raw coordinates, it must include the exact transform samples; this fixture starts in map coordinates.</p></div><div class="example-code"><pre><code class="language-ts">export const camera: FrameRef = {
+  streamId: &quot;go2.front.camera&quot;, sessionId: &quot;sensor_session_01&quot;, sequence: 2048,
+  capturedAt: &quot;2026-09-15T12:00:00.000Z&quot;,
+}; // transient frame identity, not an artifact or promise of stored bytes
+export const lidar: FrameRef = {
+  streamId: &quot;go2.lidar&quot;, sessionId: &quot;sensor_session_01&quot;, sequence: 991,
+  capturedAt: &quot;2026-09-15T12:00:00.000Z&quot;,
+};
+export const observation = {
+  id: &quot;obs_backpack_01&quot;, trackId: &quot;track_27&quot;, inputs: [camera, lidar],
+  retained: [], supersedes: [], transforms: [], // this fixture supplies geometry already in map
+  semantic: {
+    observedAt: camera.capturedAt,
+    value: { hypotheses: [{ label: &quot;backpack&quot;, score: 0.94 }] },
+  },
+  geometry: {
+    observedAt: lidar.capturedAt,
+    value: {
+      kind: &quot;box3&quot;, frameId: &quot;map&quot;,
+      pose: { positionM: [2.4, -0.6, 0.35], orientation: [0, 0, 0, 1] },
+      sizeM: [0.4, 0.3, 0.7], // full measured extents; no invented defaults
     },
   },
-});
-
-const [approach] = runtime.affordances({
-  actorId: "go2_01", // select the acting entity
-  targetId: "ent_backpack_01", // select the observed target
-});
-
-approach.actionId; // "robot.approach"</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">05</span><span><span class="example-title">Propose the run</span><span class="example-summary">client → SceneProjection → MissionService</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The client requests the meaningful verb. Scene binding checks identity, confidence, freshness, and applicability, then pins the exact target evidence into the run.</p><span class="detail-label detail-label-spaced">State produced</span><p>A proposed run whose target cannot silently move to a different scene snapshot during approval.</p></div><div class="example-code"><pre><code class="language-ts">const target = await scenes.bind({
-  verb: "approach", // map action meaning to a required affordance
-  entityId: "ent_backpack_01", // bind the stable target identity
-  minimumConfidence: 0.8, // reject weak semantic evidence
-  maximumFreshnessMs: 700, // reject stale target state
-});
-
-const run = await missions.proposeRun(
-  {
-    missionId: mission.id, // join the mission causal chain
-    robotId: "go2_01", // select the physical actor
-    verb: "approach", // preserve domain meaning above implementation
-    target, // pin entity, scene cursor, and evidence refs
-    args: { standoffM: 1.2 }, // provide validated action input
+} satisfies Observation;</code></pre></div></div></details>
+<details class="example-item" id="example-event"><summary><span class="example-index">03</span><span><span class="example-title">Record evidence</span><span class="example-summary">CloudEvent → journal receipt</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The envelope identifies the producer and event. The journal adds its own position/time without replacing acquisition time. Ingestion deduplicates observation identity.</p></div><div class="example-code"><pre><code class="language-ts">export const observationEvent: NewEvent = {
+  specversion: &quot;1.0&quot;, id: &quot;evt_observation_01&quot;, source: &quot;urn:nemeia:perception:session-17&quot;,
+  type: &quot;dev.nemeia.observation.recorded.v1&quot;,
+  time: &quot;2026-09-15T12:00:00.020Z&quot;, datacontenttype: &quot;application/json&quot;,
+  data: { worldId: initial.worldId, producer: perception, causes: [], observation },
+}; // CloudEvents envelope; source is checked against the authenticated producer
+export const recordedObservation = {
+  cursor: &quot;c_41&quot;, recordedAt: &quot;2026-09-15T12:00:00.030Z&quot;, event: observationEvent,
+}; // journal receipt time does not overwrite the capturedAt/observedAt values</code></pre></div></div></details>
+<details class="example-item" id="example-world"><summary><span class="example-index">04</span><span><span class="example-title">Associate and commit world state</span><span class="example-summary">Observation → Entity + Relationship</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The trusted projector associates track_27 with one entity and commits both changes atomically. A second backpack receives a different identity. Scene and UI read this same snapshot.</p></div><div class="example-code"><pre><code class="language-ts">export const backpack: Entity = {
+  id: &quot;entity_backpack_01&quot;, label: &quot;Backpack&quot;, // association allocates identity, not label normalization
+  components: {
+    &quot;core.semantic&quot;: {
+      version: 1, value: observation.semantic.value,
+      evidence: { observedAt: observation.semantic.observedAt, observationIds: [observation.id] },
+    },
+    &quot;core.geometry&quot;: {
+      version: 1, value: observation.geometry.value,
+      evidence: { observedAt: observation.geometry.observedAt, observationIds: [observation.id] },
+    },
   },
-  { commandId: "cmd_run_01", principal: "agent:mission" },
-);</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">06</span><span><span class="example-title">Issue bounded authority</span><span class="example-summary">PackageRegistry ↔ MissionService → ExecutionGrant</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The service resolves an enabled, pinned capability and rechecks policy at approval time. Audit facts stay on the run and issuance event; only enforceable authority enters the signed grant.</p><span class="detail-label detail-label-spaced">State produced</span><p>A single-use grant bound to one run, robot, command envelope, expiry, and trusted signature.</p></div><div class="example-code"><pre><code class="language-ts">// Client → MissionService
-const decision = await missions.decideRun(
-  { runId: run.id, decision: "approve", reason: "aisle is clear" },
-  { commandId: "cmd_decide_01", principal: "operator:hercules" },
-);
-
-// MissionService → PackageRegistry before signing
-// registry.get("cap:approach-entity@1.0.0") must be enabled and pinned
-
-if (decision.decision !== "approved") throw new Error("run was rejected");
-const grant = decision.grant; // receive authority only from an approved decision
-if (!("stream" in grant.command)) throw new Error("expected stream grant");
-const stream = grant.command.stream; // read the kernel-enforceable envelope
-stream.actionSpace; // "base_velocity_3d"
-stream.limits; // { maxSpeedMps: 0.18, maxYawRps: 0.25 }
-stream.watchdogMs; // 200
-stream.maxDurationMs; // 5_000
-grant.signature; // proof checked only by ControlKernel</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">07</span><span><span class="example-title">Execute through control</span><span class="example-summary">Capability → ControlKernel → RobotDriver → Go2</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>The kernel consumes the grant before the capability starts. Capability chunks are advice; the kernel validates, clamps, and forwards them through the driver. Applied values return as acknowledgements.</p><span class="detail-label detail-label-spaced">State produced</span><p>Ordered chunk acknowledgements and driver events that match the values actually applied to the robot.</p></div><div class="example-code"><pre><code class="language-ts">await kernel.execute(grant); // verify signature, expiry, robot, and stop state
-
-for await (const output of capability.run(context)) {
-  if (output.type === "chunk") {
-    const ack = await kernel.submit(output.chunk); // validate and clamp
-    acknowledgementChannel.write(ack); // feed applied values back to the capability
-  }
-
-  if (output.type === "observation") {
-    await events.append({ events: [asEvent(output.observation)] }); // retain evidence
-  }
-}
-
-// Inside ControlKernel after clamping:
-// RobotDriver.command({ kind: "setpoint", actionSpace, value: ack.applied })</code></pre></div></div>
-            </details>
-
-            <details class="example-item">
-              <summary><span class="example-index">08</span><span><span class="example-title">Close the loop</span><span class="example-summary">control events → projections → client</span></span><span class="example-toggle" aria-hidden="true"></span></summary>
-              <div class="example-body"><div class="example-description"><span class="detail-label">Information flow</span><p>Kernel and driver evidence enters the Event Store. Scene updates can change the world again, while Attention delivers the outcome and exact cursor range to the client.</p><span class="detail-label detail-label-spaced">State produced</span><p>A completed run, updated robot and target state, a durable digest, and a new set of affordances for the next loop.</p></div><div class="example-code"><pre><code class="language-ts">const controlEvents = await kernel.events(controlCursor); // read new control evidence
-await events.append({
-  events: controlEvents.map(asNewEvent), // join evidence to the durable sequence
-});
-
-const delivery = await attention.receive({
-  missionId: mission.id, // scope the attention cursor
-  principal: "agent:mission", // deliver only the caller's view
-  waitMs: 0, // drain immediately at the turn seam
-  cause: "turn_start", // record why delivery occurred
-});
-
-delivery.events; // authorization.completed + driver.safe_state
-delivery.cursorRange; // exact evidence delivered to the client
-runtime.snapshot(); // begin the next affordance cycle</code></pre></div></div>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="status" aria-labelledby="status-title">
-        <div class="section-inner status">
-          <div><div class="section-label">07 / Current state</div><h2 id="status-title">Current state</h2><p>The first World Runtime slice is implemented and connected to the live Go2 operator surface. The next step is turning sensor evidence into semantic entities and relationships, then binding physical action packs to the same actions used in simulation.</p></div>
-          <div class="status-list" aria-label="Implementation status">
-            <div class="status-item"><div class="status-icon">✓</div><div><strong>World state and affordances</strong><span>Entities, components, relationships, action requirements, snapshots, and ordered events.</span></div><div class="status-value">implemented</div></div>
-            <div class="status-item"><div class="status-icon">✓</div><div><strong>Live robot projection</strong><span>Connection, locomotion, vision, spatial sensing, audio, power, and pose become components.</span></div><div class="status-value">implemented</div></div>
-            <div class="status-item"><div class="status-icon">✓</div><div><strong>Manual operator actions</strong><span>World panel actions route through the runtime and return event-backed receipts.</span></div><div class="status-value">implemented</div></div>
-            <div class="status-item"><div class="status-icon next">△</div><div><strong>Semantic perception</strong><span>Camera and LiDAR evidence is not yet producing semantic object entities in the live panel.</span></div><div class="status-value next">next</div></div>
-            <div class="status-item"><div class="status-icon next">△</div><div><strong>Physical action packs</strong><span>Generic action meaning exists; physical implementations are the next binding.</span></div><div class="status-value next">next</div></div>
-          </div>
-        </div>
-      </section>
-    </main>
+};
+export const changes: Change[] = [
+  { op: &quot;entity.put&quot;, entity: backpack },
+  { op: &quot;relationship.put&quot;, relationship: {
+    subjectId: robot.id, predicate: &quot;observes&quot;, objectId: backpack.id,
+    evidence: { observedAt: lidar.capturedAt, observationIds: [observation.id] },
+  } },
+]; // trusted projector commits the entire batch against c_41
+export const delta: WorldDelta = { from: &quot;c_41&quot;, to: &quot;c_42&quot;, changes };
+export const associations: Association[] = [{ observationId: observation.id, entityId: backpack.id }];
+// world.changed records changes + associations together; replay rebuilds source/track bindings from those facts.
+export const snapshot: WorldSnapshot = {
+  ...initial, cursor: delta.to, entities: [robot, backpack],
+  relationships: [{ subjectId: robot.id, predicate: &quot;observes&quot;, objectId: backpack.id,
+    evidence: { observedAt: lidar.capturedAt, observationIds: [observation.id] } }],
+}; // scene and RobotWorldView read this same object, not a second entity registry</code></pre></div></div></details>
+<details class="example-item" id="example-dispatch"><summary><span class="example-index">05</span><span><span class="example-title">Discover and request an action</span><span class="example-summary">Affordance → ActionRequest → Execution</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The host rechecks actual input and current evidence, chooses the executor, pins relevant versions, then persists accepted plus the retry receipt. Approval may pause this same execution, but is absent here.</p></div><div class="example-code"><pre><code class="language-ts">export const affordance: Affordance = {
+  action: approach.action, actorId: robot.id, targetId: backpack.id,
+  evaluatedAt: &quot;2026-09-15T12:00:00.080Z&quot;, cursor: snapshot.cursor,
+  availability: { available: true },
+}; // discovery hint; no authority to send motion
+export const request: ActionRequest = {
+  requestId: &quot;req_approach_01&quot;, action: approach.action,
+  actorId: robot.id, targetId: backpack.id, input: { standoffM: 0.8 },
+  expectedCursor: snapshot.cursor,
+}; // client submits identity + intent; host supplies authentication and checks current evidence
+export const accepted: Execution = {
+  id: &quot;exec_approach_01&quot;, request, executor, mode: &quot;physical&quot;,
+  binding: [{ entityId: backpack.id, component: &quot;core.geometry&quot;, version: 1 },
+    { entityId: robot.id, component: &quot;core.pose&quot;, version: 1 }],
+  createdAt: &quot;2026-09-15T12:00:00.100Z&quot;, state: &quot;accepted&quot;,
+}; // accepted event and original request receipt commit together before executor starts</code></pre></div></div></details>
+<details class="example-item" id="example-control"><summary><span class="example-index">06</span><span><span class="example-title">Execute under local limits</span><span class="example-summary">Execution → ControlSession → RobotDriver</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>One local owner sends bounded velocity commands while independent timers watch liveness. The sample report says sent, not applied or completed. Further commands and fresh observations are required throughout motion.</p></div><div class="example-code"><pre><code class="language-ts">export const admission: ControlAdmission = {
+  executionId: accepted.id, robotId: robot.id, executor,
+  limits: { maxLinearMps: 0.25, maxYawRadps: 0.4, watchdogMs: 250, maxDurationMs: 15_000 },
+}; // local host policy supplies these bounds; the client cannot choose them
+export const running: Execution = { ...accepted, state: &quot;running&quot; };
+export const sent: ControlReport = {
+  kind: &quot;sent&quot;, sessionId: &quot;control_01&quot;, sequence: 1,
+  requested: { vxMps: 0.3, vyMps: 0, yawRadps: 0 },
+  sent: { vxMps: 0.25, vyMps: 0, yawRadps: 0 }, confirmation: &quot;sent&quot;,
+}; // report after gate/driver dispatch; not proof of motion or completion
+// Further commands and fresh observations continue; a missing command triggers the local watchdog.
+// A remote deployment transports a JOSE grant; local execution does not need a signed envelope.</code></pre></div></div></details>
+<details class="example-item" id="example-completion"><summary><span class="example-index">07</span><span><span class="example-title">Confirm measured completion</span><span class="example-summary">New evidence + closed session → result</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The fixture assumes fresh robot/target measurements and driver confirmation of safe state. The target did not move just because an action requested it. A timeout or unknown outcome would fail, not succeed.</p></div><div class="example-code"><pre><code class="language-ts">export const finalObservation: Observation = {
+  ...observation, id: &quot;obs_backpack_final&quot;,
+  inputs: [{ ...camera, sequence: 2480, capturedAt: &quot;2026-09-15T12:00:10.800Z&quot; },
+    { ...lidar, sequence: 1423, capturedAt: &quot;2026-09-15T12:00:10.800Z&quot; }],
+  geometry: { ...observation.geometry, observedAt: &quot;2026-09-15T12:00:10.800Z&quot; },
+}; // target is still at its measured map location; current robot pose arrives as separate evidence
+export const finalPose: Entity = {
+  ...robot, components: { ...robot.components, &quot;core.pose&quot;: {
+    version: 2, value: { frameId: &quot;map&quot;, pose: {
+      positionM: [1.6, -0.6, 0], orientation: [0, 0, 0, 1],
+    } }, evidence: { observedAt: &quot;2026-09-15T12:00:10.800Z&quot;, observationIds: [&quot;obs_robot_pose_final&quot;] },
+  } },
+}; // illustrative measured ground-plane distance to target center is 0.8 m
+export const closed: ControlReport = {
+  kind: &quot;closed&quot;, sessionId: &quot;control_01&quot;, cause: &quot;finished&quot;, safeState: &quot;confirmed&quot;,
+}; // this fixture assumes the driver supplied confirming evidence
+export const output: ApproachOutput = { distanceM: 0.8, observationId: finalObservation.id };
+export const succeeded: Execution = {
+  ...accepted, state: &quot;succeeded&quot;, finishedAt: &quot;2026-09-15T12:00:11.000Z&quot;, output,
+}; // host verifies result schema, fresh target/robot evidence, and closed control session</code></pre></div></div></details>
+<details class="example-item" id="example-resume"><summary><span class="example-index">08</span><span><span class="example-title">Consume and resume</span><span class="example-summary">Terminal event → UI / attention / replay</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>All readers share event IDs and resumable cursors. A retry returns the original dispatch receipt; query execution for current state. This compact fixture omits intermediate events, not the requirement to record them.</p></div><div class="example-code"><pre><code class="language-ts">export const completionEvent: NewEvent = {
+  specversion: &quot;1.0&quot;, id: &quot;evt_execution_done&quot;, source: &quot;urn:nemeia:host:lab&quot;,
+  type: &quot;dev.nemeia.execution.changed.v1&quot;, time: succeeded.finishedAt,
+  datacontenttype: &quot;application/json&quot;,
+  data: { worldId: initial.worldId, producer: host,
+    causes: [&quot;evt_control_closed&quot;, &quot;evt_final_world&quot;], execution: succeeded },
+}; // intermediate observation/world/control events are omitted from this compact fixture
+// events({after: snapshot.cursor, limit: 100}, authenticatedContext) resumes after c_42.
+// UI, attention and replay consume the same committed events; replay never dispatches commands.
+// Repeating requestId req_approach_01 returns its original accepted receipt, not new motion.
+// execution(exec_approach_01, authenticatedContext) returns the current succeeded state.</code></pre></div></div></details></div></div></section>
+<section class="section" id="decisions" aria-labelledby="decisions-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">07 / Simplification decisions</div><h2 id="decisions-title">Simplification decisions</h2></div><p>Fewer independent authorities; more explicit identity, time, atomicity and failure behavior.</p></div><div class="abstraction-list"><details class="abstraction" id="one-state-owner"><summary><span class="abstraction-index">01</span><span><span class="abstraction-title">One state owner</span><span class="abstraction-summary">World replaces the separate Scene authority</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Entity/component state, scene queries and UI views derive from one WorldSnapshot. Display strings are not domain values. This removes competing object registries and projection-specific action catalogs.</p></div></details>
+<details class="abstraction" id="one-execution"><summary><span class="abstraction-index">02</span><span><span class="abstraction-title">One execution</span><span class="abstraction-summary">Action + executor, not Run + Authorization lifecycles</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Keep action meaning separate from its implementation. One execution moves through accepted, running and terminal states. Approval is optional pre-admission; a signed grant is only a remote transport credential.</p></div></details>
+<details class="abstraction" id="atomic-decisions"><summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Atomic decisions</span><span class="abstraction-summary">transaction + receipt</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Validate all changes before committing. Store original response and events together. Retry identity is durable and body-bound. Database transactions cannot roll back physical motion; uncertain actions are never blindly repeated.</p></div></details>
+<details class="abstraction" id="honest-evidence"><summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Honest evidence</span><span class="abstraction-summary">identity, independent times, complete geometry</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Never associate objects by their label alone. Keep acquisition time separate from storage time and semantic freshness separate from geometry freshness. Missing dimensions stay unknown; no default obstacle boxes.</p></div></details>
+<details class="abstraction" id="local-control"><summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Local control</span><span class="abstraction-summary">mandatory only when hardware moves</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>One gate owns limits, sequence, deadlines, cancellation and stop. Stop does not wait for the agent, worker cleanup or world journal. Command dispatch, device acknowledgement and physical success are different facts.</p></div></details>
+<details class="abstraction" id="replace-do-not-migrate"><summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Replace, do not migrate</span><span class="abstraction-summary">greenfield implementation</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>This is the canonical target, not an adapter over old APIs. Remove replaced prototype modules and databases as new slices land. There are no compatibility modes, dual writes or historical decoders to maintain.</p></div></details></div></div></section>
+<section class="section" id="standards" aria-labelledby="standards-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">08 / Established standards &amp; patterns</div><h2 id="standards-title">Established standards &amp; patterns</h2></div><p>Reuse mechanisms that already exist. Nemeia defines world and action meaning, not replacement infrastructure.</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Concern</th><th scope="col">Established basis</th><th scope="col">Nemeia adds</th></tr></thead><tbody><tr><td>Units and axes</td><td><a href="https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0103.rst" target="_blank" rel="noopener noreferrer">ROS REP-103</a></td><td>Explicit field units and validation.</td></tr><tr><td>Mobile coordinate frames</td><td><a href="https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0105.rst" target="_blank" rel="noopener noreferrer">ROS REP-105</a></td><td>World scoping and retained transform samples.</td></tr><tr><td>Oriented boxes</td><td><a href="https://raw.githubusercontent.com/ros-perception/vision_msgs/ros2/vision_msgs/msg/BoundingBox3D.msg" target="_blank" rel="noopener noreferrer">ROS BoundingBox3D</a>, <a href="https://raw.githubusercontent.com/ros-perception/vision_msgs/ros2/vision_msgs/msg/BoundingBox2D.msg" target="_blank" rel="noopener noreferrer">BoundingBox2D</a></td><td>JSON union tags and evidence references.</td></tr><tr><td>Pose</td><td><a href="https://raw.githubusercontent.com/ros2/common_interfaces/rolling/geometry_msgs/msg/Pose.msg" target="_blank" rel="noopener noreferrer">ROS Pose</a></td><td>Explicit containing frame and units.</td></tr><tr><td>Schema validation</td><td><a href="https://json-schema.org/draft/2020-12" target="_blank" rel="noopener noreferrer">JSON Schema 2020-12</a></td><td>Closed registered core and package schemas.</td></tr><tr><td>HTTP description</td><td><a href="https://spec.openapis.org/oas/v3.1.1.html" target="_blank" rel="noopener noreferrer">OpenAPI 3.1.1</a></td><td>World and execution resource routes; generated client bindings.</td></tr><tr><td>Event envelopes</td><td><a href="https://raw.githubusercontent.com/cloudevents/spec/v1.0.2/cloudevents/spec.md" target="_blank" rel="noopener noreferrer">CloudEvents 1.0.2</a></td><td>Versioned domain payloads, causal links, and a separate journal cursor.</td></tr><tr><td>API failures</td><td><a href="https://www.rfc-editor.org/rfc/rfc9457.html" target="_blank" rel="noopener noreferrer">RFC 9457</a></td><td>Stable problem-type URIs; no parallel error envelope on HTTP.</td></tr><tr><td>Long-running actions</td><td><a href="https://design.ros2.org/articles/actions.html" target="_blank" rel="noopener noreferrer">ROS 2 actions</a></td><td>One execution identity, feedback, cancel, and terminal result. Approval is a pre-admission extension.</td></tr><tr><td>Sensor delivery</td><td><a href="https://raw.githubusercontent.com/ros2/ros2_documentation/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst" target="_blank" rel="noopener noreferrer">ROS 2 QoS</a></td><td>Explicit depth, loss, freshness, and liveness requirements per stream.</td></tr><tr><td>Durable decisions</td><td><a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener noreferrer">PostgreSQL constraints</a>, <a href="https://www.postgresql.org/docs/current/sql-insert.html" target="_blank" rel="noopener noreferrer">ON CONFLICT</a></td><td>Transactions and unique retry keys; no homegrown consensus protocol.</td></tr><tr><td>Remote event publishing</td><td><a href="https://microservices.io/patterns/data/transactional-outbox.html" target="_blank" rel="noopener noreferrer">Transactional outbox pattern</a></td><td>Publish committed events at least once; consumers deduplicate by event ID. No broker required locally.</td></tr><tr><td>Signed remote grants</td><td><a href="https://www.rfc-editor.org/rfc/rfc7519.html" target="_blank" rel="noopener noreferrer">JWT</a>, <a href="https://www.rfc-editor.org/rfc/rfc8037.html" target="_blank" rel="noopener noreferrer">EdDSA in JOSE</a>, <a href="https://www.rfc-editor.org/rfc/rfc8725.html" target="_blank" rel="noopener noreferrer">JWT security guidance</a></td><td>Execution/robot/executor/epoch/limits claims and durable admission receipt.</td></tr><tr><td>Request fingerprint</td><td><a href="https://www.rfc-editor.org/rfc/rfc8785" target="_blank" rel="noopener noreferrer">RFC 8785 JCS</a></td><td>Hash the canonical operation/body/principal/world; not a custom signing scheme.</td></tr><tr><td>Worker RPC, if needed</td><td><a href="https://www.jsonrpc.org/specification" target="_blank" rel="noopener noreferrer">JSON-RPC 2.0</a></td><td>Methods for executor start, progress, cancellation and result; local calls need no envelope.</td></tr><tr><td>Linux isolation</td><td><a href="https://github.com/containers/bubblewrap" target="_blank" rel="noopener noreferrer">bubblewrap</a>, <a href="https://docs.kernel.org/userspace-api/landlock.html" target="_blank" rel="noopener noreferrer">Landlock</a></td><td>Least-privilege launch profile; use OS enforcement, not a JavaScript sandbox simulation.</td></tr><tr><td>Distributed tracing</td><td><a href="https://www.w3.org/TR/trace-context/" target="_blank" rel="noopener noreferrer">W3C Trace Context</a></td><td>Propagate standard tracing metadata; domain causation remains explicit event IDs.</td></tr></tbody></table></div><p class="reference-note">Exact standard formats: CloudEvents, JSON Schema, Problem Details and JOSE. ROS geometry/action mappings are semantic mappings, not a claim of ROS wire compatibility. Transactions and outbox are patterns, not another custom transport. No message broker, workflow engine or mandatory ROS deployment is required.</p></div></section>
+<section class="section" id="status" aria-labelledby="status-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">09 / Implementation target</div><h2 id="status-title">Implementation target</h2></div><p>Nemeia is a prototype. This page is the source for the next implementation, not a claim that these guarantees already exist.</p></div><div class="architecture-rows"><div class="architecture-row"><strong>1 · Contracts</strong><div>Generate JSON schemas and OpenAPI clients; replace old contract files and handwritten validators.</div></div><div class="architecture-row"><strong>2 · Durable core</strong><div>Atomic changes, persistent request receipts, one session lifetime and gap-free cursor resumption.</div></div><div class="architecture-row"><strong>3 · Perception</strong><div>Explicit association, independent facet times, complete geometry and incremental world projection.</div></div><div class="architecture-row"><strong>4 · Execution</strong><div>Bind one action in simulation and hardware; qualify local stop, watchdog, cancellation and restart behavior.</div></div><div class="architecture-row"><strong>5 · Consumers</strong><div>Render the same world in UI/CLI. Add approval, remote grants or durable attention only for a concrete need.</div></div></div></div></section>
+</main>
 
     <script>
       (() => {
@@ -1431,7 +975,7 @@ runtime.snapshot(); // begin the next affordance cycle</code></pre></div></div>
             return '<span class="code-line" data-line="' + (lineIndex + 1) + '">' + (result.html || "&nbsp;") + "</span>";
           });
 
-          code.innerHTML = rendered.join("");
+          code.innerHTML = rendered.join("\n");
           code.classList.add("syntax-rendered");
           const wrapper = code.closest(".contract-code, .object-code, .example-code");
           const pre = code.closest("pre");

@@ -2,7 +2,8 @@
 
 > **Archived governance design.** This document preserves the earlier
 > Mission-cockpit frontend plan. The current operator starts from the live World
-> surface described in [`world-runtime.md`](./world-runtime.md).
+> surface is now specified in [`protocol.md`](./protocol.md). This document is
+> a prototype UI note, not a second protocol specification.
 
 Nemeia should use a web console as the primary operator cockpit. The frontend is
 a client of the NEM Mission API: it displays missions, runs, approvals,
