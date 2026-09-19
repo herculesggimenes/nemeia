@@ -1,7 +1,7 @@
 # Nemeia architecture and protocol
 
 Selected design, 2026-09-19. Nemeia defines perception, a shared world,
-per-client context preparation, decisions and bounded execution. Its foundations
+client subscriptions, decisions and bounded execution. Its foundations
 are world, entity, component, relationship, affordance, action, system and event.
 SpacetimeDB is the selected world-storage and synchronization implementation,
 not a foundational concept. This document does not deploy a database or control
@@ -12,7 +12,7 @@ integration or hardware test.
 
 One world owns committed state. Perception associates observations with stable
 entities and supplies independently timed components and relationships. Clients
-prepare a relevant view of that world at their own pace. Decisions propose
+subscribe to relevant state and changes, then prepare context at their own pace. Decisions propose
 intent; action admission and local execution enforce current requirements.
 Measured outcomes feed back into the world. Tracing records the context behind
 the work without becoming another state or control authority.
@@ -107,27 +107,52 @@ SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
 do not perform serialization or validate runtime input. Preserve evidence and
 row versions; do not serialize a mutable subscription cache or Map directly.
 
-## Client inboxes and prepared context
+## Client subscriptions
+
+A subscription selects which authorized state and changes a client follows.
+An inbox buffers work that needs attention; context is the detached, frozen
+input prepared when the client is ready to decide. These are separate concerns,
+not three world authorities or three required services.
+
+Select entities, components, relationships and executions relevant to the task,
+including the dependencies needed to evaluate it. Interest filters do not grant
+read or action permissions; the server enforces those independently. Use native
+database subscriptions rather than inventing a new transport or query language.
+On a scope change, wait for the new matching view and review active-step
+dependencies. A row entering or leaving a query is not evidence that an object
+physically appeared or disappeared. A display-only client can render its cache
+directly without a durable inbox or reasoning-step lifecycle.
 
 Each logical client keeps independent progress. Coalesce replaceable state by
 entity/component, but retain must-handle events such as user instructions, tool
-results and important transitions. Latest state does not reconstruct events
+results and important transitions, including messages received outside world
+subscriptions. Latest state does not reconstruct events
 that occurred between steps. One client consuming an event must not consume it
 for every other client.
 
-Prepare context immediately before a reasoning step: reserve an exact event
+Wait until the required subscriptions are ready. Prepare context immediately
+before a reasoning step: reserve an exact event
 batch at a consistent committed-cache boundary, detach the relevant world,
 include the authorized goal/constraints, available actions, execution state and
 relevant history, then freeze the input with a context ID. Preserve acquisition
 times and unknown values. Bound tokens and retained bytes; defer excess events
 without silently discarding required meaning. While inference runs, new updates
 remain pending for another step. The prompt already in flight does not mutate.
+After a disconnect, resynchronize and review dependencies before proposing new
+physical work.
 
 Start with one active reasoning step per logical agent. Wake on meaningful
 changes, user input, tool completion or deadlines, not every frame. Task
 cancellation supersedes work immediately; reject late results even when model
 cancellation is unavailable. Local stop never waits for this queue. UI, rules
 and faster model workers may consume the same world at different cadences.
+
+The client may propose an action, ask for clarification or do nothing. Receiving
+an update does not require inference or grant permission to execute. Review
+current task dependencies before proposing an action; admission, controller
+claim and robot-local limits remain mandatory. Receipts and measured outcomes
+return through subscriptions and can wake the next step. Avoid wake rules that
+turn the client's own bookkeeping writes into a self-triggering inference loop.
 
 Durable clients persist required events, active-step identity, outcomes and
 acknowledgements in a worker store. Complete only after verifying the durable

@@ -39,7 +39,7 @@ export interface PreparedStep {
   id: string; clientId: string; // one logical client identity across reconnects; one active step per client
   eventIds: readonly string[]; // exact reserved must-handle events; not acknowledged by reading them
   changedEntityIds: readonly string[]; // coalesced changes since the prior step, not every intermediate observation
-  rescan: boolean; // rebuild relevant state when the dirty-key set overflows or a subscription reconnects
+  rescan: boolean; // rebuild relevant state after dirty-key overflow, subscription reconnect or scope change
   context: DecisionContext; // detached world/task projection frozen for this evaluation
   actions: JsonProjection<Row<"actionBinding">>[]; // installed operations visible to this client, not permission to run them
   executions: JsonProjection<Pick<Row<"execution">, "id" | "actorId" | "input" | "state" | "result">>[]; // relevant in-progress and completed attempts
@@ -48,7 +48,7 @@ export interface PreparedStep {
   historyRef?: string; // immutable authorized history slice resolved before inference; never a mutable conversation pointer
 }
 export interface ClientSteps {
-  prepare(clientId: string): Promise<PreparedStep | undefined>; // reserve a bounded batch and consistent context; no second step while one is active
+  prepare(clientId: string): Promise<PreparedStep | undefined>; // once required subscriptions are ready, reserve a batch and freeze context; at most one active step
   complete(stepId: string, durableOutcomeRef: string): Promise<void>; // verify durable handled outcome; atomically record it and acknowledge only this batch; idempotent retry
   release(stepId: string): Promise<void>; // failed/invalidated attempt: retain unhandled events for another step; reject later completion of this attempt
 } // worker-side lifecycle contract, not another world authority; persistence/recovery remain implementation work

@@ -53,16 +53,28 @@ export const semanticRow: Row<"semantic"> = {
 // Authorized SDK subscriptions apply matching row changes together; no handwritten WorldDelta.
 // endregion
 
+// region subscribed
+export const subscribedClient = {
+  clientId: "operator-agent-1", // logical consumer, independent from the UI or another worker
+  interests: ["actor state", "candidate objects and evidence", "relevant relationships", "action bindings", "own executions"], // task scope through authorized views, not executable queries
+  ready: true, // fixture assumes the required subscriptions have applied
+  changedEntityIds: [backpack.id], // coalesced state changes; do not queue every perception update
+  eventIds: ["task-message-1"], // separately delivered user instruction; retained until handled
+  wakeReason: "task-message", // scheduling policy chooses a step; row delivery alone does not
+} as const; // illustrative client state, not a new wire format or world table
+// Other clients keep their own interests, inboxes and progress over the same world.
+// endregion
+
 // region prepared
 export const preparedStep = {
-  id: "step-1", clientId: "operator-agent-1", // one active reasoning step for this logical client
+  id: "step-1", clientId: subscribedClient.clientId, // one active reasoning step for this logical client
   contextId: "decision-context-1", // immutable context retained by the worker; shared with the decision below
-  eventIds: ["task-message-1"], // reserved, not yet acknowledged; later arrivals remain pending
-  changedEntityIds: [backpack.id], // many perception updates collapse to one changed entity
+  eventIds: [...subscribedClient.eventIds], // reserve this exact batch; later arrivals remain pending
+  changedEntityIds: [...subscribedClient.changedEntityIds], // detach the coalesced changes for this step
   evidenceVersions: { geometry: geometryRow.version, semantic: semanticRow.version }, // detach latest committed relevant values
   inputs: ["authorized goal", "current world projection", "pending events", "relevant history"], // context recipe, not a provider prompt
 } as const; // lifecycle summary, not a full PreparedStep or an implemented persistent inbox
-// Subscriptions keep updating the world while inference runs; this step's input stays frozen.
+// Subscriptions keep updating the client's read cache while inference runs; this input stays frozen.
 // The outcome and progress are persisted before task-message-1 is acknowledged.
 // Failed or superseded attempts retain unhandled events; they must not issue a late action.
 // endregion

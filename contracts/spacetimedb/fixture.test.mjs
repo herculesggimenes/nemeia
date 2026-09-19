@@ -53,9 +53,13 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/<title>Nemeia · Architecture<\/title>/);
     const opening=page.split('<section class="section" id="ownership"')[0];
     assert.doesNotMatch(opening,/SpacetimeDB|YOLOE|SAM3|Typesafe|Laminar/);
-    assert.match(opening,/Client context/);
+    assert.match(opening,/<strong>Subscriptions<\/strong>/);
+    assert.doesNotMatch(opening,/<strong>Client context<\/strong>/);
     assert.match(page,/Implementation choices/);
     assert.match(page,/id="clients"/);
+    assert.match(page,/id="clients-title">Client subscriptions/);
+    assert.match(page,/id="subscription-scope"/);
+    assert.match(page,/id="decisions-feedback"/);
     assert.match(page,/ClientSteps/);
     assert.match(page,/SAM3/); assert.match(page,/Typesafe/); assert.match(page,/LLMs/);
     assert.match(page,/YOLOE/); assert.match(page,/Laminar/); assert.match(page,/OpenTelemetry/);
@@ -68,6 +72,21 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
       assert.doesNotMatch(script,/fetch\(|WebSocket\(|XMLHttpRequest|localStorage/);
     }
   }
+});
+
+test("subscription fixture gives the prepared step independent pending-work arrays",()=>{
+  const { subscribedClient, preparedStep, decisionStage } = example;
+  assert.equal(subscribedClient.ready,true);
+  assert.equal(subscribedClient.wakeReason,"task-message");
+  assert.equal(preparedStep.clientId,subscribedClient.clientId);
+  assert.deepEqual(preparedStep.changedEntityIds,subscribedClient.changedEntityIds);
+  assert.notEqual(preparedStep.changedEntityIds,subscribedClient.changedEntityIds);
+  assert.deepEqual(preparedStep.eventIds,subscribedClient.eventIds);
+  assert.notEqual(preparedStep.eventIds,subscribedClient.eventIds);
+  assert.equal(decisionStage.contextId,preparedStep.contextId);
+  const clients=readFileSync(new URL("../../docs/client-content.mjs",import.meta.url),"utf8");
+  assert.match(clients,/Subscription access never grants execution permission/);
+  assert.match(clients,/not every subscriber needs a durable inbox/);
 });
 
 test("trace profiles support controlled content and a restricted metadata fallback",()=>{

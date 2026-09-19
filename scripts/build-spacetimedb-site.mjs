@@ -36,11 +36,11 @@ const tableHtml = tables.map((item,i)=>{
   return `<details class="schema-item" id="table-${item.name}">${summary("schema",i,item.name,description)}<div class="schema-body"><div class="column-table-wrap" tabindex="0" role="region" aria-label="${item.name} columns"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>${item.columns.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="reference-note">${escape(notes)}</p></div></details>`;
 }).join("\n");
 
-const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell" role="img" aria-label="Perception turns sensor input into evidence. One shared world owns entities, components and relationships. Each client gathers changes and prepares context at its own pace. Decisions propose actions; local execution returns measured feedback. Tracing records the context and results without controlling the loop."><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>continuous observation · deliberate decisions · local control</span></div><div class="diagram">${[
+const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell" role="img" aria-label="Perception turns sensor input into evidence. One shared world owns entities, components and relationships. Subscriptions deliver relevant state and changes to each client. Clients prepare context and decide at their own pace. Decisions propose actions; validated local execution returns measured feedback through the world and subscriptions. Tracing records the context and results without controlling the loop."><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>continuous observation · deliberate decisions · local control</span></div><div class="diagram">${[
   ["Perception","Camera, depth, audio and telemetry become evidence.","observe + associate"],
   ["World","Shared entities, components and relationships.","state + evidence + events"],
-  ["Client context","Gather changes; prepare the next step at each client's pace.","inbox → frozen context"],
-  ["Decisions","Models, rules and operators propose actions.","context → intent"],
+  ["Subscriptions","Each client follows relevant state and changes.","scope → relevant updates"],
+  ["Decisions","Clients prepare context, then propose actions at their own pace.","context → intent"],
   ["Execution","Validate current requirements; execute under local limits.","action → measured outcome"],
 ].map(([title,description,code],i)=>`${i?'<div class="diagram-arrow" aria-hidden="true"></div>':""}<div class="diagram-node"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Feedback → world</strong><p>Measurements update the world. Intent, predictions and sent commands never stand in for observed outcomes.</p></div><div><strong>Trace the whole step</strong><p>Inspect compiled context, selected evidence, model inputs, outputs and action results under a controlled capture policy.</p></div></div></div></div></section>`;
 
@@ -65,16 +65,18 @@ const connection = DbConnection.builder()
   .withConfirmedReads(true) // do not trade durability for early execution
   .onConnect(conn => {
     conn.subscriptionBuilder()
-      .onApplied(() => { /* the subscribed cache is ready to read */ })
+      .onApplied(() => { /* mark this scope ready; reconcile current state */ })
       .subscribe(["SELECT * FROM visible_executions"]);
   })
   .build();
 
-// UI reads the SDK cache. A worker treats rows as reconciliation input, never as motor commands.
+// Row callbacks mark relevant state dirty; the client's wake policy decides when to prepare context.
+// UI reads the SDK cache directly. A reasoning worker freezes a projection before inference.
+// Controller clients reconcile rows and claim authorized work; delivery is never a motor command.
 // Initial inserts also occur on subscription/reconnect; they are not new-execution events.
 // Generate bindings instead of maintaining a second handwritten HTTP/snapshot/delta client.`;
 const readRows = `<div class="architecture-rows">${[
-  ["UI / decision worker", "Authorized views of live entities, pose, geometry, semantic, relations and action bindings. Subscribe to relevant state; assemble a detached task context without copying database authority."],
+  ["UI / decision worker", "Authorized views of live entities, pose, geometry, semantic, relations and action bindings. Each client selects its relevant scope. UIs render the cache; reasoning workers prepare detached context at their own cadence."],
   ["Controller", "Its robot's executions and necessary actor/target evidence. Private tables plus scoped views; no subscribeToAllTables shortcut."],
   ["Freshness", "Subscriptions update when data changes. Evidence can become stale without a write, so evaluate acquisition timestamps with the current world clock."],
   ["History", "Read bounded audit pages through an authorized history boundary when needed. Audit sequence is not the SDK subscription cursor; a reconnect gives current state, not missed transitions."],
@@ -97,7 +99,7 @@ ${section("tables","04","Database tables","The selected SpacetimeDB implementati
 ${section("platform","05","Implementation choices","Concrete tools underneath the model. These are implementation targets, not live integrations or new foundational abstractions.",`${implementationChoices}<div class="object-list">${platform}</div>${readRows}${codeRow("example",0,"Subscribe and reconcile","generated client pattern","This consumer fragment assumes generated bindings for the completed module. Only schema/function examples and domain fixtures are type-checked here; connection behavior still requires a running-server integration test.",subscription,"sdk-subscribe")}`)}
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${renderClients({section,codeRow,proseRow,region},"06b")}
-${section("example","07","End-to-end information flow","One Go2 approaches a backpack. Static, type-checked fixtures show ingestion, decision, admission, claim, physical execution and measured completion; they do not execute anything.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(sources.example,id),`flow-${id}`)).join("\n")}</div>`)}
+${section("example","07","End-to-end information flow","One Go2 approaches a backpack. Static, type-checked fixtures show ingestion, subscribed changes, prepared context, decision, admission, claim, execution and measured feedback; they do not execute anything.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(sources.example,id),`flow-${id}`)).join("\n")}</div>`)}
 ${renderTracing({section,codeRow,proseRow,region},"08")}
 ${section("boundaries","09","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("references","10","Implementation references","The schema and fixtures are checked examples. World services, durable client steps, controlled content tracing and robot-local execution still require integration and failure testing.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}
@@ -106,7 +108,7 @@ ${section("references","10","Implementation references","The schema and fixtures
 const shell=read("docs/index.html");
 const html=shell.replace(/<main id="main-content">[\s\S]*?<\/main>/,main)
   .replace(/<title>[^<]*<\/title>/,"<title>Nemeia · Architecture</title>")
-  .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="Nemeia: shared world state, perception, per-client inboxes, prepared context, decisions, bounded execution and end-to-end tracing.">');
+  .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="Nemeia: perception, shared world state, client subscriptions, prepared context, decisions, bounded execution and end-to-end tracing.">');
 // One architecture. Preserve the existing /spacetimedb/ bookmark as an identical alias.
 for (const path of ["docs/index.html","dist/index.html","docs/spacetimedb/index.html","dist/spacetimedb/index.html"]) {
   if(process.argv.includes("--check")) {
