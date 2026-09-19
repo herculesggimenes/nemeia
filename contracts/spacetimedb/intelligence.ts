@@ -17,9 +17,9 @@ export type DecisionContext = {
   entities: JsonProjection<Pick<EntityView, "entity" | "pose" | "geometry" | "semantic">>[]; // authorized detached facets; no controller identities or credentials
   relationships: JsonProjection<Row<"relation">>[]; // relevant facts, with both endpoints in the candidate context
   options: { key: string; entityId: string; description: string }[]; // exact option-to-entity mapping; no invented targets
-  basis: ComponentPin[]; // relevant input revisions; recheck candidate membership and goal version as well
+  basis: ComponentPin[]; // inspected revisions; changed dependencies require review, not blanket invalidation on every world write
   generatedAt: string; // UTC timestamp when this projection was prepared
-  validUntil: string; // UTC deadline; late responses cannot authorize a new action
+  validUntil: string; // UTC inference deadline; physical evidence freshness is checked separately at action admission
 }; // derived read model, NOT a second authoritative world or a Typesafe-specific database
 export type TargetSelection =
   | { kind: "candidate"; entityId: string } // must resolve to an option in this exact context
@@ -34,6 +34,26 @@ export type DecisionRecord = {
 }; // optional audit data; the existing action request remains the only execution boundary
 // endregion
 
+// region clients
+export interface PreparedStep {
+  id: string; clientId: string; // one logical client identity across reconnects; one active step per client
+  eventIds: readonly string[]; // exact reserved must-handle events; not acknowledged by reading them
+  changedEntityIds: readonly string[]; // coalesced changes since the prior step, not every intermediate observation
+  rescan: boolean; // rebuild relevant state when the dirty-key set overflows or a subscription reconnects
+  context: DecisionContext; // detached world/task projection frozen for this evaluation
+  actions: JsonProjection<Row<"actionBinding">>[]; // installed operations visible to this client, not permission to run them
+  executions: JsonProjection<Pick<Row<"execution">, "id" | "actorId" | "input" | "state" | "result">>[]; // relevant in-progress and completed attempts
+  constraints: readonly string[]; // task constraints; hard limits remain enforced at admission and local control
+  eventContext: readonly { eventId: string; kind: string; content: string; recordRef: string }[]; // authorized event content with durable originals; do not omit must-handle meaning to fit a token budget
+  historyRef?: string; // immutable authorized history slice resolved before inference; never a mutable conversation pointer
+}
+export interface ClientSteps {
+  prepare(clientId: string): Promise<PreparedStep | undefined>; // reserve a bounded batch and consistent context; no second step while one is active
+  complete(stepId: string, durableOutcomeRef: string): Promise<void>; // verify durable handled outcome; atomically record it and acknowledge only this batch; idempotent retry
+  release(stepId: string): Promise<void>; // failed/invalidated attempt: retain unhandled events for another step; reject later completion of this attempt
+} // worker-side lifecycle contract, not another world authority; persistence/recovery remain implementation work
+// endregion
+
 // region evaluator
 export interface TargetSelector {
   evaluate(context: DecisionContext, signal: AbortSignal): Promise<DecisionRecord>; // adapter for Typesafe, an LLM or rules; no actuator access
@@ -44,8 +64,8 @@ export interface TargetSelector {
 export interface DecisionAdmission {
   admit(context: DecisionContext, result: DecisionRecord): Promise<
     | { kind: "proposal"; entityId: string; executionId: string } // stable attempt identity; submit through ActionRequests
-    | { kind: "abstain"; reason: string } // expired, superseded, unrecognized option, insufficient confidence or changed evidence
-  >; // repeat membership, goal, dependency, freshness and permission checks before accepting a proposal
+    | { kind: "abstain"; reason: string } // expired, superseded, unknown option, inadequate evidence or invalidated dependencies
+  >; // revalidate reasoning dependencies, then use current evidence and strict pins through ActionRequests
 }
 // endregion
 

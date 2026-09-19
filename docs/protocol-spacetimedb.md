@@ -1,13 +1,23 @@
-# Nemeia with SpacetimeDB
+# Nemeia architecture and protocol
 
-Selected implementation design, 2026-09-19. This is the only protocol presented
-on the architecture site. This page does not deploy a database or control a
-robot. The accompanying module examples target SpacetimeDB 2.10.1 and are
-type-checked; type checking is not a server integration or hardware test.
+Selected design, 2026-09-19. Nemeia defines perception, a shared world,
+per-client context preparation, decisions and bounded execution. Its foundations
+are world, entity, component, relationship, affordance, action, system and event.
+SpacetimeDB is the selected world-storage and synchronization implementation,
+not a foundational concept. This document does not deploy a database or control
+a robot. Module examples target SpacetimeDB 2.10.1; type checking is not a server
+integration or hardware test.
 
 ## Ownership
 
-One database owns one world. Its typed tables hold current entities, components,
+One world owns committed state. Perception associates observations with stable
+entities and supplies independently timed components and relationships. Clients
+prepare a relevant view of that world at their own pace. Decisions propose
+intent; action admission and local execution enforce current requirements.
+Measured outcomes feed back into the world. Tracing records the context behind
+the work without becoming another state or control authority.
+
+In the selected implementation, one database owns one world. Its typed tables hold current entities, components,
 relationships and executions. Reducers validate and commit domain decisions;
 subscriptions synchronize read-only client caches. Do not maintain a second
 mutable JavaScript world and synchronize it back into the database.
@@ -78,8 +88,12 @@ Typesafe, LLMs and rules consume a task-scoped projection of that world.
 Typesafe supplies focused choices/scores/probabilities; LLMs interpret unfamiliar
 goals and propose plans or versioned questions. Exact checks remain code.
 Decision workers run outside transactions. Preserve context/model/question
-versions and reject late, superseded or out-of-option answers. Admission checks
-the task, candidates, relevant dependencies, freshness and policy. A decision
+versions and reject late, superseded or out-of-option answers. A changed row
+triggers dependency review, not automatic cancellation of all reasoning. Recheck
+the goal, candidate identities and task-relevant meaning. Explicit task rules may
+establish equivalence; otherwise recompute. Inference deadlines differ from
+physical evidence-age limits. Build an action request from fresh evidence and
+strict current geometry pins; admission and claim repeat their checks. A decision
 never calls an actuator directly. Reducers independently repeat current action
 requirements; model confidence never overrides them.
 
@@ -93,24 +107,68 @@ SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
 do not perform serialization or validate runtime input. Preserve evidence and
 row versions; do not serialize a mutable subscription cache or Map directly.
 
+## Client inboxes and prepared context
+
+Each logical client keeps independent progress. Coalesce replaceable state by
+entity/component, but retain must-handle events such as user instructions, tool
+results and important transitions. Latest state does not reconstruct events
+that occurred between steps. One client consuming an event must not consume it
+for every other client.
+
+Prepare context immediately before a reasoning step: reserve an exact event
+batch at a consistent committed-cache boundary, detach the relevant world,
+include the authorized goal/constraints, available actions, execution state and
+relevant history, then freeze the input with a context ID. Preserve acquisition
+times and unknown values. Bound tokens and retained bytes; defer excess events
+without silently discarding required meaning. While inference runs, new updates
+remain pending for another step. The prompt already in flight does not mutate.
+
+Start with one active reasoning step per logical agent. Wake on meaningful
+changes, user input, tool completion or deadlines, not every frame. Task
+cancellation supersedes work immediately; reject late results even when model
+cancellation is unavailable. Local stop never waits for this queue. UI, rules
+and faster model workers may consume the same world at different cadences.
+
+Durable clients persist required events, active-step identity, outcomes and
+acknowledgements in a worker store. Complete only after verifying the durable
+handled outcome; acknowledge the exact reserved event IDs, not later arrivals.
+Delivery retries use the same identity. Releasing a failed/superseded step
+retains unhandled events and invalidates late completion; re-evaluation gets a
+new step ID. Reconcile durable outcomes before retrying physical actions.
+Queue limits require explicit backpressure/admission errors, never silent loss
+of required messages. A replaceable-state key overflow can instead request a
+fresh projection. Reuse domain audit events only when they actually contain
+the required occurrence and retention covers the consumer's progress.
+
+ClientSteps is a worker-side design interface. Its persistent schema and crash
+recovery are not yet implemented or included in the thirteen world tables.
+No separate message broker or actor framework is required for this first slice.
+
 ## Tracing and sensitive data
 
 Use OpenTelemetry spans and OTLP export to Laminar for both LLM and ordinary
-code. Trace perception, fusion, decision context/evaluation/admission, reducer
+code. Trace perception, fusion, inbox batches, compiled context/evaluation/admission, reducer
 requests, local execution boundaries and measured completion. Use W3C context
 on trusted request paths; subscription delivery does not automatically inherit
 the writer's trace. Correlate observation/context/execution references and use
 OTel links when originating context is available. A trace ID is never an
 authorization credential or a physical retry identity.
 
-Default to reviewed metadata, not content. Disable automatic input/output and
-unreviewed library capture. Sanitize exception events, status text, URLs and
-child attributes before export. Never export raw sensor media, full world
-snapshots, transcripts, prompts, credentials or signed media URLs by default.
-Laminar's PII redaction operates after ingestion on input/output fields; it
-does not replace local filtering, cover all metadata, or rewrite old traces.
-Content debugging requires an approved destination, restricted access and a
-retention policy. Evaluate self-hosting if sensitive data must remain local.
+Use controlled content capture, including authorized sensitive application
+data. Record the compiled step context, selected world projection, relevant
+event/history content, model prompts/responses, tool results and selected image
+evidence. This supports understanding decisions, not just measuring duration.
+Exclude credentials, signed access URLs and unrelated private content across
+inputs, outputs, errors and nested spans. Configure an approved destination,
+restricted access, retention and byte limits before export. Use metadata-only
+mode where content is not authorized. Keep continuous media and large point
+clouds in evidence storage; attach selected samples or authorized references
+and report truncation/expired evidence explicitly.
+
+Laminar's optional PII redaction operates after ingestion on input/output
+fields; it does not cover all metadata or rewrite old traces. Choose redaction
+for the intended data policy instead of removing every sensitive field by
+default. Evaluate self-hosting if sensitive data must remain local.
 
 Use bounded asynchronous export outside reducers and local control. On queue
 overflow or an unavailable exporter, drop diagnostics and count the loss;
@@ -120,8 +178,8 @@ resource limits. Required audit records stay in domain storage: Laminar's
 sampled/redacted traces cannot replace world_event, local execution receipts,
 or exact decision evidence. Tracing is not a dependency of physical action.
 
-The checked tracing file is illustrative metadata/options, not an installed
-SDK or a complete privacy filter. Before enabling export, test secret canaries
+The checked tracing file shows content and metadata-only option profiles, not
+an installed SDK or a complete privacy filter. Before enabling export, test secret canaries
 in inputs, outputs, errors, URLs and nested spans; verify the outbound payload.
 Test exporter outage/overload without delaying local stop or reducer calls.
 

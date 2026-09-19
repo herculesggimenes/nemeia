@@ -53,9 +53,23 @@ export const semanticRow: Row<"semantic"> = {
 // Authorized SDK subscriptions apply matching row changes together; no handwritten WorldDelta.
 // endregion
 
+// region prepared
+export const preparedStep = {
+  id: "step-1", clientId: "operator-agent-1", // one active reasoning step for this logical client
+  contextId: "decision-context-1", // immutable context retained by the worker; shared with the decision below
+  eventIds: ["task-message-1"], // reserved, not yet acknowledged; later arrivals remain pending
+  changedEntityIds: [backpack.id], // many perception updates collapse to one changed entity
+  evidenceVersions: { geometry: geometryRow.version, semantic: semanticRow.version }, // detach latest committed relevant values
+  inputs: ["authorized goal", "current world projection", "pending events", "relevant history"], // context recipe, not a provider prompt
+} as const; // lifecycle summary, not a full PreparedStep or an implemented persistent inbox
+// Subscriptions keep updating the world while inference runs; this step's input stays frozen.
+// The outcome and progress are persisted before task-message-1 is acknowledged.
+// Failed or superseded attempts retain unhandled events; they must not issue a late action.
+// endregion
+
 // region decision
 export const decisionStage = {
-  contextId: "decision-context-1", // worker retains the exact context used for this evaluation
+  contextId: preparedStep.contextId, // exact context selected before inference starts
   goal: "Approach the backpack", // authorized task, potentially interpreted by an LLM
   candidates: [{ key: "candidateA", entityId: backpack.id, semanticVersion: 1n, geometryVersion: 1n }],
   provider: "typesafe", // can be replaced by an LLM or rules without changing the execution protocol
