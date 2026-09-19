@@ -53,10 +53,25 @@ export const semanticRow: Row<"semantic"> = {
 // Authorized SDK subscriptions apply matching row changes together; no handwritten WorldDelta.
 // endregion
 
+// region mission
+export const activeMission: Row<"mission"> = {
+  id: "mission-1", owner: operator, // durable domain identity, independent of the decision client
+  spec: {
+    goal: "Approach the selected backpack", template: undefined, actorIds: ["go2-01"],
+    objectives: [{ id: "approach", description: "Reach the measured standoff", dependsOn: [], optional: false,
+      criterion: { tag: "approached", value: { actorId: "go2-01", targetId: backpack.id, standoffM: 0.8 } } }],
+    maxLinearMps: 0.25, maxRunMs: 15_000, deadlineAt: at("2026-09-19T12:01:00.000Z"),
+  }, // bind the target and authorize this specification before activating the mission
+  state: { tag: "active" }, revision: 1n, closingOutcome: undefined,
+  createdAt: at("2026-09-19T12:00:00.050Z"), updatedAt: at("2026-09-19T12:00:00.050Z"),
+}; // typed fixture; createMission would commit mission + audit, not start the robot
+// endregion
+
 // region subscribed
 export const subscribedClient = {
   clientId: "operator-agent-1", // logical consumer, independent from the UI or another worker
-  interests: ["actor state", "candidate objects and evidence", "relevant relationships", "action bindings", "own executions"], // task scope through authorized views, not executable queries
+  missionId: activeMission.id, // follow mission lifecycle and objective credits, not a private goal string
+  interests: ["mission and credits", "actor state", "candidate objects and evidence", "relevant relationships", "action bindings", "own executions"], // task scope through authorized views, not executable queries
   ready: true, // fixture assumes the required subscriptions have applied
   changedEntityIds: [backpack.id], // coalesced state changes; do not queue every perception update
   eventIds: ["task-message-1"], // separately delivered user instruction; retained until handled
@@ -69,10 +84,11 @@ export const subscribedClient = {
 export const preparedStep = {
   id: "step-1", clientId: subscribedClient.clientId, // one active reasoning step for this logical client
   contextId: "decision-context-1", // immutable context retained by the worker; shared with the decision below
+  missionId: activeMission.id, missionRevision: activeMission.revision, // freeze the mission pin as well as evidence versions
   eventIds: [...subscribedClient.eventIds], // reserve this exact batch; later arrivals remain pending
   changedEntityIds: [...subscribedClient.changedEntityIds], // detach the coalesced changes for this step
   evidenceVersions: { geometry: geometryRow.version, semantic: semanticRow.version }, // detach latest committed relevant values
-  inputs: ["authorized goal", "current world projection", "pending events", "relevant history"], // context recipe, not a provider prompt
+  inputs: ["authorized mission and ready objectives", "current world projection", "pending events", "relevant history"], // context recipe, not a provider prompt
 } as const; // lifecycle summary, not a full PreparedStep or an implemented persistent inbox
 // Subscriptions keep updating the client's read cache while inference runs; this input stays frozen.
 // The outcome and progress are persisted before task-message-1 is acknowledged.
@@ -82,7 +98,8 @@ export const preparedStep = {
 // region decision
 export const decisionStage = {
   contextId: preparedStep.contextId, // exact context selected before inference starts
-  goal: "Approach the backpack", // authorized task, potentially interpreted by an LLM
+  missionId: activeMission.id, goal: activeMission.spec.goal, // intent comes from the accepted mission
+  objectiveId: "approach", // focus this decision on one currently ready objective
   candidates: [{ key: "candidateA", entityId: backpack.id, semanticVersion: 1n, geometryVersion: 1n }],
   provider: "typesafe", // can be replaced by an LLM or rules without changing the execution protocol
   model: "jev-1.13.0", questionVersion: "target-match@1", // qualified, pinned definitions
@@ -98,6 +115,7 @@ export const request: ApproachRequest = {
   executionId: "execution-1", // same ID on every retry; execution row is the receipt
   actorId: "go2-01", targetId: backpack.id, standoffM: 0.8,
   expectedGeometryVersion: 1n, acceptBy: at("2026-09-19T12:00:01.000Z"),
+  mission: { missionId: activeMission.id, objectiveId: "approach", expectedRevision: activeMission.revision }, // pin active mission and ready objective
 };
 export const binding: Row<"actionBinding"> = {
   actorId: request.actorId, version: 1n,
@@ -106,7 +124,7 @@ export const binding: Row<"actionBinding"> = {
   maxLinearMps: 0.25, maxRunMs: 15_000, toleranceM: 0.05, // illustrative policy, not qualified hardware limits
 };
 export const accepted: Row<"execution"> = {
-  id: request.executionId, requestedBy: operator, actorId: request.actorId,
+  id: request.executionId, requestedBy: operator, actorId: request.actorId, missionId: activeMission.id,
   input: request, binding, targetGeometryVersion: geometryRow.version,
   state: { tag: "accepted" }, controller: undefined, controllerEpoch: undefined,
   createdAt: at("2026-09-19T12:00:00.150Z"), updatedAt: at("2026-09-19T12:00:00.150Z"), result: undefined,
@@ -166,4 +184,22 @@ export const succeeded: Row<"execution"> = {
 // If cancellation committed first, success is rejected; the worker reports cancellation or failure instead.
 // Terminal state + robot release + execution.finished audit row commit together.
 // UI sees the new rows through subscriptions. Reconnect reads this terminal receipt and does not redispatch.
+// endregion
+
+// region mission-finished
+export const approachCredit: Row<"missionCredit"> = {
+  key: JSON.stringify([activeMission.id, "approach"]), // one immutable credit for this milestone, even after redelivery
+  missionId: activeMission.id, objectiveId: "approach",
+  evidence: { tag: "execution", value: { executionId: succeeded.id } }, // load and validate the durable measured receipt
+  recordedAt: at("2026-09-19T12:00:08.060Z"),
+};
+export const closingMission: Row<"mission"> = {
+  ...activeMission, state: { tag: "closing" }, closingOutcome: { tag: "succeeded" },
+  revision: 2n, updatedAt: approachCredit.recordedAt,
+}; // all required milestones credited; new action admission is now blocked
+export const completedMission: Row<"mission"> = {
+  ...closingMission, state: { tag: "succeeded" }, closingOutcome: undefined,
+  revision: 3n, updatedAt: at("2026-09-19T12:00:08.070Z"),
+}; // only after every linked attempt is safely closed; this fixture has one confirmed local receipt
+// Mission credit, lifecycle and audit are authoritative; subscribers render them without writing progress.
 // endregion

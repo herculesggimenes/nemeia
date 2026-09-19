@@ -6,6 +6,7 @@ export interface DiagnosticAttributes {
   "nemeia.observation_ref"?: string; // link perception to committed evidence without copying sensor data
   "nemeia.context_ref"?: string; // identify the compiled context, with approved content captured in the trace
   "nemeia.step_ref"?: string; // correlate the inbox batch, context preparation and model call
+  "nemeia.mission_ref"?: string; // durable mission context across clients, steps and physical attempts
   "nemeia.execution_ref"?: string; // correlate attempts; never use a trace ID as an idempotency key
   "nemeia.model_version"?: string; // qualified checkpoint/provider version from trusted configuration
   "nemeia.question_version"?: string; // tested decision definition, not its prompt text
@@ -42,6 +43,7 @@ export const correlationExample = {
   "nemeia.observation_ref": "observation-1",
   "nemeia.context_ref": "decision-context-1",
   "nemeia.step_ref": "step-1",
+  "nemeia.mission_ref": "mission-1",
   "nemeia.execution_ref": "execution-1",
   "nemeia.model_version": "jev-1.13.0",
   "nemeia.question_version": "target-match@1",

@@ -1,5 +1,6 @@
 import { schema, table, t } from "spacetimedb/server";
 import { ApproachRequest, Completion, ExecutionState, Geometry, Mode, ObservationInput, PackagePin, Pose3, Role, Semantic } from "./values.ts";
+import { MissionEvidence, MissionOutcome, MissionSpec, MissionState } from "./missions.ts";
 
 // These tables and the two functions below are checked SDK examples, not a deployed module.
 // Column documentation on the page is generated from these declarations and comments.
@@ -97,12 +98,32 @@ export const robotControl = table({ name: "robot_control", public: false }, {
   observedAt: t.timestamp(), // Acquisition time of the local control report.
 });
 
+export const mission = table({ name: "mission", public: false }, {
+  id: t.string().primaryKey(), // One accepted mission instance; same owner/id/spec retry returns this row.
+  owner: t.identity().index("btree"), // Authenticated operator; owner or admin authorizes mission mutations.
+  spec: MissionSpec, // Immutable bound objective graph and limits; no mutable template lookup.
+  state: MissionState, // active -> closing -> succeeded/failed/cancelled; terminals are immutable.
+  revision: t.u64(), // Starts at 1; increments on lifecycle changes, not on every evidence credit.
+  closingOutcome: t.option(MissionOutcome), // Present only while closing; cancellation can replace pending success.
+  createdAt: t.timestamp(), // Activation time; no implicit credit for evidence predating readiness.
+  updatedAt: t.timestamp(), // Last lifecycle transition, not a heartbeat or sensor timestamp.
+});
+
+export const missionCredit = table({ name: "mission_credit", public: false }, {
+  key: t.string().primaryKey(), // Canonical JSON tuple [missionId,objectiveId]; at most one immutable milestone credit.
+  missionId: t.string().index("btree"), // Existing mission; validated owner and evidence access.
+  objectiveId: t.string(), // Existing objective in mission.spec; dependencies were ready when evidence occurred.
+  evidence: MissionEvidence, // Exact retained observation or execution; no client-supplied progress value.
+  recordedAt: t.timestamp(), // Credit commit time; unlocks dependent objectives.
+}); // derive ready/completed objectives from spec + credits; no second mutable progress table
+
 export const execution = table({ name: "execution", public: false }, {
   id: t.string().primaryKey(), // input.executionId; execution row is also the durable retry receipt.
   requestedBy: t.identity().index("btree"), // Caller who owns this attempt and idempotency key.
   actorId: t.string().index("btree"), // Indexed routing to the robot controller.
+  missionId: t.option(t.string()), // Derived from input.mission for reconciliation; never independently caller-selected.
   input: ApproachRequest, // Immutable normalized request; changed retries with the same ID conflict.
-  binding: actionBinding.rowType, // Exact action policy, mode and executor pinned at acceptance.
+  binding: actionBinding.rowType, // Installed policy with tighter mission caps applied and pinned at acceptance.
   targetGeometryVersion: t.u64(), // Target revision checked again at claim; movement never silently retargets.
   state: ExecutionState, // accepted, running, cancelling, succeeded, cancelled or failed.
   controller: t.option(t.identity()), // Assigned only by a successful claim transaction.
@@ -115,8 +136,8 @@ export const execution = table({ name: "execution", public: false }, {
 export const worldEvent = table({ name: "world_event", public: false }, {
   sequence: t.u64().primaryKey().autoInc(), // Local audit ordering; not a subscription cursor and gaps are allowed.
   id: t.string().unique(), // UUID retained on export; one domain decision per row.
-  kind: t.string(), // Closed names: observation.recorded, execution.accepted/claimed/cancel_requested/finished, configuration.changed, entity.removed.
-  subjectId: t.string().index("btree"), // Entity or execution whose decision was recorded.
+  kind: t.string(), // Closed names: observation.recorded, execution.accepted/claimed/cancel_requested/finished, mission.created/credited/closing/finished, configuration.changed, entity.removed.
+  subjectId: t.string().index("btree"), // Entity, mission or execution whose decision was recorded.
   actor: t.identity(), // Authenticated producer of this decision.
   recordedAt: t.timestamp(), // Database transaction time.
   detail: t.string(), // Short audit explanation; never parse it to reconstruct world state.
@@ -125,7 +146,7 @@ export const worldEvent = table({ name: "world_event", public: false }, {
 // region module
 export const db = schema({
   worldConfig, member, entity, pose, geometry, semantic, relation,
-  observation, track, actionBinding, robotControl, execution, worldEvent,
+  observation, track, actionBinding, robotControl, mission, missionCredit, execution, worldEvent,
 }); // no public base tables; expose authorized views instead
 export default db;
 // endregion

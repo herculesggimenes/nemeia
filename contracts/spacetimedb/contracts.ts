@@ -1,8 +1,9 @@
 import type { Identity, Timestamp, Infer } from "spacetimedb";
 import type * as tables from "./schema.ts";
 import type { ApproachRequest, Completion, ObservationInput } from "./values.ts";
+import type { MissionSpec, MissionEvidence } from "./missions.ts";
 
-type TableMap = Pick<typeof tables, "worldConfig" | "member" | "entity" | "pose" | "geometry" | "semantic" | "relation" | "observation" | "track" | "actionBinding" | "robotControl" | "execution" | "worldEvent">;
+type TableMap = Pick<typeof tables, "worldConfig" | "member" | "entity" | "pose" | "geometry" | "semantic" | "relation" | "observation" | "track" | "actionBinding" | "robotControl" | "mission" | "missionCredit" | "execution" | "worldEvent">;
 export type Row<K extends keyof TableMap> = Infer<TableMap[K]["rowType"]>;
 
 // region world-view
@@ -12,6 +13,7 @@ export interface WorldView {
   relationships: readonly Row<"relation">[]; // both endpoints are in this authorized world view
   actions: readonly Row<"actionBinding">[]; // approach@1 bindings, not a second action registry
   executions: readonly Row<"execution">[]; // only attempts this identity is allowed to see
+  missions: ReadonlyMap<string, MissionView>; // authorized mission instances and their evidence-backed progress
   synchronized: boolean; // false while disconnected or until the required subscription is applied
 } // presentation only: no writable snapshot, manual delta cursor or second authoritative world
 export interface EntityView {
@@ -28,8 +30,26 @@ export interface Affordance {
 } // UI recomputes freshness locally; the reducer repeats all checks authoritatively
 // endregion
 
+// region mission-view
+export interface MissionView {
+  mission: Readonly<Row<"mission">>; // immutable specification plus authoritative lifecycle
+  credits: readonly Row<"missionCredit">[]; // validated milestones; retained across client restarts
+  completedObjectiveIds: readonly string[]; // derived from credits, not a separately writable counter
+  readyObjectiveIds: readonly string[]; // uncredited objectives with all dependencies credited, while active and before deadline
+} // UI and decision workers read the same mission; no per-LLM Mission or Run copy
+// endregion
+
 // Design contracts below describe semantic boundaries. They are NOT handwritten generated clients.
 // Implementation generates reducer bindings from the completed SpacetimeDB module.
+
+// region missions
+export interface Missions {
+  createMission(input: { id: string; spec: MissionSpec }): Promise<void>; // owner from identity; validate bound graph, limits and deadline; atomically activate + audit
+  creditObjective(input: { missionId: string; objectiveId: string; evidence: MissionEvidence }): Promise<void>; // validate proof/readiness; atomically credit + audit and enter closing if all required objectives are met
+  cancelMission(input: { missionId: string; expectedRevision: bigint }): Promise<void>; // idempotent if cancellation already requested; otherwise compare revision, block new work and cancel linked attempts
+  reconcileMission(input: { missionId: string }): Promise<void>; // enforce deadline/completion; close only after all linked attempts have confirmed safe closure
+} // owner/admin calls; no setProgress(), arbitrary success flag or model-controlled completion
+// endregion
 
 // region ingest
 export interface PerceptionIngress {

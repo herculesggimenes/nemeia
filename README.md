@@ -32,7 +32,7 @@ to preserve old APIs, formats, databases, or archived protocol designs.
 
 ## Core Model
 
-| Primitive | Purpose |
+| Concept | Purpose |
 |---|---|
 | World | Holds current entities, relationships, actions, and events. |
 | Entity | Gives one thing a stable identity. |
@@ -41,6 +41,12 @@ to preserve old APIs, formats, databases, or archived protocol designs.
 | Affordance | Describes an action currently available to an actor and target. |
 | Action | Applies a meaningful change to the world. |
 | System | Continuously senses, updates, executes, or emits events. |
+| Event | Retains an occurrence that current state alone may not preserve. |
+| Mission | Binds authorized intent to typed objectives, constraints and evidence-backed progress. |
+
+Mission is a first-class domain abstraction built on the eight world foundations.
+Its specification and progress survive client restarts; clients subscribe and
+propose actions, while validated domain evidence determines objective completion.
 
 See [the Nemeia protocol](./docs/protocol-spacetimedb.md) for the full explanation,
 [the architecture website](./docs/) for a visual walkthrough,

@@ -82,6 +82,10 @@ export type ObservationInput = Infer<typeof ObservationInput>;
 // endregion
 
 // region action
+export const MissionLink = t.object("MissionLink", {
+  missionId: t.string(), objectiveId: t.string(), // mission and ready approached objective this attempt advances
+  expectedRevision: t.u64(), // admission and claim reject a closing, terminal or changed mission
+});
 export const ApproachRequest = t.object("ApproachRequest", {
   executionId: t.string(), // caller-generated UUID; both attempt identity and retry key
   actorId: t.string(), // robot or simulated actor, never a caller-chosen executor
@@ -89,6 +93,7 @@ export const ApproachRequest = t.object("ApproachRequest", {
   standoffM: t.f64(), // positive ground-plane distance to target center; not obstacle clearance
   expectedGeometryVersion: t.u64(), // reject if the selected target changed since the client read it
   acceptBy: t.timestamp(), // short acceptance deadline; not a physical motion deadline
+  mission: t.option(MissionLink), // absent only for an explicitly authorized standalone operator action
 });
 export type ApproachRequest = Infer<typeof ApproachRequest>;
 export const ExecutionState = t.enum("ExecutionState", [

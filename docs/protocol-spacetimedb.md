@@ -3,6 +3,8 @@
 Selected design, 2026-09-19. Nemeia defines perception, a shared world,
 client subscriptions, decisions and bounded execution. Its foundations
 are world, entity, component, relationship, affordance, action, system and event.
+Mission is a first-class domain abstraction built on those foundations: durable
+intent, typed objectives, constraints and evidence-backed progress.
 SpacetimeDB is the selected world-storage and synchronization implementation,
 not a foundational concept. This document does not deploy a database or control
 a robot. Module examples target SpacetimeDB 2.10.1; type checking is not a server
@@ -12,7 +14,7 @@ integration or hardware test.
 
 One world owns committed state. Perception associates observations with stable
 entities and supplies independently timed components and relationships. Clients
-subscribe to relevant state and changes, then prepare context at their own pace. Decisions propose
+subscribe to missions and relevant world changes, then prepare context at their own pace. Decisions propose
 intent; action admission and local execution enforce current requirements.
 Measured outcomes feed back into the world. Tracing records the context behind
 the work without becoming another state or control authority.
@@ -107,9 +109,109 @@ SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
 do not perform serialization or validate runtime input. Preserve evidence and
 row versions; do not serialize a mutable subscription cache or Map directly.
 
+## Missions and objectives
+
+The reference patterns come from open-source MMO server implementations, not
+claims about the commercial games' internal systems. AzerothCore separates
+[quest definitions](https://www.azerothcore.org/wiki/quest_template) from
+[per-character progress](https://www.azerothcore.org/wiki/character_queststatus).
+[EQEmu task activities](https://docs.eqemu.dev/server/task-system-guide/) define
+typed goals, counts, optional activities and ordered steps.
+[TrinityCore QuestObjective](https://github.com/TrinityCore/TrinityCore/blob/master/src/server/game/Quests/QuestDef.h)
+has distinct identity, type, target and amount fields. We adopt the separation
+of definition, progress and objective credit, not their game-specific schemas.
+This is a Nemeia design, not an established universal mission protocol.
+
+### Definition and identity
+
+A mission is one accepted, immutable specification plus a durable lifecycle.
+Keep the bound specification inline in `mission`; an optional template pin is
+authoring provenance, not a mutable lookup. Resolve target identities and
+authorize the specification before creation. The owner is the authenticated
+operator. Owner/admin mutations are allowed; subscription access alone is not
+delegation. Dedicated mission/credit views must enforce this boundary, with
+scoped read access for assigned controllers. Those views remain unimplemented.
+
+Creation with the same owner, ID and specification returns the existing instance;
+a changed body conflicts. The specification never changes in place. Repeating
+or replacing a mission requires a new ID. Plans may adapt without changing the
+agreed outcome. One mission can span clients and executions; there is no separate
+Run, Plan or Task record. A stopped client does not erase or cancel the mission.
+
+### Objectives and credit
+
+An objective has an ID, explanatory text, all-of dependencies, an optional flag
+and a typed criterion. Validate 1–32 nodes, unique IDs, existing references,
+acyclic dependencies and at least one required objective. Optional objectives
+cannot gate required ones. Independent objectives may progress in parallel.
+The first slice has two criteria:
+
+- `observed`: acquire a geometry or semantic facet for an already bound entity.
+  Load the retained observation and its association. The required facet must
+  exist, be acquired at/after objective readiness, and satisfy `maxAgeMs` at
+  credit time with the world's clock-error policy. A semantic facet proves that
+  hypotheses were acquired, not that a label is true.
+- `approached`: a successful `approach@1` receipt for the exact actor, target and
+  standoff. Verify the request's mission/objective link, admission after objective
+  readiness, successful measured completion and the pinned effective policy.
+  A sent command, model answer or unlinked standalone action is not credit.
+
+Readiness begins at mission creation or the latest prerequisite credit timestamp.
+These are latched milestones, not perpetual conditions. Old proof cannot satisfy
+a newly unlocked objective; repeated frames cannot stand in for distinct objects.
+Live physical freshness is still rechecked for every action.
+
+`mission_credit` stores one immutable proof per `[missionId, objectiveId]`.
+Check owner/admin and evidence access; load authoritative domain records instead
+of accepting caller-provided progress. The first valid proof wins. Redelivery
+returns the existing credit without replacing evidence. Validate and record the
+credit, audit event and any transition to closing in one transaction. Retain
+proof records for the supported mission audit lifetime; a missing reference
+cannot grant new credit. Derive ready/completed IDs from the specification and
+credits, with no additional mutable progress table. A client inbox acknowledgement
+and a mission objective credit are different operations.
+
+### Lifecycle and execution
+
+The lifecycle is `active → closing → succeeded | failed | cancelled`. Creation
+activates a complete authorized specification; drafts remain authoring inputs.
+All required credits request success. Cancellation requests cancellation; expiry
+requests failure. Entering closing blocks new admission and claim, requests
+cancellation of unfinished linked attempts and bumps the lifecycle revision.
+Record cancellation intent for linked executions atomically with that transition;
+bound outstanding attempts to one per mission/objective. Deadline checks occur
+at admission, claim, credit and reconciliation; schedule reconciliation even when
+no sensor writes arrive. A mission deadline is not a robot-local watchdog.
+
+Before a terminal mission state, confirm safe closure for every linked attempt.
+An execution marked failed with an unknown physical outcome is insufficient.
+An unreachable controller leaves closing unresolved, never implies stopped.
+Cancellation can replace pending success before terminal commit. A deadline
+reached while closing prevents success; it does not override requested cancellation.
+An already requested cancellation is an idempotent retry, checked before the
+revision precondition; cancellation cannot rewrite another terminal outcome.
+Terminal mission outcomes are immutable. A failed action alone need not fail the
+mission: reconcile it before considering a fresh execution with a new ID.
+
+Action requests pin mission ID, objective ID and lifecycle revision. Admission
+and claim verify active state, deadline, ready matching objective, authorized
+owner and allowed actor. Reject a second nonterminal attempt for that objective.
+Pin the tighter installed/mission speed and per-execution duration caps in the
+accepted policy; local control enforces those caps independently. Only the
+explicit standalone operator path permits an absent mission link; workers must
+not strip a mission link to bypass closing or cancellation. Entity removal must
+reject references from active/closing missions as well as active executions.
+
+Start with two tables and one `Missions` boundary. Counted objectives need an
+explicit distinct-item identity and deduplication policy before addition.
+Dynamic branches, nested missions, pause/resume, party permissions, rewards,
+reset calendars and automatic mission chains are intentionally deferred.
+The typed schema and fixtures specify this design; mission reducers, validators,
+authorized views, scheduler and crash/race tests are not implemented here.
+
 ## Client subscriptions
 
-A subscription selects which authorized state and changes a client follows.
+A subscription selects its mission, credits and relevant authorized world changes.
 An inbox buffers work that needs attention; context is the detached, frozen
 input prepared when the client is ready to decide. These are separate concerns,
 not three world authorities or three required services.
@@ -166,7 +268,7 @@ fresh projection. Reuse domain audit events only when they actually contain
 the required occurrence and retention covers the consumer's progress.
 
 ClientSteps is a worker-side design interface. Its persistent schema and crash
-recovery are not yet implemented or included in the thirteen world tables.
+recovery are not yet implemented or included in the world tables.
 No separate message broker or actor framework is required for this first slice.
 
 ## Tracing and sensitive data
@@ -210,9 +312,9 @@ Test exporter outage/overload without delaying local stop or reducer calls.
 
 ## Verification scope
 
-The SDK schema, cancellation reducer, authorized execution view, design
-interfaces and static flow fixtures are type-checked against 2.10.1. Remaining
-reducers and world views are specified, not implemented. The illustrative
+The fifteen-table SDK schema, cancellation reducer, authorized execution view, design
+interfaces and static flow fixtures are type-checked against 2.10.1. Mission
+validators/lifecycle, remaining reducers and world views are specified, not implemented. The illustrative
 generated-client fragment requires bindings from the completed module.
 Server integration, auth revocation, crash/retry tests, model evaluation and
 hardware qualification remain implementation work.
