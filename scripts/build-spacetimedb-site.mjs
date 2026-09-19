@@ -10,6 +10,7 @@ import { missionsContractCode } from "../docs/mission-model-content.mjs";
 import { renderAgents } from "../docs/agent-content.mjs";
 import { renderEve } from "../docs/eve-content.mjs";
 import { renderWorldPlan, objectCode, objectPlanningCode, worldMemoryCode, coordinationCode, plannedTables, v0FlowCode } from "../docs/world-view-content.mjs";
+import { spatialContractCode } from "../docs/spatial-model-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -42,8 +43,8 @@ const tableHtml = tables.map((item,i)=>{
 }).join("\n");
 
 const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell"><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span></div><div class="diagram">${[
-  ["Perception","Camera, depth, audio and telemetry become evidence.","observe + associate"],
-  ["World","Durable entities, evidence, mission progress and local map revisions.","retain → refine → recover"],
+  ["Perception","Mapping and image perception run in parallel; calibrated association joins their evidence.","map + detect + associate"],
+  ["World","Accumulated spatial maps, regions, names, objects and mission progress.","retain → refine → recover"],
   ["Awareness","Automatic Unit observations; nearby state when a usable frame exists.","subscriptions → bounded context"],
   ["Agents","Agents use world context to coordinate missions and propose actions.","context → decision → intent"],
   ["Execution","Admission checks authority and evidence; local systems control Units.","validate → execute → measure"],
@@ -88,6 +89,10 @@ const readRows = `<div class="architecture-rows">${[
 ].map(([title,body])=>`<div class="architecture-row"><strong>${title}</strong><div>${escape(body)}</div></div>`).join("")}</div>`;
 
 const refs = [
+  ["Spatial mapping reference","https://github.com/hku-mars/FAST-LIVO2","LiDAR–inertial–visual estimation and mapping; a reference pattern, not an assumed Go2 integration."],
+  ["Native occupancy representation","https://github.com/ros2/common_interfaces/blob/rolling/nav_msgs/msg/OccupancyGrid.msg","ROS grid metadata and application-defined occupancy values. Retain the producer's documented encoding."],
+  ["Incremental scene graphs","https://github.com/MIT-SPARK/Hydra","Reference for deriving spatial and semantic scene structure over time; not a required Nemeia dependency."],
+  ["Pose navigation boundary","https://github.com/ros-navigation/navigation2/blob/main/nav2_msgs/action/NavigateToPose.action","An existing pose-goal action pattern. Each Unit still needs a qualified navigation and control adapter."],
   ["Local coordinate frames","https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0105.rst","ROS reference for independent mobile-platform frames; local operation need not wait for global localization."],
   ["Collaborative mapping reference","https://arxiv.org/html/2211.01538","D²SLAM: local frames, discovery, near/far estimation and evidence-backed alignment."],
   ["Reducers","https://spacetimedb.com/docs/functions/reducers/","Atomic module operations; no external IO inside reducers."],
@@ -104,7 +109,7 @@ ${section("objects","02","Objects & world view","WorldView projects durable enti
 ${renderWorldPlan({section,proseRow})}
 ${renderMissions({section,codeRow,proseRow,region})}
 ${renderAgents({section,proseRow})}
-${section("contracts","03","Service contracts","Typed boundaries for world storage, perception, missions, coordination and execution. Each contract defines authority, validation and retry behavior; it need not be a separate microservice.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,id === "world-memory" ? worldMemoryCode : id === "missions" ? missionsContractCode : id === "coordination" ? coordinationCode : region(sources.contracts,id),`contract-${id}`)).join("\n")}</div>`)}
+${section("contracts","03","Service contracts","Typed boundaries for world storage, perception, missions, coordination and execution. Each contract defines authority, validation and retry behavior; it need not be a separate microservice.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,spatialContractCode(id,id === "world-memory" ? worldMemoryCode : id === "missions" ? missionsContractCode : id === "coordination" ? coordinationCode : region(sources.contracts,id)),`contract-${id}`)).join("\n")}</div>`)}
 ${section("tables","04","Database tables",`${tables.length} private tables hold world records, local maps, assignments, progress and execution receipts. Authorized views expose the relevant state to each client. Eve owns conversation and runtime persistence.`,`<div class="schema-list">${tableHtml}</div>`)}
 ${section("platform","05","Implementation choices","Storage, inference, agent runtime and tracing support the domain model through explicit boundaries.",`${implementationChoices}<div class="object-list">${platform}</div>${readRows}${codeRow("example",0,"Subscribe and reconcile","generated client pattern","Generated bindings expose authorized views. Subscription initialization and committed changes update the local cache; clients reconcile current state before acting.",subscription,"sdk-subscribe")}`)}
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}

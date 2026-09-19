@@ -9,7 +9,8 @@ import { inspectionSpec } from "./missions.ts";
 import ts from "../../frontend/node_modules/typescript/lib/typescript.js";
 import { fileURLToPath } from "node:url";
 import { missionCode, missionViewCode, missionLogCode, missionsContractCode } from "../../docs/mission-model-content.mjs";
-import { v0FlowCode, objectPlanningCode } from "../../docs/world-view-content.mjs";
+import { v0FlowCode, objectPlanningCode, objectCode, worldMemoryCode } from "../../docs/world-view-content.mjs";
+import { spatialTypesCode, navigationCode } from "../../docs/spatial-model-content.mjs";
 
 test("sensor facets retain independent acquisition times and complete measured geometry",()=>{
   const { input, camera, lidar, geometryRow }=example;
@@ -165,7 +166,7 @@ test("architecture documents durable local knowledge, automatic awareness and re
   assert.match(flow,/mission-2/);
   assert.match(flow,/satisfies MissionSpec/);
   assert.match(flow,/recordObjectiveProgress/);
-  for (const text of ["Find the blue backpack", "Inspect the passage", "satisfies MissionFinding", "satisfies ApproachRequest", "World Master reviews", "obstructed", "obs-2"]) assert.ok(flow.includes(text), text);
+  for (const text of ["Find the blue backpack", "Inspect the passage", "satisfies MissionFinding", "satisfies NavigateRequest", "World Master reviews", "obstructed", "obs-2"]) assert.ok(flow.includes(text), text);
   assert.doesNotMatch(flow,/Acquire a fresh semantic observation|Acquire a fresh local geometry measurement/);
   assert.ok(page.includes('id="object-mission-finding"'));
   assert.ok(page.includes('id="object-mission-place"'));
@@ -173,8 +174,13 @@ test("architecture documents durable local knowledge, automatic awareness and re
   assert.match(v0FlowCode.mission, /searchArea: \{ tag: "description", value: \{ text: "the living area" \} \}/);
   assert.match(v0FlowCode.mission, /region: \{ tag: "description", value: \{ text: "the passage to the kitchen" \} \}/);
   assert.doesNotMatch(v0FlowCode.mission, /searchAreaId:|regionId:|entityId:/);
-  assert.match(v0FlowCode.navigation, /targetId: "opening-1"/);
-  assert.match(v0FlowCode.discovery, /entityId: "opening-1"/);
+  assert.match(v0FlowCode.navigation, /targetPose:/);
+  assert.match(v0FlowCode.discovery, /kind: "occupancy"/);
+  assert.doesNotMatch(flow, /opening-1|firstSurvey|sizeM: \[0.4, 0.3, 0.7\]/);
+  assert.match(v0FlowCode.inputs, /tag: "pointCloud"/);
+  assert.match(v0FlowCode.naming, /satisfies LocalMapManifest/);
+  assert.match(v0FlowCode.findings, /regionRevision: 1n/);
+  for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-naming"]) assert.ok(page.includes(`id="${id}"`), id);
   assert.match(v0FlowCode.findings, /searchAreaId: "space-1"/);
   assert.match(v0FlowCode.findings, /regionId: "passage-1"/);
   assert.doesNotMatch(flow, /regions are already named|resolve them before accepting|targetId: &quot;kitchen-doorway&quot;/);
@@ -201,10 +207,10 @@ test("mission planning examples use the declared description/objectives/log/prog
   const path=fileURLToPath(new URL("./mission-plan-check.ts",import.meta.url));
   const source=[
     'import { Identity, Timestamp, t, type Infer } from "spacetimedb";',
-    'import { PackagePin as PackagePinBuilder } from "./values.ts";',
-    'type PackagePin = Infer<typeof PackagePinBuilder>;',
     'import type { Row, WorldMasters } from "./contracts.ts";',
+    ...["geometry", "evidence"].map(id => objectPlanningCode(id, readFileSync(new URL("./values.ts", import.meta.url), "utf8").split(`// region ${id}\n`)[1].split("// endregion")[0])),
     objectPlanningCode("action", readFileSync(new URL("./values.ts", import.meta.url), "utf8").split("// region action\n")[1].split("// endregion")[0]),
+    spatialTypesCode, navigationCode, objectCode["local-map"], worldMemoryCode,
     ...Object.values(missionCode), missionViewCode, missionLogCode, missionsContractCode,
     ...Object.values(v0FlowCode),
   ].join("\n\n");

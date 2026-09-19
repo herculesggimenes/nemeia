@@ -62,12 +62,12 @@ interface Mission {
   "mission-finding": `type MissionFinding =
   | { tag: "located"; value: {
       entityId: string; // discovered candidate accepted as the requested object during review
-      searchAreaId: string; // discovered place matching searchArea; not required at mission creation
+      searchAreaId: string; searchAreaRevision: bigint; // discovered region and exact archived extent/name version
       observationIds: readonly string[]; // nonempty evidence of place identity, object match and location within it
       description: string; // human-readable location; coordinates/time come from cited evidence
     } }
   | { tag: "inspected"; value: {
-      regionId: string; // discovered place matching region, or the exact ID when the target was already bound
+      regionId: string; regionRevision: bigint; // discovered region and exact archived extent used for the inspection
       conclusion: "obstructed" | "clear" | "unknown"; // a finding, not navigation clearance
       obstructionEntityIds: readonly string[]; // evidenced obstructions; nonempty for obstructed
       observationIds: readonly string[]; // nonempty retained evidence of place identity and reported inspection extent
