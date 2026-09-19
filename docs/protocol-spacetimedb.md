@@ -55,9 +55,12 @@ agent, mission, entity or execution identities. Each inference gets a bounded
 authorized projection; prompt omission never deletes durable knowledge.
 
 World persistence and restart recovery are platform responsibilities, not mission
-objectives. The walkthrough uses two missions for an already known target: acquire
-a fresh semantic observation and acquire measured local geometry. Their typed
-objectives validate domain evidence; they do not certify complete scene coverage.
+objectives. The walkthrough assigns one agent two missions: find a blue backpack
+in a bounded living area and inspect the kitchen passage for obstructions. A
+useful viewpoint supports both investigations. The backpack need not exist in
+the world before the search; the search area and inspection region must be
+resolved. Shared observations support independently reviewed findings. An
+obstructed passage is a valid inspection result, not a navigation clearance.
 Restart recovery is a platform property, independent of mission completion.
 
 Recovery validation covers: ingest observations; refine an associated entity;
@@ -244,8 +247,9 @@ A mission is one accepted, immutable specification plus a durable lifecycle.
 briefing. `objectives[]` defines the measurable conditions.
 Description is useful reasoning context, not executable completion logic.
 Keep the bound specification inline in `mission`; an optional template pin is
-authoring provenance, not a mutable lookup. Resolve target identities and
-authorize the specification before creation. The owner records the creating
+authoring provenance, not a mutable lookup. Resolve bound targets and region
+extents before creation. A search binds a description and bounded area rather
+than an entity that has not yet been discovered. The owner records the creating
 World Master's identity; it does not lock the mission to one agent. World Masters
 create/cancel and assign participants; active assigned agents may submit proof.
 Subscription access alone grants neither participation nor Unit authority.
@@ -285,7 +289,7 @@ An objective has an ID, explanatory text, all-of dependencies, an optional flag
 and a typed criterion. Validate 1–32 nodes, unique IDs, existing references,
 acyclic dependencies and at least one required objective. Optional objectives
 cannot gate required ones. Independent objectives may progress in parallel.
-The contract defines two criteria with distinct evidence requirements:
+The contract defines criteria with distinct evidence requirements:
 
 - `observed`: acquire a geometry or semantic facet for an already bound entity.
   Load the retained observation and its association. The required facet must
@@ -296,6 +300,28 @@ The contract defines two criteria with distinct evidence requirements:
   standoff, using an eligible assigned Unit selected by an agent. Verify the request's mission/objective link, admission after objective
   readiness, successful measured completion and the pinned effective policy.
   A sent command, model answer or unlinked standalone action is not credit.
+- `located`: find the described object within a resolved search area. The
+  finding identifies a discovered entity and cites retained observations of
+  its identity and last-seen location. The explicit `world_master` review policy
+  requires authenticated acceptance; a detector label cannot approve its own
+  match. Not-found-yet is not success. Exhausting a search requires a separate,
+  bounded coverage criterion rather than counting negative frames.
+- `inspected`: answer the specified obstruction question for a resolved region.
+  A typed finding reports `obstructed`, `clear` or `unknown`, with observations
+  and any obstruction entity IDs. Under `world_master` review, an evidenced
+  obstruction can complete the objective. Clear requires evidence covering the
+  entire defined region; unknown or insufficient visibility cannot complete it.
+  Inspection findings do not certify traversability for any particular Unit.
+
+Agents draft `MissionFinding` results through Eve. Drafts are neither authoritative
+world state nor objective progress. For the reviewed criteria, only a World
+Master may submit acceptance through `recordObjectiveProgress`; reducers validate
+the criterion/finding tag, referenced evidence, acquisition age, readiness, access
+and region scope. Review supplies the identity or coverage judgment that the
+deterministic reference checks cannot establish. No inference runs in a reducer.
+Store the accepted finding inline in the progress evidence and the authenticated
+reviewer identity in audit. A model cannot gain review authority by echoing a role
+field. Preserve cited evidence for the mission's audit lifetime.
 
 Readiness begins at mission creation or the latest prerequisite credit timestamp.
 These are latched milestones, not perpetual conditions. Old proof cannot satisfy
@@ -319,8 +345,9 @@ multiple objectives only after each independently validates it. A client inbox
 acknowledgement and objective progress are different operations.
 
 `Missions.readMissionLog` exposes the authorized projection;
-`Missions.recordObjectiveProgress` accepts evidence references, not asserted
-progress. Creation and assignment remain separate World Master operations.
+`Missions.recordObjectiveProgress` accepts evidence references or explicitly
+reviewed findings, not asserted progress. Creation and assignment remain separate
+World Master operations.
 
 ### Lifecycle and execution
 
@@ -347,7 +374,11 @@ mission: reconcile it before considering a fresh execution with a new ID.
 Action requests pin mission ID, objective ID, mission revision and Unit assignment
 revision. Admission and claim verify the current caller role, unpaused agent,
 participation, current unexpired grant for the action, active mission, deadline,
-ready matching objective, evidence freshness and target version. Reject a second
+ready objective, evidence freshness and target version. An `approached` objective
+requires its exact target and standoff. For a search or inspection, the approach
+target must be in the authorized investigation area or a verified adjacent
+viewpoint; reject unrelated motion. Arrival supports investigation but does not
+complete `located` or `inspected`. Reject a second
 nonterminal attempt for that objective. MissionSpec has no Unit list, speed cap
 or motor duration. Pin installed execution policy in the accepted row; local
 control may tighten it. Only an explicit audited World Master intervention can

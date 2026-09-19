@@ -88,7 +88,10 @@ export const coordinationCode = `interface AgentCoordination {
 
 export function objectPlanningCode(id, code) {
   if (id === "evidence") return code.replace('  producerSession: t.string()', '  localMapId: t.string(), // originating local-map context, validated against producer authority; retain even for unlocated evidence\n  producerSession: t.string()');
-  if (id === "action") return code.replace('  expectedGeometryVersion: t.u64()', '  expectedGeometryFrameId: t.string(), // identify the exact frame-qualified target facet; require a usable transform to the executor\n  expectedGeometryVersion: t.u64()');
+  if (id === "action") return code
+    .replace('mission and ready approached objective this attempt advances', 'mission and ready objective this attempt serves; investigation actions do not themselves complete it')
+    .replace('  expectedGeometryVersion: t.u64()', '  expectedGeometryFrameId: t.string(), // identify the exact frame-qualified target facet; require a usable transform to the executor\n  expectedGeometryVersion: t.u64()')
+    .concat('\n// For approached, require the specified target/standoff. For located or inspected, require a target\n// in the authorized investigation area or a verified adjacent viewpoint; reject unrelated motion.\n// This action can support an investigation, but only the objective criterion determines progress.');
   return code;
 }
 
@@ -162,114 +165,166 @@ export function plannedTables(tables) {
 }
 
 export const v0ExampleRows = [
-  ["mission", "World Master describes two missions", "description + objectives; no hardware choice", "A prior observation has already established backpack-A. The World Master requests a fresh semantic inspection and a separate geometry measurement of that same known target. Both missions use the same accumulated world knowledge."],
-  ["team", "Assign both missions to one agent", "World Master → Navigator's mission log → separate Unit grant", "Assign both missions to Navigator, then grant Go2 capabilities separately. The log contains both assignments. Nemeia derives awareness automatically; Navigator neither selects subscription entity IDs nor creates a separate reasoning loop per mission."],
-  ["inputs", "Observe in a local frame", "known target → fresh retained evidence", "A fresh camera detection can update the known backpack without metric depth. A later qualified local spatial pipeline adds geometry. Local calibration is still required; no cross-Unit calibration or global frame is assumed. Observations need validated association to the bound target."],
-  ["projection", "Refine and checkpoint the local map", "same entity → newer evidence → immutable map revision", "Commit observations idempotently. Association links the second observation to the same local entity only with supporting evidence. Preserve old observations, exact source frames and retained resources. Publish immutable map bytes before atomically advancing the checkpoint head."],
-  ["prepared", "Read the mission log and choose work", "one coordinated step across both assignments", "The adapter freezes a compact log summary, relevant world changes, Unit availability and pending executions before reasoning. Navigator can submit the semantic proof while waiting for geometry. Neither mission is paused by the choice of focus. Detailed evidence remains available through authorized reads."],
-  ["resume", "Restart and recover", "durable world survives disposable context", "A new Eve session or restarted worker reloads the same mission, entity identities and map head. Reconcile later retained observations against the checkpoint's evidence index. If localization is lost, keep the map readable and require relocalization or a new frame before spatial action."],
-  ["mission-finished", "Record objective progress and close", "two independent outcomes; one agent", "Each evidence submission is checked against its mission's objective, readiness, acquisition age and permissions. The world records progress and closes each mission independently. No physical actions are required in this example. Mission progress and world memory persist independently of the agent's conversation."],
+  ["mission", "Find the backpack · inspect the passage", "search + inspection · shared world", "The World Master asks Navigator to find a blue backpack and inspect the passage to the kitchen. The living area and passage are already named, bounded regions in the local map; the backpack has no known entity or location. If those regions are ambiguous, resolve them before accepting the missions. Both objectives use explicit World Master review of evidence-backed findings."],
+  ["team", "Assign Navigator and grant Go2", "one mission log · one Unit · separate authority", "The World Master creates both missions, assigns them to Navigator and separately grants Go2 control. Nemeia derives awareness from Go2 observations, its usable local neighborhood and both mission dependencies. Neither assignment starts the robot or creates a separate Eve loop."],
+  ["prepared", "Choose an investigation from the mission log", "read known evidence → identify a gap → choose a viewpoint", "Navigator reads both assignments. Existing observations do not establish a backpack match, and the passage is partly occluded. Investigating the kitchen doorway can help both missions. Exploration chooses which missing information to pursue; navigation gets Go2 to a useful viewpoint. Neither behavior is itself a mission type."],
+  ["navigation", "Navigate to a useful viewpoint", "agent intent → admission → local planner → measured receipt", "A recent observation locates the kitchen doorway in Go2’s local frame. Navigator requests approach@1 under the inspection objective. The controller chooses a safe path and local stopping pose; it does not blindly follow the LLM. If the bound action cannot provide a useful, safely reachable viewpoint, report it unavailable and reconsider. Arrival only enables inspection; it does not complete it."],
+  ["inputs", "Discover a candidate while inspecting", "camera candidate → associated depth → wider view", "At the viewpoint, YOLOE detects a blue backpack candidate. Qualified camera/depth association adds local geometry; a wider observation shows how the object occupies the passage. Perception keeps committing evidence while Navigator is reasoning. A label is not an accepted identity, and the absence of detections is not proof of a clear passage."],
+  ["projection", "Retain evidence and refine the map", "one discovered entity · independent facets · durable checkpoints", "Association creates backpack-A and refines it with measured local geometry. Retain exact acquisitions and resources before publishing the map checkpoint. Moving out of view does not erase the entity. Camera viewpoints and retained evidence help reconstruct what was inspected; they do not automatically prove complete search coverage."],
+  ["findings", "Compile the next step and report both findings", "one evidence set → two independently reviewed outcomes", "The adapter compiles both mission summaries and new evidence into one frozen Eve context. Navigator proposes a backpack match and an obstructed-passage report. Both cite obs-2, but each must satisfy its own criterion. These are typed draft findings, not trusted facts or completion flags. The reviewer checks identity and last-seen location separately from obstruction evidence."],
+  ["mission-finished", "Accept findings and close each mission", "review → durable objective progress → safe closure", "For these review policies, the World Master submits each accepted finding through Missions.recordObjectiveProgress. The backpack mission may close while passage review remains pending. Finding an obstruction successfully completes the inspection; clearing it was never requested. Unknown visibility cannot complete inspection, and a clear report would require evidence covering the entire named region. Neither outcome authorizes traversal."],
+  ["resume", "Recover the world and resume useful work", "world state and accepted progress survive an Eve reset", "A restarted agent reloads both assignments, accepted findings, retained observations, map checkpoints and execution receipts. It reconstructs outstanding work from those records. Draft reasoning is not objective progress. If Go2 has lost localization, the map remains readable but spatial actions wait for qualified localization or a new frame."],
 ];
 
 export const v0FlowCode = {
-  mission: `// Mission creation inputs; these examples perform no IO.
+  mission: `// Mission creation inputs; no robot commands or database writes run on this page.
 const at = (iso: string) => Timestamp.fromDate(new Date(iso));
-const semanticSpec = {
-  description: "Acquire a fresh semantic observation of the selected backpack",
+const backpackSpec = {
+  description: "Find the blue backpack in the living area and report where it was last seen.",
   objectives: [{
-    id: "inspect", description: "Record current semantic hypotheses for backpack-A",
+    id: "locate", description: "Identify the requested backpack and report its evidenced location.",
     dependsOn: [], optional: false,
-    criterion: { tag: "observed", value: {
-      entityId: "backpack-A", facet: { tag: "semantic" }, maxAgeMs: 30_000, // example freshness policy, not a universal default
+    criterion: { tag: "located", value: {
+      description: "Blue backpack", searchAreaId: "living-area", // resolve the search area, not the unknown object
+      maxAgeMs: 60_000, review: "world_master", // example acceptance policy; not an automatic detector verdict
     } },
   }],
-  deadlineAt: at("2026-09-19T12:06:00Z"), // deadline for this mission, not a controller timeout
+  deadlineAt: at("2026-09-19T12:06:00Z"),
 } satisfies MissionSpec;
-const geometrySpec = {
-  description: "Acquire a fresh local geometry measurement of the selected backpack",
+const passageSpec = {
+  description: "Inspect the passage to the kitchen and report anything obstructing it.",
   objectives: [{
-    id: "measure", description: "Record measured geometry in a known local frame",
+    id: "inspect", description: "Report whether the defined passage is obstructed, with evidence.",
     dependsOn: [], optional: false,
-    criterion: { tag: "observed", value: {
-      entityId: "backpack-A", facet: { tag: "geometry" }, maxAgeMs: 30_000,
+    criterion: { tag: "inspected", value: {
+      regionId: "kitchen-passage", question: "Is anything obstructing this passage?",
+      maxAgeMs: 60_000, review: "world_master", // obstructed can be a successful inspection result
     } },
   }],
   deadlineAt: at("2026-09-19T12:06:00Z"),
 } satisfies MissionSpec;
 const creationInputs = [
-  { id: "mission-1", spec: semanticSpec },
-  { id: "mission-2", spec: geometrySpec },
+  { id: "mission-1", spec: backpackSpec },
+  { id: "mission-2", spec: passageSpec },
 ] satisfies Parameters<Missions["createMission"]>[0][];
-// World Master submits these before assignment; creation commits description + objectives + lifecycle.
-// backpack-A must already exist. These are input objects, not fabricated persisted Mission rows.`,
+// The bounded kitchen-passage region is inside living-area in this example.
+// These are existing region entities, not invented global coordinates or an existing backpack target.
+// No Unit, route, viewpoint, motor speed or execution duration is part of either MissionSpec.
+// Not found yet is not success; declaring a bounded search exhausted needs a separate coverage criterion.`,
   team: `const missionAssignments = [
   { missionId: "mission-1", agentId: "navigator", active: true, expectedRevision: 1n },
   { missionId: "mission-2", agentId: "navigator", active: true, expectedRevision: 1n },
-] satisfies Parameters<WorldMasters["assignMission"]>[0][]; // World Master submits each after creation
-// Both assignments appear in Navigator's mission log; each mission revision advances independently.
-// A separate WorldMasters.assignUnit operation grants Go2 capabilities to Navigator.
-// Assignment permits proposals; it does not reserve the Unit or start a physical action.
-// Nemeia follows Go2 observations, its local map, all assigned mission deadlines and pending outcomes.
-// The agent does not create subscriptions. The world owns awareness and batching policy.
-// No radius is needed to retain direct observations; no frame alignment is fabricated.`,
-  inputs: `const firstObservation = {
+] satisfies Parameters<WorldMasters["assignMission"]>[0][];
+const unitGrant = {
+  unitId: "go2-01", agentId: "navigator", actionNames: ["approach@1"],
+  expectedRevision: 0n, expiresAt: at("2026-09-19T12:06:00Z"),
+} satisfies Parameters<WorldMasters["assignUnit"]>[0];
+// World Master submits creation, assignment and Unit grant as separate operations.
+// Each mission is now at revision 2; this first Unit grant produces assignment revision 1.
+// Participation is not command authority. Command authority is not a physical execution reservation.
+// Both assignments share one Eve agent loop and automatically prepared Unit awareness.`,
+  prepared: `// Decision-context excerpt, not another writable world table.
+const initialContext = {
+  agentId: "navigator", unitId: "go2-01",
+  missionLogSummary: [
+    { missionId: "mission-1", objectiveId: "locate", progress: "pending", need: "accepted match and location" },
+    { missionId: "mission-2", objectiveId: "inspect", progress: "pending", need: "passage inspection" },
+  ],
+  relevantKnowledge: {
+    backpackCandidateIds: [], // no match established; retained prior observations are still available
+    passageVisibility: "partial", // unknown behind the occlusion is not clear
+    landmarkId: "kitchen-doorway", // a known, freshly located entity near a useful viewpoint
+    frameId: "go2/map:epoch-7", navigation: "qualified", // assumed measured local capability in this scenario
+  },
+};
+// Navigator chooses passage inspection first because that viewpoint can also help the backpack search.
+// Read retained evidence before revisiting locations; do not treat old negative detections as exhaustive.
+// Exploration chooses an information gap. Navigation reaches a viewpoint. Perception supplies evidence.
+// A second mission stays active while attention is on the first; focus changes no deadlines.`,
+  navigation: `const approachInput = {
+  executionId: "d0cb5435-aed4-45b5-933c-fb47b29cff42", // stable retry identity for this attempt
+  unitId: "go2-01", assignment: { agentId: "navigator", revision: 1n },
+  targetId: "kitchen-doorway", standoffM: 0.8, // chosen investigation action, not a mission outcome
+  expectedGeometryFrameId: "go2/map:epoch-7", expectedGeometryVersion: 8n,
+  acceptBy: at("2026-09-19T12:00:08Z"), // fresh target evidence acquired at 12:00:05
+  mission: { missionId: "mission-2", objectiveId: "inspect", expectedRevision: 2n },
+} satisfies ApproachRequest;
+// ActionRequests.requestApproach receives this input; the example performs no IO.
+// Admission checks authority, ready objective, permitted target scope, fresh geometry and local capability.
+// Claim reserves Go2 across all missions; robot-local planning and obstacle checks run at their own rates.
+// accepted → claimed → local motion → measured arrival at 12:00:12 → confirmed safe-closure receipt.
+// Retry by executionId. An unknown physical outcome holds the reservation until reconciled.
+// Linking an action to an inspection explains its purpose; arrival does NOT satisfy inspected.
+// The 0.8 m standoff is not an obstacle-clearance guarantee or a command to cross the passage.`,
+  inputs: `// Observation excerpts; full ingestion also carries source IDs, resources and calibration receipts.
+const candidateObservation = {
   id: "obs-1", unitId: "go2-01", producerSession: "perception-7", trackId: "track-12",
-  acquiredAt: "2026-09-19T12:00:01Z", // exact source sample time; receipt time is separate
-  hypothesis: { label: "backpack", score: 0.94 }, // semantic belief, not position or navigability
-  metricGeometry: undefined, // retain the observation without guessing depth
-};
-const measuredGeometry = {
-  id: "obs-2", frameId: "go2/map:epoch-7", // later qualified local measurement, not a global map
-  acquiredAt: "2026-09-19T12:00:03Z",
-  centerM: [2.4, -0.6, 0.35], sizeM: [0.4, 0.3, 0.7], // illustrative measured values
-};
-// These excerpts are not complete ObservationInput objects: ingestion also requires source IDs,
-// calibration/transform provenance and storage receipts. Both observations must associate to backpack-A.
-// Matching the label alone never proves identity. Both acquisitions occur after mission readiness.`,
+  acquiredAt: "2026-09-19T12:00:13Z",
+  hypotheses: [{ label: "backpack", score: 0.94 }, { label: "blue", score: 0.91 }],
+}; // image evidence alone does not fabricate a metric position or prove identity
+const locatedObservation = {
+  id: "obs-2", acquiredAt: "2026-09-19T12:00:14Z", frameId: "go2/map:epoch-7",
+  centerM: [2.4, -0.6, 0.35], sizeM: [0.4, 0.3, 0.7], // illustrative qualified local measurements
+}; // association/calibration links the depth to the candidate; labels alone are insufficient
+const passageObservation = {
+  id: "obs-3", acquiredAt: "2026-09-19T12:00:18Z",
+  subjectId: "kitchen-passage", evidence: "wide view of the backpack occupying the passage",
+}; // prose abbreviates the retained image/depth evidence; it is not an authoritative geometry field
+// A lower-frequency SAM3 refinement may help an ambiguous mask; no model is mandatory on every frame.
+// Unknown calibration preserves the camera evidence but blocks unsupported spatial claims.`,
   projection: `const progression = [
   { revision: 1, entityId: "backpack-A", observationId: "obs-1", spatialState: "unlocated" },
   { revision: 2, entityId: "backpack-A", observationId: "obs-2", frameId: "go2/map:epoch-7" },
-]; // illustrative checkpoints over one growing local map; no second entity for a refined measurement
+  { revision: 3, entityId: "kitchen-passage", observationId: "obs-3", frameId: "go2/map:epoch-7" },
+]; // checkpoint excerpt; association established one candidate identity, not a new object per frame
 const head = {
-  mapId: "local-map-1", rootFrameId: "go2/map:epoch-7", revision: 2,
-  manifestId: "map-manifest-2", // immutable resource verified retained before the head commit
-};
-// The manifest records exactly which observations it covers; audit events alone are not a map backup.
-// Losing sight of backpack-A changes visibility/freshness, not its identity or retained existence.`,
-  prepared: `const context = {
-  worldId: "world-demo", agentId: "navigator",
-  missionLogSummary: [
-    { missionId: "mission-1", objectiveId: "inspect", progress: "pending", evidenceId: "obs-1" },
-    { missionId: "mission-2", objectiveId: "measure", progress: "pending", evidenceId: "obs-2" },
-  ], // compact illustrative summary; MissionLog.entries exposes full MissionViews on authorized read
-  localMaps: [{ mapId: "local-map-1", revision: 2, frameId: "go2/map:epoch-7" }],
-  knownEntities: ["backpack-A"], // derived relevant content, not a configured entity subscription
-  unavailableActions: [{ name: "approach@1", reason: "navigation_not_qualified" }],
-}; // both missions remain visible; selecting one does not hide the other
-// Evidence is only a candidate until recordObjectiveProgress validates it.
-// Eve reads a frozen /world projection. New observations coalesce for a later useful step.
-// An omitted entity in a bounded context is not deleted from the durable map.`,
-  resume: `const recovered = {
-  agentId: "navigator", missionIds: ["mission-1", "mission-2"], // reload both assignments and any recorded progress
-  localMapId: "local-map-1", headRevision: 2, // restore the last committed retained checkpoint
-  entityIds: ["backpack-A"], // accumulated knowledge is still available
-  localization: "relocalization_required", // map recovery does not prove the current Unit pose
-};
-// Reconcile retained observations beyond checkpoint coverage; repeat IDs must not duplicate entities.
-// If native mapper state cannot resume, start a new frame epoch; never reuse the old origin blindly.
-// Eve history may reset. Reading, reporting and new local evidence can continue without global alignment.`,
+  mapId: "local-map-1", rootFrameId: "go2/map:epoch-7", revision: 3, manifestId: "map-manifest-3",
+}; // publish retained bytes first, then atomically advance the durable checkpoint head
+// Evidence supports a candidate in a local region; the World Master has not accepted either finding yet.
+// Map manifests preserve acquisitions, source frames and checkpoint coverage; audit is not a map backup.
+// Rejected candidates and inspected viewpoints can be revisited from retained evidence and Eve reasoning.
+// Losing view of backpack-A changes visibility/freshness, not the retained entity or last-seen evidence.`,
+  findings: `// At 12:00:22, the next frozen context includes both pending missions and obs-1, obs-2, obs-3.
+const backpackFinding = {
+  tag: "located", value: {
+    entityId: "backpack-A", observationIds: ["obs-1", "obs-2"],
+    description: "Blue backpack last seen in the kitchen passage at 12:00:14, in Go2’s local map.",
+  },
+} satisfies MissionFinding;
+const passageFinding = {
+  tag: "inspected", value: {
+    regionId: "kitchen-passage", conclusion: "obstructed",
+    obstructionEntityIds: ["backpack-A"], observationIds: ["obs-2", "obs-3"],
+    description: "A backpack occupies the inspected passage. This report does not certify a safe route.",
+  },
+} satisfies MissionFinding;
+// Navigator presents these drafts for review through Eve; they do not mutate world truth.
+// Same obs-2, different checks: requested-object match/location versus obstruction within the region.
+// Models can help compare evidence. Their confidence is not mission acceptance or safety clearance.
+// If a view remains inconclusive, report unknown and investigate another safe viewpoint or ask for help.
+// Context, selected evidence, reasoning and receipts share trace correlation under the capture policy.`,
   "mission-finished": `const progressSubmissions = [
-  { missionId: "mission-1", objectiveId: "inspect",
-    evidence: { tag: "observation", value: { observationId: "obs-1" } } },
-  { missionId: "mission-2", objectiveId: "measure",
-    evidence: { tag: "observation", value: { observationId: "obs-2" } } },
+  { missionId: "mission-1", objectiveId: "locate", evidence: { tag: "finding", value: backpackFinding } },
+  { missionId: "mission-2", objectiveId: "inspect", evidence: { tag: "finding", value: passageFinding } },
 ] satisfies Parameters<Missions["recordObjectiveProgress"]>[0][];
-// The authenticated agent submits retained proof, not completed=true or a percentage.
-// Validate each independently: target association, requested facet, readiness, freshness and authority.
-// Valid proof → mission_objective_progress row + audit → active/closing → succeeded once safely closed.
-// On restart, reconcile recorded progress first. Old pending evidence may need a fresh acquisition.
-// Repeated submissions return existing progress. One mission can finish while another remains active.
-// Recovery preserves the map and recorded progress; redelivery cannot duplicate either.
-// Motion uses admission, local control, receipts and measured completion.
-// Additional Units keep independent local frames until a qualified alignment can reconcile them.`,
+// World Master reviews and submits each independently at 12:00:25 and 12:00:26.
+// Agent attempts to self-approve these reviewed findings are rejected, regardless of Unit authority.
+// Load cited records; check readiness, exact criterion, area/region scope, evidence access and age.
+// Persist accepted finding + objective progress + authenticated reviewer audit atomically.
+// mission-1: locate completed → closing → succeeded; mission-2 can still be awaiting its own review.
+// mission-2: inspect completed with obstructed → closing → succeeded after every linked attempt is safe.
+// The navigation receipt is already safely closed. Pending/unknown physical work would hold closing.
+// Obstruction is an inspection result, not mission failure. Removing it requires different authorized work.
+// Repeated submission returns the retained proof; it cannot overwrite acceptance or increment progress.`,
+  resume: `const recovered = {
+  agentId: "navigator", missionIds: ["mission-1", "mission-2"],
+  completedObjectives: ["mission-1/locate", "mission-2/inspect"], // read accepted progress, not conversation claims
+  localMapId: "local-map-1", headRevision: 3, entityIds: ["backpack-A", "kitchen-passage"],
+  localization: "relocalization_required", // recovery of map bytes does not prove the current Unit pose
+}; // both mission outcomes, accepted findings, evidence and safe-closure receipts are durable
+// A reset before review leaves the objective pending; reconstruct a draft from retained evidence.
+// If evidence has aged beyond the review policy, gather fresh evidence before accepting the finding.
+// Reconcile receipts before new motion. Reconcile observations beyond checkpoint coverage by their IDs.
+// No useful pending work → idle, with relevant changes/deadlines still observed; no repeated LLM polling.
+// Additional Units can retain their own local frames; these outcomes require no perfect global alignment.`,
 };

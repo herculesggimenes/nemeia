@@ -9,7 +9,7 @@ import { inspectionSpec } from "./missions.ts";
 import ts from "../../frontend/node_modules/typescript/lib/typescript.js";
 import { fileURLToPath } from "node:url";
 import { missionCode, missionViewCode, missionLogCode, missionsContractCode } from "../../docs/mission-model-content.mjs";
-import { v0FlowCode } from "../../docs/world-view-content.mjs";
+import { v0FlowCode, objectPlanningCode } from "../../docs/world-view-content.mjs";
 
 test("sensor facets retain independent acquisition times and complete measured geometry",()=>{
   const { input, camera, lidar, geometryRow }=example;
@@ -165,6 +165,9 @@ test("architecture documents durable local knowledge, automatic awareness and re
   assert.match(flow,/mission-2/);
   assert.match(flow,/satisfies MissionSpec/);
   assert.match(flow,/recordObjectiveProgress/);
+  for (const text of ["Find the blue backpack", "Inspect the passage", "satisfies MissionFinding", "satisfies ApproachRequest", "World Master reviews", "obstructed", "obs-2"]) assert.ok(flow.includes(text), text);
+  assert.doesNotMatch(flow,/Acquire a fresh semantic observation|Acquire a fresh local geometry measurement/);
+  assert.ok(page.includes('id="object-mission-finding"'));
   assert.doesNotMatch(page,/local_map_checkpoint|minNewObservations|spec\.goal|goal:|creditObjective|id="table-mission_credit"/);
   assert.doesNotMatch(flow,/fromAgentId|toAgentId|analystPrincipal|readScope:/);
   const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];
@@ -187,12 +190,13 @@ test("mission planning examples use the declared description/objectives/log/prog
   assert.doesNotMatch(page,/id="table-mission_log"/); // the log is a view, not duplicated storage
   const path=fileURLToPath(new URL("./mission-plan-check.ts",import.meta.url));
   const source=[
-    'import { Identity, Timestamp, type Infer } from "spacetimedb";',
+    'import { Identity, Timestamp, t, type Infer } from "spacetimedb";',
     'import { PackagePin as PackagePinBuilder } from "./values.ts";',
     'type PackagePin = Infer<typeof PackagePinBuilder>;',
     'import type { Row, WorldMasters } from "./contracts.ts";',
+    objectPlanningCode("action", readFileSync(new URL("./values.ts", import.meta.url), "utf8").split("// region action\n")[1].split("// endregion")[0]),
     ...Object.values(missionCode), missionViewCode, missionLogCode, missionsContractCode,
-    v0FlowCode.mission, v0FlowCode.team, v0FlowCode["mission-finished"],
+    ...Object.values(v0FlowCode),
   ].join("\n\n");
   const configPath=fileURLToPath(new URL("./tsconfig.json",import.meta.url));
   const config=ts.readConfigFile(configPath,ts.sys.readFile);

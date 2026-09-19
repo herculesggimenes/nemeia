@@ -47,6 +47,10 @@ try {
         await page.locator("#object-local-map").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-local-map-${width}.png`, root)) });
         await page.locator("#object-mission-log > summary").click();
         await page.locator("#object-mission-log").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-mission-log-${width}.png`, root)) });
+        await page.locator("#example").scrollIntoViewIfNeeded();
+        await page.screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-exploration-${width}.png`, root)) });
+        await page.locator("#flow-findings > summary").click();
+        await page.locator("#flow-findings").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-findings-${width}.png`, root)) });
       }
       console.log(`${route} ${width}px: disclosures, keyboard, syntax rendering, overflow and read-only checks passed`);
       await page.close();
