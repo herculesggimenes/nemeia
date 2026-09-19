@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { foundations, objects, services, tables, examples, decisions } from "../docs/protocol-content.mjs";
+import { renderIntelligence } from "../docs/intelligence-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = (path) => readFileSync(resolve(root, path), "utf8");
@@ -26,16 +27,17 @@ const section = (id, number, title, description, body) => `<section class="secti
 const table = (index, item) => `<details class="schema-item" id="table-${item.name}">${summary("schema",index,item.name,item.summary)}<div class="schema-body"><div class="schema-description"><p>${escape(item.description)}</p></div><div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>${item.columns.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="reference-note">${escape(item.constraints)}</p></div></details>`;
 
 const diagram = `<section class="diagram-section" id="how-it-works" aria-label="How Nemeia works"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / protocol</h1><p class="reference-note">Canonical implementation target · pre-production · no backward-compatibility requirement</p><div class="diagram-shell" role="img" aria-label="Sensors produce evidence; trusted systems commit world state; clients discover affordances and request actions; executors produce new evidence. All decisions are recorded in one journal."><div class="diagram-header"><span class="diagram-label">CORE LOOP</span><span>same meaning · simulation or hardware</span></div><div class="diagram">${[
-  ["sense","Sense","Frames become timestamped observations.","FrameRef → Observation"],
-  ["world","Compose","Associate identities; commit complete changes.","Entity + Component + Relationship"],
-  ["affordance","Discover","Derive what is possible from current evidence.","Action → Affordance"],
-  ["action","Execute","One attempt; local control for hardware.","ActionRequest → Execution"],
-  ["event","Observe again","Measurements, not intent, close the loop.","Evidence → world changes"],
+  ["sense","Perceive","SAM3, depth/LiDAR, speech and semantic workers.","sensors → observations"],
+  ["world","Compose","Associate identities and preserve evidence.","entities + components + relationships"],
+  ["affordance","Decide","Typesafe, LLMs and rules read task-scoped state.","world → context → proposal"],
+  ["action","Validate","Recheck requirements, freshness and permission.","affordance → ActionRequest"],
+  ["event","Execute & observe","Local control executes; measurements update the world.","Execution → new evidence"],
 ].map(([tone,title,description,code],i)=>`${i ? '<div class="diagram-arrow" aria-hidden="true"></div>' : ""}<div class="diagram-node" data-tone="${tone}"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Journal</strong><p>CloudEvents + atomic decisions + resumable cursors</p></div><div><strong>One world</strong><p>UI, Scene, attention and replay are readers of the same state.</p></div></div></div></div></section>`;
 
 const architecture = `<div class="architecture-rows">${[
   ["Core host", "Client / agent → WorldService → executor → journal + world"],
   ["Perception", "RobotDriver → ObservationSink → association / projector → WorldWriter"],
+  ["Model systems", "SAM3 / multimodal workers → observations · shared world → Typesafe / LLM / rules → ordinary action requests"],
   ["Physical host", "Executor → ControlGate / Session → RobotDriver → device"],
   ["Readers", "WorldSnapshot + events → UI / Scene / attention / replay"],
   ["Optional", "Admission / approval · remote JOSE grant · retained resources · prediction"],
@@ -50,7 +52,7 @@ const inlineLinks = (value) => {
 };
 const standards = `<div class="column-table-wrap"><table class="column-table"><thead><tr><th scope="col">Concern</th><th scope="col">Established basis</th><th scope="col">Nemeia adds</th></tr></thead><tbody>${standardRows.map(line=>`<tr>${line.split("|").slice(1,-1).map(value=>`<td>${inlineLinks(value.trim())}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="reference-note">Exact standard formats: CloudEvents, JSON Schema, Problem Details and JOSE. ROS geometry/action mappings are semantic mappings, not a claim of ROS wire compatibility. Transactions and outbox are patterns, not another custom transport. No message broker, workflow engine or mandatory ROS deployment is required.</p>`;
 
-const main = `<main id="main-content">${diagram}
+const main = `<main id="main-content"><nav class="protocol-nav section-inner" aria-label="Protocol design"><a href="/" aria-current="page">Core protocol</a><a href="/spacetimedb/">SpacetimeDB variant</a></nav>${diagram}
 ${section("abstractions","01","Core abstractions","Eight foundations; no parallel hierarchy of mission, run and authorization objects.",`<div class="abstraction-list">${foundations.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & definitions","Complete checked types, including world-view shape, evidence, geometry, execution and transport primitives.",`<div class="object-list">${objects.map(([id,title,summary,description],i)=>{
   let code=region(protocol,id);
@@ -58,6 +60,7 @@ ${section("objects","02","Objects & definitions","Complete checked types, includ
   return codeRow("object",i,title,summary,description,code.trim(),`object-${id}`);
 }).join("\n")}</div>`)}
 ${section("architecture","03","Architecture","One state owner, one execution owner and one physical control authority. Optional modules do not redefine the core.",architecture)}
+${renderIntelligence({ section, codeRow, proseRow, region }, "03b")}
 ${section("contracts","04","Service contracts","Open each boundary independently. Types above are shared; comments describe each method. These are host-side interfaces, not a list of separately deployed servers.",`<div class="contract-list">${services.map(([name,summary,description],i)=>codeRow("contract",i,name,summary,description,contract(name),`contract-${slug(name)}`)).join("\n")}</div>`)}
 ${section("tables","05","Database tables","Two core tables. Add caches or retained bytes only when needed. Physical controllers keep their own local state and receipts; these are logical schemas, not deployed migrations.",`<div class="schema-list">${tables.map((item,i)=>table(i,item)).join("\n")}</div>`)}
 ${section("example","06","End-to-end information flow","Go2 approaches a detected backpack. The trace uses the exact types above and makes every boundary visible. It does not execute hardware commands.",`<div class="example-list">${examples.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(fixture,id),id)).join("\n")}</div>`)}

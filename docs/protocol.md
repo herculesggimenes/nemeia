@@ -44,6 +44,36 @@ execution. Its conversation, planning and tool-call loop can use an existing
 agent runtime. Those concerns do not need another Nemeia service contract or
 permission to call the driver. A service interface does not imply an RPC hop.
 
+### Perception and decision systems
+
+Compose specialized tools around the shared world, rather than giving one model
+every responsibility. SAM3 supplies image/video segmentation and tracking.
+Calibrated depth/LiDAR and localization supply measured spatial values; ASR
+supplies transcripts; semantic models supply attributed hypotheses. Association
+and validated ingestion turn these into entities, components and relationships.
+A segmentation mask is not a measured 3D box. A transcript alone is not an
+authenticated command.
+
+Typesafe, LLMs and rules read a task-scoped projection of the same world. LLMs
+interpret unfamiliar goals, propose plans using installed actions and help
+author tested, versioned questions. Typesafe evaluates bounded choices, rubrics
+or yes/no judgments over structured state. Exact arithmetic, requirements and
+permissions remain code. No provider owns a separate authoritative world.
+
+The checked decision types are in `contracts/protocol/intelligence.ts`.
+Decision workers retain goal/context/question/model versions, preserve evidence
+times and uncertainty, and discard expired or superseded answers. Candidate
+membership and relevant dependencies must be rechecked during admission.
+Use a stable decision-to-request identity to prevent repeated answers from
+creating new attempts. All providers submit ordinary action requests; local
+control remains independent of model or database availability.
+
+Primary capability references: [SAM3](https://github.com/facebookresearch/sam3),
+[Typesafe primitives](https://docs.typesafe.ai/primitives),
+[confidence](https://docs.typesafe.ai/confidence), and
+[model configuration](https://docs.typesafe.ai/models). These integrations are
+implementation targets, not deployed capabilities or measured latency claims.
+
 ## 2. Naming, values, schemas, and identity
 
 Use camelCase for TypeScript and JSON, snake_case for SQL columns. This is a

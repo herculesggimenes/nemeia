@@ -4,7 +4,8 @@
   "version": "0.2.1",
   "type": "module",
   "scripts": {
-    "build:protocol-site": "node scripts/build-protocol-site.mjs",
+    "build:protocol-site": "node scripts/build-protocol-site.mjs && node scripts/build-spacetimedb-site.mjs",
+    "check:spacetimedb-protocol": "npm --prefix contracts/spacetimedb run check && node --test contracts/spacetimedb/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
     "check:protocol": "node frontend/node_modules/typescript/bin/tsc -p contracts/protocol/tsconfig.json && node --test contracts/protocol/*.test.mjs && node scripts/build-protocol-site.mjs --check",
     "check": "npm run check:world-runtime && npm run check:contracts && npm run check:mission-server && npm run check:mission-api && npm run check:supervisor && npm run check:driver-go2 && npm run check:capability-host && npm run check:scene && npm run check:world-twin && npm run check:attention && npm run check:anomaly && npm run check:policy && npm run check:replay && npm run check:cli && npm run check:conformance && npm run check:frontend",
     "check:anomaly": "npm --prefix anomaly run check",

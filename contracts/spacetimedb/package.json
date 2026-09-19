@@ -1,0 +1,11 @@
+{
+  "name": "@nemeia/spacetimedb-protocol-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node ../../frontend/node_modules/typescript/bin/tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "spacetimedb": "2.10.1"
+  }
+}
