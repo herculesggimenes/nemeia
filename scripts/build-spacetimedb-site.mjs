@@ -11,6 +11,7 @@ import { renderAgents } from "../docs/agent-content.mjs";
 import { renderEve } from "../docs/eve-content.mjs";
 import { renderWorldPlan, objectCode, objectPlanningCode, worldMemoryCode, coordinationCode, plannedTables, v0FlowCode } from "../docs/world-view-content.mjs";
 import { spatialContractCode } from "../docs/spatial-model-content.mjs";
+import { exampleTimeline } from "../docs/world-example-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -103,6 +104,7 @@ const refs = [
   ["Table storage","https://spacetimedb.com/docs/tables/","Typed, memory-resident state with durable backing."],
   ["Engine license","https://github.com/clockworklabs/SpacetimeDB/blob/master/LICENSE.txt","Verify release-specific deployment terms before fleet use."],
 ];
+const timeline = `<div class="column-table-wrap" tabindex="0" role="region" aria-label="Example timing: continuous systems and agent reasoning"><table class="column-table"><thead><tr><th scope="col">Time</th><th scope="col">World &amp; local systems</th><th scope="col">Agent &amp; review</th></tr></thead><tbody>${exampleTimeline.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 const main = `<main id="main-content">${diagram}
 ${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Masters govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & world view","WorldView projects durable entities, evidence, local maps, missions and executions. Each spatial estimate retains its coordinate frame and acquisition time.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,objectPlanningCode(id,objectCode[id] ?? region(sources[file],id)),`object-${id}`)).join("\n")}</div>`)}
@@ -115,7 +117,7 @@ ${section("platform","05","Implementation choices","Storage, inference, agent ru
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${renderClients({section,codeRow,proseRow,region},"06b")}
 ${renderEve({section,codeRow,proseRow},"06c")}
-${section("example","07","End-to-end information flow","Find a blue backpack and inspect the kitchen passage. One agent coordinates both missions, navigates Go2 to a useful viewpoint, and turns shared observations into independently accepted findings.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,v0FlowCode[id],`flow-${id}`)).join("\n")}</div>`)}
+${section("example","07","End-to-end information flow","Find a blue backpack and inspect the kitchen passage in an already-running, partially mapped world. One agent coordinates both missions while perception and local systems keep updating independently of its slower reasoning.",`${timeline}<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,v0FlowCode[id],`flow-${id}`)).join("\n")}</div>`)}
 ${renderTracing({section,codeRow,proseRow,region},"08")}
 ${section("boundaries","09","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("references","10","Implementation references","This document specifies intended architecture, not deployment status. Interfaces and examples describe the contracts; production use requires integration, security and failure testing.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}

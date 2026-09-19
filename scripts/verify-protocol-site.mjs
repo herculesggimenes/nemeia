@@ -24,7 +24,7 @@ try {
         await page.keyboard.press("Enter");
         assert.equal(await page.locator(`#${id}`).getAttribute("open"), null);
       }
-      for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-discovery", "flow-naming"]) {
+      for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-discovery", "flow-prepared", "flow-waiting", "flow-naming"]) {
         await page.locator(`#${id} > summary`).focus();
         await page.keyboard.press("Enter");
         assert.equal(await page.locator(`#${id}`).getAttribute("open"), "");
@@ -61,6 +61,8 @@ try {
         await page.locator("#flow-discovery").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-mapping-${width}.png`, root)) });
         await page.locator("#flow-naming > summary").click();
         await page.locator("#flow-naming").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-naming-${width}.png`, root)) });
+        await page.locator("#flow-waiting > summary").click();
+        await page.locator("#flow-waiting").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-continuous-world-${width}.png`, root)) });
       }
       console.log(`${route} ${width}px: disclosures, keyboard, syntax rendering, overflow and read-only checks passed`);
       await page.close();

@@ -11,6 +11,8 @@ import { fileURLToPath } from "node:url";
 import { missionCode, missionViewCode, missionLogCode, missionsContractCode } from "../../docs/mission-model-content.mjs";
 import { v0FlowCode, objectPlanningCode, objectCode, worldMemoryCode } from "../../docs/world-view-content.mjs";
 import { spatialTypesCode, navigationCode } from "../../docs/spatial-model-content.mjs";
+import { wakeCode } from "../../docs/eve-content.mjs";
+import { exampleTimeline } from "../../docs/world-example-content.mjs";
 
 test("sensor facets retain independent acquisition times and complete measured geometry",()=>{
   const { input, camera, lidar, geometryRow }=example;
@@ -178,8 +180,18 @@ test("architecture documents durable local knowledge, automatic awareness and re
   assert.match(v0FlowCode.discovery, /kind: "occupancy"/);
   assert.doesNotMatch(flow, /opening-1|firstSurvey|sizeM: \[0.4, 0.3, 0.7\]/);
   assert.match(v0FlowCode.inputs, /tag: "pointCloud"/);
-  assert.match(v0FlowCode.naming, /satisfies LocalMapManifest/);
-  assert.match(v0FlowCode.findings, /regionRevision: 1n/);
+  assert.match(v0FlowCode.projection, /satisfies LocalMapManifest/);
+  assert.match(v0FlowCode.findings, /regionRevision: 6n/);
+  assert.doesNotMatch(flow, /relevantKnowledge|placeCandidateIds|backpackCandidateIds|nextInvestigation|initialContext/);
+  assert.equal(exampleRows[0][0], "discovery", "populated world precedes mission and reasoning");
+  assert.ok(exampleRows.findIndex(row => row[0] === "waiting") < exampleRows.findIndex(row => row[0] === "navigation"));
+  assert.match(v0FlowCode.discovery, /revision: 41n/);
+  assert.match(v0FlowCode.waiting, /revision: 48n/);
+  assert.match(v0FlowCode.prepared, /Readonly<WorldView>/);
+  assert.match(v0FlowCode.prepared, /MissionLog/);
+  assert.match(v0FlowCode.navigation, /basisMapRevision: 42n/);
+  assert.match(v0FlowCode.findings, /Readonly<WorldView>/);
+  assert.equal(exampleTimeline.length, 5);
   for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-naming"]) assert.ok(page.includes(`id="${id}"`), id);
   assert.match(v0FlowCode.findings, /searchAreaId: "space-1"/);
   assert.match(v0FlowCode.findings, /regionId: "passage-1"/);
@@ -211,6 +223,7 @@ test("mission planning examples use the declared description/objectives/log/prog
     ...["geometry", "evidence"].map(id => objectPlanningCode(id, readFileSync(new URL("./values.ts", import.meta.url), "utf8").split(`// region ${id}\n`)[1].split("// endregion")[0])),
     objectPlanningCode("action", readFileSync(new URL("./values.ts", import.meta.url), "utf8").split("// region action\n")[1].split("// endregion")[0]),
     spatialTypesCode, navigationCode, objectCode["local-map"], worldMemoryCode,
+    objectCode["world-view"], objectCode["unit-agent-view"], wakeCode,
     ...Object.values(missionCode), missionViewCode, missionLogCode, missionsContractCode,
     ...Object.values(v0FlowCode),
   ].join("\n\n");

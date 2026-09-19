@@ -57,13 +57,40 @@ authorized projection; prompt omission never deletes durable knowledge.
 
 World persistence and restart recovery are platform responsibilities, not mission
 objectives. The walkthrough assigns one agent two missions: find a blue backpack
-in the living area and inspect the kitchen passage for obstructions. Neither
-place nor the backpack needs a known entity or location at assignment. The
-mission keeps place descriptions; discovery is part of the work. A measured
-local map can supply a useful viewing pose before any room is identified.
-Shared observations support independently reviewed place and object findings. An
-obstructed passage is a valid inspection result, not a navigation clearance.
-Restart recovery is a platform property, independent of mission completion.
+in the living area and inspect the kitchen passage for obstructions. It starts
+with an already-localized Unit, a partial map, a named living area, an adjoining
+region with a kitchen hypothesis and a tracked backpack candidate. Described
+mission targets can resolve against existing knowledge; they do not imply that
+mapping or object detection has yet to begin. New views improve occlusion and
+place interpretation rather than creating the world from scratch. An obstructed
+passage is a valid inspection result, not a navigation clearance.
+
+The example includes two 30-second inference intervals. Before each step, the
+adapter freezes a synchronized authorized WorldView and its MissionLog; workers
+continue updating current world state during inference. WorldWake carries
+coalesced dirty keys and retained important event identities, not every sensor
+sample or every obsolete world snapshot. Context selects existing records and
+preserves their acquisition times. It has no backpack-specific context schema
+or authoritative next-investigation field; an agent's plan belongs to reasoning.
+
+Sensor acquisition, model inference, world publication and durable map
+checkpointing use separate cadences. A checkpoint increment is not one sensor
+frame. Retain evidence needed by current state, decisions and proofs even when
+wake notifications coalesce. A queued wake prepares context at the actual step
+boundary, after its delivery delay. New map revisions call for action-specific
+revalidation, not rejection merely because a slow LLM read an older revision.
+Local planning, obstacle checks and stop remain independent of reasoning.
+
+At 12:00:02 the example agent reads checkpoint 42; at 12:00:33 it submits a
+viewpoint while current mapping has reached checkpoint 48. Admission and claim
+validate that same pose against current localization and operating limits. The
+controller records arrival at 12:00:45. A fresh 12:00:46 projection feeds another
+reasoning step, which drafts findings at 12:01:16. World Master review at
+12:01:20 checks approximately 35-second-old measurements against the 60-second
+acceptance policy and checks for contradictory newer evidence. Expired or
+contradicted evidence requires reconsideration, never a refreshed timestamp.
+Times illustrate concurrency, not a device benchmark. Startup without usable
+spatial state and localization loss are explicit alternate conditions.
 
 Recovery validation covers: ingest observations; refine an associated entity;
 retain map chunks and evidence; interrupt before/after head commit; recover the

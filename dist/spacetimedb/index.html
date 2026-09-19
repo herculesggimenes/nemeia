@@ -1099,10 +1099,10 @@ export const proposedTarget: TargetSelection = { kind: &quot;candidate&quot;, en
 // Path planning, distance checks, collision avoidance and local stop do not use this Choice answer as authority.</code></pre></div></div></details></div><p class="reference-note">Capability references: <a href="https://docs.ultralytics.com/models/yoloe/">YOLOE modes and export limits</a> · <a href="https://github.com/THU-MIG/yoloe">YOLOE research</a> · <a href="https://github.com/facebookresearch/sam3">Meta SAM3</a> · <a href="https://docs.typesafe.ai/primitives">Typesafe questions</a> · <a href="https://docs.typesafe.ai/confidence">Confidence semantics</a> · <a href="https://docs.typesafe.ai/models">Model versions and input limits</a>. Check model and runtime licenses before distribution.</p></div></section>
 <section class="section" id="clients" aria-labelledby="clients-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">06b / Client subscriptions</div><h2 id="clients-title">Client subscriptions</h2></div><p>Subscriptions are transport, not agent configuration. Nemeia automatically derives Unit awareness and prepares bounded context from the durable world. Eve owns the conversation and reasoning lifecycle.</p></div><div class="abstraction-list"><details class="abstraction" id="subscription-scope"><summary><span class="abstraction-index">01</span><span><span class="abstraction-title">Subscription scope</span><span class="abstraction-summary">derived by Nemeia, never managed by the agent</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Native subscriptions transport authorized state. Nemeia derives the agent's interests from assigned Units, their observations and progressive local maps, mission dependencies and pending outcomes. A world-managed radius adds nearby state only within reliably connected metric frames. Discovery and unlocated evidence stay available without radius filtering. World Masters grant world-level read access; the radius narrows interest, not permission. Bounded context omits detail without deleting durable knowledge. Rows leaving a query are not proof of physical disappearance.</p><code>Unit observations + retained local map + mission → automatic awareness</code></div></details>
 <details class="abstraction" id="per-client-inbox"><summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Per-client inbox</span><span class="abstraction-summary">coalesce before handing useful work to Eve</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>The Nemeia adapter retains changed entity keys and must-handle event IDs; Eve owns the session inbox and turn execution. Do not implement a second conversation queue. Latest state can replace intermediate measurements, but messages and important occurrences keep their meaning and identity until handled. A display-only client can render its subscribed cache directly; not every subscriber needs a durable inbox.</p><code>many world changes → bounded wake → Eve-owned session</code></div></details>
-<details class="abstraction" id="context-preparation"><summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Context preparation</span><span class="abstraction-summary">project the world at Eve's step boundary</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>After queue delay and once subscriptions are synchronized, select a consistent authorized world projection for the next inference step. Expose its manifest and immutable files in the just-bash world mount. Eve supplies conversation history and compaction; the adapter supplies a compact mission log covering every assignment, Unit grants, evidence and pending domain messages. Load deeper mission details as needed; an out-of-radius target does not hide its assignment. Keep unknown values, acquisition times and revisions. Bound the projection and preserve deferred must-handle work. A retried step must reconcile its context and command receipts rather than silently repeating effects from a different snapshot.</p><code>mission log + relevant changes + Eve history → coordinated reasoning step</code></div></details>
+<details class="abstraction" id="context-preparation"><summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Context preparation</span><span class="abstraction-summary">project the accumulated world at Eve's step boundary</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>After queue delay and once subscriptions are synchronized, select a consistent authorized WorldView for inference. It normally contains already-processed spatial knowledge: local maps, tracked entities, regions and Unit localization. Expose its manifest and immutable files in the just-bash world mount, with a MissionLog covering every assignment. Perception continues while this view stays frozen. Preserve per-facet acquisition times; a new context timestamp does not make old evidence fresh. Agent plans belong to reasoning, not world facts. Bound detail without hiding missions or dropping deferred important work. Retries reconcile their context and command receipts.</p><code>accumulated WorldView + MissionLog + Eve history → reasoning step</code></div></details>
 <details class="abstraction" id="scheduling-interruption"><summary><span class="abstraction-index">04</span><span><span class="abstraction-title">Scheduling &amp; interruption</span><span class="abstraction-summary">world wake policy; Eve turn policy</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>World-managed awareness selects meaningful triggers and cadence; minIntervalMs is a rate cap, not mandatory polling. maxBatchWaitMs is a desired batching bound, subject to the cap and compute budget. Coalesce before delivery, then use Eve's queue policy for ordinary updates. Eve owns serialized turns for the agent's channel address; no Nemeia step lease is needed. Administrative pause or revoked Unit authority blocks domain action immediately. Eve cancellation stops reasoning cooperatively, not hardware; local stop and world cancellation remain independent.</p><code>90 observations + 1 meaningful map change → coalesced context → Eve turn</code></div></details>
 <details class="abstraction" id="agent-activity"><summary><span class="abstraction-index">05</span><span><span class="abstraction-title">Agent activity</span><span class="abstraction-summary">idle / ready / thinking / waiting as a derived view</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Keep these labels for the UI, not as a second runtime machine. Idle means no useful pending work; ready means an eligible wake; thinking is derived from Eve runtime events; waiting means a domain dependency or parked runtime. Eve session.waiting alone cannot distinguish idle from waiting for a Unit execution. Administrative pause and synchronization stay separate. If all Units are unavailable, retain cheap availability/deadline subscriptions; the agent may still coordinate or analyse evidence without controlling a Unit.</p><code>Eve events + pending world work + dependencies → activity projection</code></div></details>
-<details class="abstraction" id="decisions-feedback"><summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Decisions &amp; feedback</span><span class="abstraction-summary">subscribers propose; execution checks current authority</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>A client may propose an action, ask for clarification or make no change. Subscription access never grants execution permission. Before acting, review the prepared context against current task dependencies and request admission using fresh evidence. Admission, controller claim and local limits still apply. Execution receipts and measured outcomes return through the same subscriptions and can wake the next step. Wake rules should distinguish relevant outcomes from the client's own bookkeeping writes to avoid a self-triggering loop.</p><code>subscribe → prepare → decide → validate → execute → observe</code></div></details>
+<details class="abstraction" id="decisions-feedback"><summary><span class="abstraction-index">06</span><span><span class="abstraction-title">Decisions &amp; feedback</span><span class="abstraction-summary">slow reasoning; fresh action checks</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>A client may propose an action, ask for clarification or make no change. Subscription access never grants execution permission. Revalidate the proposal's relevant assumptions against current evidence, permissions and localization. A new map revision alone need not invalidate a useful viewpoint; changed meaning, an unusable pose or a reset frame can. Admission and claim check again; local control handles live obstacles without waiting for inference. Retained receipts and meaningful changes can wake a fresh step. Avoid loops triggered only by the agent's bookkeeping writes.</p><code>frozen reasoning view → current admission → independent local control</code></div></details>
 <details class="abstraction" id="durability-acknowledgement"><summary><span class="abstraction-index">07</span><span><span class="abstraction-title">Durability &amp; acknowledgement</span><span class="abstraction-summary">Eve checkpoints; Nemeia delivery and domain receipts</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Let Eve persist sessions, history and workflow progress. The adapter still needs bounded delivery bookkeeping from retained world event to accepted wake to explicitly handled event. A reconnect is not domain replay, a send acknowledgement is not handling, and a completed turn is not mission success. Reconcile ambiguous handoffs without dropping events or inventing new physical execution IDs. Session reset/expiry must preserve pending domain work. Persist this integration bookkeeping with the bridge, not as a second conversation history or thread schema.</p><code>retained event → accepted delivery → explicit handling receipt</code></div></details></div><div class="object-list"><details class="object-item" id="object-agent-scope"><summary><span class="object-index">01</span><span><span class="object-title">ReadScope &amp; AwarenessPolicy</span><span class="object-summary">world-managed policy; automatic Unit interests</span></span><span class="object-toggle" aria-hidden="true"></span></summary><div class="object-body"><div class="object-description"><p>World Masters grant visibility; Nemeia derives interests. Validate bounded nonnegative timing and positive finite radius values when supplied. These types do not define a new transport.</p></div><div class="object-code"><pre><code class="language-ts">interface ReadScope {
   worldId: string; // World Master grants read access to the named world
 } // Interest is derived automatically; no entity allowlist or agent-managed subscription.
@@ -1209,17 +1209,52 @@ const commands = [
 // Redirection into /world must fail; changing a scratch JSON file never commits world state.
 // Reuse execution-1 on retry. Eve step retries do not guarantee exactly-once physical effects.
 // A bash approval is not per-command authorization; enforce action-specific policy in the bridge/reducer.</code></pre></div></div></details></div><p class="reference-note">Runtime references: <a href="https://eve.dev/docs/channels/custom">custom channels</a> · <a href="https://eve.dev/docs/sandbox">sandboxes and just-bash</a> · <a href="https://eve.dev/docs/concepts/execution-model-and-durability">execution and durability</a> · <a href="https://eve.dev/docs/concepts/context-control">context control</a>.</p></div></section>
-<section class="section" id="example" aria-labelledby="example-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">07 / End-to-end information flow</div><h2 id="example-title">End-to-end information flow</h2></div><p>Find a blue backpack and inspect the kitchen passage. One agent coordinates both missions, navigates Go2 to a useful viewpoint, and turns shared observations into independently accepted findings.</p></div><div class="example-list"><details class="example-item" id="flow-mission"><summary><span class="example-index">01</span><span><span class="example-title">Find the backpack · inspect the passage</span><span class="example-summary">search + inspection · shared world</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master asks Navigator to find a blue backpack in the living area and inspect the passage to the kitchen. Neither room, passage nor backpack has a known entity or location at assignment. The objectives retain those place descriptions. Discovery is part of the work; evidence-backed findings must establish the intended places before review can complete either objective.</p></div><div class="example-code"><pre><code class="language-ts">// Mission creation inputs; no robot commands or database writes run on this page.
-const at = (iso: string) =&gt; Timestamp.fromDate(new Date(iso));
-const backpackSpec = {
+<section class="section" id="example" aria-labelledby="example-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">07 / End-to-end information flow</div><h2 id="example-title">End-to-end information flow</h2></div><p>Find a blue backpack and inspect the kitchen passage in an already-running, partially mapped world. One agent coordinates both missions while perception and local systems keep updating independently of its slower reasoning.</p></div><div class="column-table-wrap" tabindex="0" role="region" aria-label="Example timing: continuous systems and agent reasoning"><table class="column-table"><thead><tr><th scope="col">Time</th><th scope="col">World &amp; local systems</th><th scope="col">Agent &amp; review</th></tr></thead><tbody><tr><td>Before 12:00</td><td>Mapping, localization and object tracking already running</td><td>No mission-driven inference needed</td></tr><tr><td>12:00:02–12:00:32</td><td>Current state advances; map checkpoints 42 → 48</td><td>Step 1 reasons over its frozen 12:00:02 view</td></tr><tr><td>12:00:33–12:00:45</td><td>Fresh admission, local navigation, continuous perception</td><td>One pose request; waits for its outcome</td></tr><tr><td>12:00:46–12:01:16</td><td>New measurements continue; completion event retained</td><td>Step 2 reviews a fresh view and drafts findings</td></tr><tr><td>12:01:20</td><td>Evidence and authority checked; progress committed</td><td>World Master accepts each finding independently</td></tr></tbody></table></div><div class="example-list"><details class="example-item" id="flow-discovery"><summary><span class="example-index">01</span><span><span class="example-title">Start with an already-running world</span><span class="example-summary">11:59:59 · localized Unit, partial map, tracked objects</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Go2 is already observing under an established mapping session. Range and motion estimation maintain a local map; camera perception and calibrated association maintain object tracks. The living area has a World Master-assigned name. An adjoining mapped space has a kitchen hypothesis, and backpack-A is a partly occluded candidate near the connecting passage. Unknown room meaning is not missing geometry. Times illustrate overlapping work, not measured hardware performance; short IDs stand for retained record/resource identities.</p></div><div class="example-code"><pre><code class="language-ts">const at = (iso: string) =&gt; Timestamp.fromDate(new Date(iso));
+declare const worldMaster: Identity; // authenticated author of the existing Living area annotation
+declare const retained: { // handles to verified stored resources; no invented bytes, hashes or live IO
+  occupancy41: ResourceRef; surface41: ResourceRef; livingMask41: ResourceRef;
+  kitchenMask41: ResourceRef; passageMask41: ResourceRef;
+  camera45: ResourceRef; lidar45: ResourceRef; backpackSurface45: ResourceRef;
+  calibration: ResourceRef; fusionReceipt45: ResourceRef;
+  occupancy51: ResourceRef; surface51: ResourceRef; passageMask51: ResourceRef; evidenceIndex52: ResourceRef;
+};
+declare const mapperPackage: PackagePin; // installed mapper and exact version
+const livingRegion = {
+  entityId: &quot;space-1&quot;, mapId: &quot;local-map-1&quot;, revision: 4n,
+  extent: { mapRevision: 41n, occupancyResourceId: retained.occupancy41.id,
+    mask: retained.livingMask41, coverage: &quot;partial&quot; },
+  observationIds: [&quot;obs-layout-41&quot;],
+  name: { text: &quot;Living area&quot;, assignedBy: worldMaster, assignedAt: at(&quot;2026-09-19T11:58:00Z&quot;) },
+} satisfies RegionRecord;
+const kitchenRegion = {
+  entityId: &quot;space-2&quot;, mapId: &quot;local-map-1&quot;, revision: 2n,
+  extent: { mapRevision: 41n, occupancyResourceId: retained.occupancy41.id,
+    mask: retained.kitchenMask41, coverage: &quot;partial&quot; },
+  observationIds: [&quot;obs-layout-41&quot;], // mapped but unnamed; kitchen is still a semantic hypothesis
+} satisfies RegionRecord;
+const baselineMap = {
+  map: { id: &quot;local-map-1&quot;, unitId: &quot;go2-01&quot;, rootFrameId: &quot;go2/map:epoch-7&quot;,
+    revision: 41n, headRevisionId: &quot;local-map-1/41&quot;, createdAt: at(&quot;2026-09-19T11:57:00Z&quot;) },
+  layers: [
+    { kind: &quot;occupancy&quot;, resource: retained.occupancy41, observedAt: at(&quot;2026-09-19T11:59:59Z&quot;) },
+    { kind: &quot;surface&quot;, resource: retained.surface41, observedAt: at(&quot;2026-09-19T11:59:59Z&quot;) },
+  ],
+  entityIds: [&quot;go2-01&quot;, &quot;space-1&quot;, &quot;space-2&quot;, &quot;passage-1&quot;, &quot;backpack-A&quot;],
+  localization: &quot;localized&quot;, // backed by current localization evidence, not inferred from persisted map bytes
+} satisfies Pick&lt;LocalMapView, &quot;map&quot; | &quot;layers&quot; | &quot;entityIds&quot; | &quot;localization&quot;&gt;;
+// These are excerpts of a populated world, not mission-created entities or the complete WorldView.
+// Existing evidence places backpack-A near passage-1; its occluded shape still needs a better view.
+// Map cells, per-facet acquisition times, region semantics and object tracks have independent update rates.
+// This is a running mapping session. A boot with unavailable localization is a separate condition.</code></pre></div></div></details>
+<details class="example-item" id="flow-mission"><summary><span class="example-index">02</span><span><span class="example-title">Assign work against existing knowledge</span><span class="example-summary">12:00:00 · find the backpack and inspect the passage</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master asks Navigator to find the blue backpack and inspect the kitchen passage. Mission language need not contain entity IDs: the agent can resolve it against the existing map, names, hypotheses and evidence. The kitchen interpretation still needs confirmation. Pre-mission knowledge guides the work; it does not automatically satisfy a criterion requiring fresh evidence after objective readiness.</p></div><div class="example-code"><pre><code class="language-ts">const backpackSpec = {
   description: &quot;Find the blue backpack in the living area and report where it was last seen.&quot;,
   objectives: [{
     id: &quot;locate&quot;, description: &quot;Identify the requested backpack and report its evidenced location.&quot;,
     dependsOn: [], optional: false,
     criterion: { tag: &quot;located&quot;, value: {
       description: &quot;Blue backpack&quot;,
-      searchArea: { tag: &quot;description&quot;, value: { text: &quot;the living area&quot; } }, // no room entity or coordinates yet
-      maxAgeMs: 60_000, review: &quot;world_master&quot;, // example acceptance policy; not an automatic detector verdict
+      searchArea: { tag: &quot;description&quot;, value: { text: &quot;the living area&quot; } }, // resolve against the existing world
+      maxAgeMs: 60_000, review: &quot;world_master&quot;, // evidence age at acceptance, not the sensor or LLM interval
     } },
   }],
   deadlineAt: at(&quot;2026-09-19T12:06:00Z&quot;),
@@ -1231,210 +1266,193 @@ const passageSpec = {
     dependsOn: [], optional: false,
     criterion: { tag: &quot;inspected&quot;, value: {
       region: { tag: &quot;description&quot;, value: { text: &quot;the passage to the kitchen&quot; } },
-      question: &quot;Is anything obstructing this passage?&quot;, // finding the intended passage is part of the work
-      maxAgeMs: 60_000, review: &quot;world_master&quot;, // obstructed can be a successful inspection result
+      question: &quot;Is anything obstructing this passage?&quot;,
+      maxAgeMs: 60_000, review: &quot;world_master&quot;,
     } },
   }],
   deadlineAt: at(&quot;2026-09-19T12:06:00Z&quot;),
 } satisfies MissionSpec;
 const creationInputs = [
-  { id: &quot;mission-1&quot;, spec: backpackSpec },
-  { id: &quot;mission-2&quot;, spec: passageSpec },
+  { id: &quot;mission-1&quot;, spec: backpackSpec }, { id: &quot;mission-2&quot;, spec: passageSpec },
 ] satisfies Parameters&lt;Missions[&quot;createMission&quot;]&gt;[0][];
-// Both PlaceTargets are descriptions: no living-area, kitchen or passage IDs exist at assignment.
-// Mission creation records intent. It does not require resolving these places or supply a destination.
-// No Unit, route, viewpoint, motor speed or execution duration is part of either MissionSpec.
-// Not found yet is not success; declaring a bounded search exhausted needs a separate coverage criterion.</code></pre></div></div></details>
-<details class="example-item" id="flow-team"><summary><span class="example-index">02</span><span><span class="example-title">Assign Navigator and grant Go2</span><span class="example-summary">one mission log · one Unit · separate authority</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master creates both missions, assigns them to Navigator and separately grants Go2 control. Nemeia derives awareness from Go2 observations, its usable local neighborhood and both mission dependencies. Neither assignment starts the robot or creates a separate Eve loop.</p></div><div class="example-code"><pre><code class="language-ts">const missionAssignments = [
+// Created at 12:00:00. Described targets can resolve to existing regions; a description does not imply an empty map.
+// Prior observations inform the plan. Completion evidence must meet readiness and acceptance-age rules.
+// No Unit ID, viewpoint, route, motor speed or execution duration belongs in MissionSpec.</code></pre></div></div></details>
+<details class="example-item" id="flow-team"><summary><span class="example-index">03</span><span><span class="example-title">Assign Navigator and grant Unit authority</span><span class="example-summary">12:00:01 · one agent, two missions, one Unit</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master assigns both missions to Navigator and grants the installed navigation capability. Assignment wakes reasoning; it does not start cameras, LiDAR or mapping. Automatic Unit awareness supplies the relevant local world and both mission dependencies. Separate local operating limits govern where Go2 may move.</p></div><div class="example-code"><pre><code class="language-ts">const missionAssignments = [
   { missionId: &quot;mission-1&quot;, agentId: &quot;navigator&quot;, active: true, expectedRevision: 1n },
   { missionId: &quot;mission-2&quot;, agentId: &quot;navigator&quot;, active: true, expectedRevision: 1n },
 ] satisfies Parameters&lt;WorldMasters[&quot;assignMission&quot;]&gt;[0][];
 const unitGrant = {
-  unitId: &quot;go2-01&quot;, agentId: &quot;navigator&quot;, actionNames: [&quot;navigate@1&quot;, &quot;approach@1&quot;],
+  unitId: &quot;go2-01&quot;, agentId: &quot;navigator&quot;, actionNames: [&quot;navigate@1&quot;],
   expectedRevision: 0n, expiresAt: at(&quot;2026-09-19T12:06:00Z&quot;),
 } satisfies Parameters&lt;WorldMasters[&quot;assignUnit&quot;]&gt;[0];
-// World Master submits creation, assignment and Unit grant as separate operations.
-// Each mission is now at revision 2; this first Unit grant produces assignment revision 1.
-// Participation is not command authority. Command authority is not a physical execution reservation.
-// Both assignments share one Eve agent loop and automatically prepared Unit awareness.
-// The grant does not turn a room name into a geofence. Local exploration limits are independently enforced.</code></pre></div></div></details>
-<details class="example-item" id="flow-prepared"><summary><span class="example-index">03</span><span><span class="example-title">Choose an investigation from the mission log</span><span class="example-summary">read known evidence → identify a gap → choose a viewpoint</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Navigator reads both assignments and sees that the place references are unresolved. It first examines Go2’s current observations and any retained local knowledge. No kitchen destination is available to navigate to. Exploration seeks information that could identify the rooms and their connections; it does not require knowing their names or complete layout in advance.</p></div><div class="example-code"><pre><code class="language-ts">// Decision-context excerpt, not another writable world table.
-const initialContext = {
-  agentId: &quot;navigator&quot;, unitId: &quot;go2-01&quot;,
-  missionLogSummary: [
-    { missionId: &quot;mission-1&quot;, objectiveId: &quot;locate&quot;, progress: &quot;pending&quot;, need: &quot;accepted match and location&quot; },
-    { missionId: &quot;mission-2&quot;, objectiveId: &quot;inspect&quot;, progress: &quot;pending&quot;, need: &quot;passage inspection&quot; },
-  ],
-  relevantKnowledge: {
-    unresolvedPlaces: [&quot;the living area&quot;, &quot;the passage to the kitchen&quot;],
-    placeCandidateIds: [], backpackCandidateIds: [], // nothing has been identified from these descriptions yet
-    nextInvestigation: &quot;inspect current sensor evidence&quot;, // not a command to drive to an unknown destination
-  },
-};
-// The first useful step is observation, not navigateTo(kitchen). No geometry is invented for a place name.
-// Read retained evidence before revisiting locations; do not treat old negative detections as exhaustive.
-// Exploration chooses an information gap. Navigation reaches a viewpoint. Perception supplies evidence.
-// A second mission stays active while attention is on the first; focus changes no deadlines.</code></pre></div></div></details>
-<details class="example-item" id="flow-discovery"><summary><span class="example-index">04</span><span><span class="example-title">Accumulate spatial structure before naming rooms</span><span class="example-summary">range + motion estimates → surfaces + free / occupied / unknown space</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The mapping pipeline integrates repeated range acquisitions with IMU/odometry, producing poses and a growing local map. Camera measurements may also support motion estimation. Image perception runs alongside it. The first checkpoint has spatial structure but no kitchen, living-area or opening entity. A navigation system can select a viewing pose on known traversable space near an unexplored boundary. Exploration still needs separate authorization and a qualified local controller.</p></div><div class="example-code"><pre><code class="language-ts">// Resource handles below stand for verified retained bytes, not fabricated hashes or live sensor access.
-declare const retained: {
-  occupancy1: ResourceRef; surface1: ResourceRef; occupancy2: ResourceRef; surface2: ResourceRef;
-  camera13: ResourceRef; camera14: ResourceRef; lidar14: ResourceRef; backpackSurface: ResourceRef;
-  calibration: ResourceRef; fusionReceipt: ResourceRef;
-  livingMask: ResourceRef; kitchenMask: ResourceRef; passageMask: ResourceRef; evidenceIndex: ResourceRef;
-};
-declare const mapperPackage: PackagePin; // exact installed mapping implementation
-const firstCheckpoint = {
-  mapId: &quot;local-map-1&quot;, frameId: &quot;go2/map:epoch-7&quot;, revision: 1n,
-  layers: [
-    { kind: &quot;occupancy&quot;, resource: retained.occupancy1, observedAt: at(&quot;2026-09-19T12:00:05Z&quot;) },
-    { kind: &quot;surface&quot;, resource: retained.surface1, observedAt: at(&quot;2026-09-19T12:00:05Z&quot;) },
-  ], // outputs of repeated range + motion estimation, not a semantic detector result
-} satisfies MapCheckpoint &amp; { layers: MapLayer[] };
-// Retained obs-layout-1 indexes the acquisitions, pose history and calibration behind this checkpoint.
-// Grid payload defines origin, resolution and occupancy encoding; unknown cells remain unknown.
-// No room labels or room entities are needed for this map to exist and keep growing.
-// Planar ranging can support a floor map; it cannot supply a backpack's full 3D dimensions.
-// A qualified viewpoint selector proposes a reachable pose beside, not inside, unknown space.
-// If exploration permission or qualified navigation is absent, observe in place or ask for help.</code></pre></div></div></details>
-<details class="example-item" id="flow-navigation"><summary><span class="example-index">05</span><span><span class="example-title">Navigate to a map-derived viewpoint</span><span class="example-summary">pose intent → admission → local planner → measured receipt</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Navigator chooses a useful viewpoint proposed from the mapped surroundings, not coordinates inferred from a room name. navigate@1 carries that local pose and its map context. The installed controller plans and replans using current localization, Unit-specific traversability and live obstacles. It can reject an unsafe or unreachable goal. Mapping and perception continue during motion; arrival supplies another view, not an inspection result.</p></div><div class="example-code"><pre><code class="language-ts">// Example pose supplied by the local viewpoint selector after validating the mapped neighborhood.
+// At 12:00:01 both missions reach revision 2; the Unit grant reaches revision 1.
+// Assignment authorizes this agent's work. It does not create a sensor session or clear the map.
+// Installed local operating limits permit this nearby investigation; mission wording does not grant them.
+// Both missions share Navigator's Eve loop and Go2's single physical execution reservation.</code></pre></div></div></details>
+<details class="example-item" id="flow-prepared"><summary><span class="example-index">04</span><span><span class="example-title">Read the accumulated world before reasoning</span><span class="example-summary">12:00:02 · consistent WorldView + MissionLog</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>After delivery delay, the adapter freezes an authorized world projection for this inference step. It already contains Go2's localization, map checkpoint 42, regions, the backpack track, Unit capabilities and both assignments. The agent inspects those records through the world mount. It chooses a viewpoint that could reduce the backpack occlusion and reveal more of the passage; that choice is reasoning, not a field in world knowledge.</p></div><div class="example-code"><pre><code class="language-ts">const assignmentWake = {
+  id: &quot;wake-assignment-1&quot;, worldId: &quot;apartment&quot;, agentId: &quot;navigator&quot;,
+  eventIds: [&quot;event-assignment-1&quot;, &quot;event-assignment-2&quot;], // durable events; delivery is not acknowledgement of handling
+  changedEntityIds: [&quot;go2-01&quot;], rescan: true, // prepare the newly authorized Unit scope
+} satisfies WorldWake;
+declare const stepOne: Readonly&lt;WorldView&gt;; // adapter-frozen authorized projection at 12:00:02
+const mapForStepOne = stepOne.localMaps.find(map =&gt; map.map.id === baselineMap.map.id);
+const backpackForStepOne = stepOne.entities.get(&quot;backpack-A&quot;); // existing semantic + local geometry facets
+const navigatorForStepOne = stepOne.agents.get(&quot;navigator&quot;);
+if (!stepOne.synchronized || !mapForStepOne || !navigatorForStepOne) {
+  throw new Error(&quot;Context not ready&quot;); // await a synchronized permitted view, never substitute empty knowledge
+}
+const missionLogForStepOne: MissionLog = navigatorForStepOne.missionLog;
+// This snapshot includes checkpoint 42, livingRegion, kitchenRegion, passage-1 and recent backpack observations.
+// /world/.../local-maps.json and entities.json expose these projections; mission-log.json covers both assignments.
+// Every facet retains its own acquisition time. A recent context timestamp does not refresh old geometry.
+// The LLM selects a useful viewing pose from the existing map and a qualified local viewpoint proposal.
+// That plan lives in Eve reasoning/scratch space. It is not a next-action field written into world state.</code></pre></div></div></details>
+<details class="example-item" id="flow-waiting"><summary><span class="example-index">05</span><span><span class="example-title">Keep perception running during a slow decision</span><span class="example-summary">12:00:02–12:00:32 · one inference, many world updates</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>During this 30-second inference, sensors, mapping and perception keep processing. Current world rows advance; the step's frozen view does not. The adapter coalesces replaceable changes and retains important occurrences. It does not enqueue every camera frame as another LLM turn. Sensor acquisition, inference, world publication and durable checkpointing have separate cadences. Exact rates depend on the selected hardware and pipelines; SAM3 remains selective.</p></div><div class="example-code"><pre><code class="language-ts">// While stepOne remains frozen at 12:00:02, the independent mapper keeps committing useful changes.
+const mapWhileThinking = {
+  ...baselineMap.map, revision: 48n, headRevisionId: &quot;local-map-1/48&quot;,
+} satisfies LocalMapRecord; // current at 12:00:32; does not mutate mapForStepOne
+const coalescedChanges = {
+  id: &quot;wake-world-2&quot;, worldId: &quot;apartment&quot;, agentId: &quot;navigator&quot;,
+  eventIds: [], // no must-handle occurrence in this interval; real occurrences would retain their IDs
+  changedEntityIds: [&quot;go2-01&quot;, &quot;backpack-A&quot;, &quot;passage-1&quot;], rescan: false,
+} satisfies WorldWake;
+// Repeated track/pose updates become dirty keys plus current state, not hundreds of queued snapshots.
+// A dirty key does not require a new inference: wake only when useful work and scheduling policy justify it.
+// If delivery waits behind a turn, prepare from current authorized state at the eventual step boundary.
+// Mapping, YOLOE/tracking and selective SAM3 do not wait for the LLM to finish or request another observation.
+// Retain evidence required by maps, decisions and mission proofs; coalescing a wake never discards those records.
+// Checkpoint 42 → 48 represents selected durable commits, not a promised mapping rate or one write per scan.</code></pre></div></div></details>
+<details class="example-item" id="flow-navigation"><summary><span class="example-index">06</span><span><span class="example-title">Validate the proposed viewpoint against current state</span><span class="example-summary">12:00:33 · old reasoning context, fresh admission</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Navigator proposes a map-derived viewing pose. The request retains the map revision used to choose it, while admission and claim check current localization, permissions, exploration limits and whether that viewpoint is still valid. A newer map revision alone is not a conflict. If the frame reset or the useful viewpoint became invalid, reject the request and reconsider. Otherwise local planning handles changing obstacles without waiting for another LLM response.</p></div><div class="example-code"><pre><code class="language-ts">// At 12:00:33 the LLM returns a viewpoint selected from its checkpoint-42 context.
 const navigationInput = {
-  executionId: &quot;d0cb5435-aed4-45b5-933c-fb47b29cff42&quot;, // stable retry identity for this attempt
+  executionId: &quot;d0cb5435-aed4-45b5-933c-fb47b29cff42&quot;, // stable UUID for retries of this exact proposal
   unitId: &quot;go2-01&quot;, assignment: { agentId: &quot;navigator&quot;, revision: 1n },
-  mapId: firstCheckpoint.mapId, basisMapRevision: firstCheckpoint.revision,
-  frameId: firstCheckpoint.frameId,
+  mapId: &quot;local-map-1&quot;, basisMapRevision: 42n, frameId: &quot;go2/map:epoch-7&quot;,
   targetPose: { positionM: { x: 1.2, y: -0.2, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } },
-  acceptBy: at(&quot;2026-09-19T12:00:08Z&quot;), // admission/claim deadline, not a command duration
+  acceptBy: at(&quot;2026-09-19T12:00:35Z&quot;), // fresh submission deadline, not chosen 30 seconds before inference completes
   mission: { missionId: &quot;mission-2&quot;, objectiveId: &quot;inspect&quot;, expectedRevision: 2n },
 } satisfies NavigateRequest;
-// ActionRequests.requestNavigate normalizes this as { tag: &quot;navigate&quot;, value: navigationInput }.
-// Admission checks the current map/localization, ready objective, Unit grant and exploration limits.
-// Coordinates illustrate an adapter-selected pose; they are not inferred from the words living area or kitchen.
-// This adapter uses a ground-projected navigation pose; z = 0 here is not a command for Go2 body height.
-// Claim reserves Go2 across all missions; robot-local planning and obstacle checks run at their own rates.
-// accepted → claimed → local motion → measured arrival at 12:00:12 → confirmed safe-closure receipt.
-// Retry by executionId. An unknown physical outcome holds the reservation until reconciled.
-// Linking an action to an inspection explains its purpose; arrival does NOT satisfy inspected.
-// Live obstacle and footprint checks remain robot-local; persisted occupancy can be incomplete or stale.</code></pre></div></div></details>
-<details class="example-item" id="flow-inputs"><summary><span class="example-index">06</span><span><span class="example-title">Associate camera evidence with measured surfaces</span><span class="example-summary">image detection + calibrated ranging → persistent object track</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>YOLOE detects a backpack candidate in an image. A spatial worker uses synchronized acquisitions, camera calibration, sensor extrinsics and motion estimates to associate compatible range points with that track. It retains the visible surface as a point cloud, without inventing full dimensions. Unsupported associations remain image-only. Repeated views refine backpack-A while the surrounding map continues growing independently. SAM3 can refine an ambiguous mask without blocking mapping or control.</p></div><div class="example-code"><pre><code class="language-ts">const cameraFrame = {
-  streamId: &quot;go2/camera&quot;, sessionId: &quot;camera-7&quot;, sequence: 141n, capturedAt: at(&quot;2026-09-19T12:00:13Z&quot;),
+// ActionRequests.requestNavigate receives this intent; this document performs no IO.
+// Current checkpoint is 48. Admission/claim revalidate the chosen pose and frame against current evidence.
+// New checkpoint alone → recheck, not automatic rejection. Invalid pose, expired grant or reset frame → reject.
+// Never silently move the target pose or rewrite a retry's body; a changed proposal needs a new execution ID.
+// z = 0 is this adapter's ground-projected navigation convention, not a command for Go2 body height.
+// 12:00:34 claim → local planning/motion → measured arrival and safe closure at 12:00:45.
+// A person crossing the route triggers local slow/stop/replan; control never waits for the next LLM step.
+// Arrival enables inspection. It does not satisfy inspected or certify that the passage is clear.</code></pre></div></div></details>
+<details class="example-item" id="flow-inputs"><summary><span class="example-index">07</span><span><span class="example-title">Receive fresh evidence while moving and observing</span><span class="example-summary">12:00:34–12:00:45 · measured arrival and a less occluded view</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The local controller navigates to the accepted pose, using live obstacle checks throughout, and records safe closure at 12:00:45. Perception has continued throughout the movement. The new view improves the already-known backpack track and passage evidence. It is not the first camera or LiDAR observation. Retain the measured visible surface rather than inventing full dimensions from a partial view.</p></div><div class="example-code"><pre><code class="language-ts">const cameraFrame = {
+  streamId: &quot;go2/camera&quot;, sessionId: &quot;camera-7&quot;, sequence: 3840n,
+  capturedAt: at(&quot;2026-09-19T12:00:45Z&quot;),
 } satisfies FrameRef;
-const fusionImage = { ...cameraFrame, sequence: 151n, capturedAt: at(&quot;2026-09-19T12:00:14Z&quot;) };
 const lidarFrame = {
-  streamId: &quot;go2/lidar&quot;, sessionId: &quot;lidar-7&quot;, sequence: 99n, capturedAt: at(&quot;2026-09-19T12:00:14.010Z&quot;),
+  streamId: &quot;go2/lidar&quot;, sessionId: &quot;lidar-7&quot;, sequence: 11201n,
+  capturedAt: at(&quot;2026-09-19T12:00:45.010Z&quot;),
 } satisfies FrameRef;
-declare const acquisitionTransforms: TransformSample[]; // calibrated, timestamped transforms used for this pair
-// Typed facet excerpts; ingestion additionally supplies authenticated producer/association and localMapId.
+declare const acquisitionTransforms: TransformSample[]; // qualified acquisition-time sensor/map transforms
 const candidateObservation = {
-  id: &quot;obs-1&quot;, inputs: [cameraFrame], retained: [retained.camera13],
+  id: &quot;obs-1&quot;, entityId: &quot;backpack-A&quot;, inputs: [cameraFrame], retained: [retained.camera45],
   semantic: { observedAt: cameraFrame.capturedAt, value: {
     hypotheses: [{ label: &quot;backpack&quot;, score: 0.94 }, { label: &quot;blue&quot;, score: 0.91 }],
   } },
-} satisfies Pick&lt;ObservationInput, &quot;id&quot; | &quot;inputs&quot; | &quot;retained&quot; | &quot;semantic&quot;&gt;;
+} satisfies Pick&lt;ObservationInput, &quot;id&quot; | &quot;entityId&quot; | &quot;inputs&quot; | &quot;retained&quot; | &quot;semantic&quot;&gt;;
 const locatedObservation = {
-  id: &quot;obs-2&quot;, inputs: [fusionImage, lidarFrame], supersedes: [&quot;obs-1&quot;],
-  retained: [retained.camera14, retained.lidar14, retained.backpackSurface, retained.calibration, retained.fusionReceipt],
+  id: &quot;obs-2&quot;, entityId: &quot;backpack-A&quot;, inputs: [cameraFrame, lidarFrame], supersedes: [&quot;obs-1&quot;],
+  retained: [retained.camera45, retained.lidar45, retained.backpackSurface45, retained.calibration, retained.fusionReceipt45],
   transforms: acquisitionTransforms,
   geometry: { observedAt: lidarFrame.capturedAt, value: { tag: &quot;pointCloud&quot;, value: {
-    frameId: firstCheckpoint.frameId, resource: retained.backpackSurface,
-  } } }, // only the associated measured surface; no inferred full box or height
-} satisfies Pick&lt;ObservationInput, &quot;id&quot; | &quot;inputs&quot; | &quot;retained&quot; | &quot;transforms&quot; | &quot;supersedes&quot; | &quot;geometry&quot;&gt;;
-// The fusion receipt retains timing checks, intrinsics/distortion, extrinsics and pose history used.
-// Reject inconsistent/occluded associations; one nearest LiDAR return is not sufficient.
-// Association binds both observations to backpack-A. More views refine it, not create same-label duplicates.
-// obs-3 retains the wider passage view; obs-layout-2 retains the accumulated layout/room evidence at 12:00:18.
-// Without qualified association, keep obs-1 as image evidence and do not submit unsupported metric geometry.</code></pre></div></div></details>
-<details class="example-item" id="flow-projection"><summary><span class="example-index">07</span><span><span class="example-title">Delimit regions in the accumulated map</span><span class="example-summary">growing geometry → partial regions + observed connections</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>Further views extend the occupancy/surface products. Spatial processing delimits two partially explored spaces and their connecting passage; retained masks identify their extents in the map. Semantic workers attach living-area and kitchen hypotheses from the supporting views. Labels do not create these regions or prove connectivity. Object tracks and located_in relations retain separate evidence; a moving backpack is not baked permanently into room structure.</p></div><div class="example-code"><pre><code class="language-ts">const expandedCheckpoint = {
-  mapId: firstCheckpoint.mapId, frameId: firstCheckpoint.frameId, revision: 2n, parentRevision: 1n,
+    frameId: &quot;go2/map:epoch-7&quot;, resource: retained.backpackSurface45,
+  } } }, // measured visible surface, not fabricated full extents
+} satisfies Pick&lt;ObservationInput, &quot;id&quot; | &quot;entityId&quot; | &quot;inputs&quot; | &quot;retained&quot; | &quot;transforms&quot; | &quot;supersedes&quot; | &quot;geometry&quot;&gt;;
+// Selected updates to an existing track; full ingestion also validates producer, association and localMapId.
+// Timing, intrinsics, extrinsics and pose history qualify this association; missing calibration keeps it image-only.
+// obs-3 retains the wider passage view; obs-layout-52 retains current place/connection evidence at 12:00:45.
+// All outcome evidence here is acquired after mission readiness. Earlier map knowledge remains useful context.</code></pre></div></div></details>
+<details class="example-item" id="flow-projection"><summary><span class="example-index">08</span><span><span class="example-title">Refine the existing map and regions</span><span class="example-summary">12:00:45 · same identities, better evidence</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The mapper extends spatial products and the region worker refines the passage extent. Semantic observations provide stronger kitchen evidence. Backpack-A, space-1, space-2 and passage-1 keep their identities. Retained resources and checkpoint lineage preserve the spatial basis of these claims. The example shows selected commits; it does not imply one database checkpoint per sensor acquisition.</p></div><div class="example-code"><pre><code class="language-ts">const spatialCheckpoint = {
+  mapId: &quot;local-map-1&quot;, frameId: &quot;go2/map:epoch-7&quot;, revision: 51n, parentRevision: 50n,
   layers: [
-    { kind: &quot;occupancy&quot;, resource: retained.occupancy2, observedAt: at(&quot;2026-09-19T12:00:18Z&quot;) },
-    { kind: &quot;surface&quot;, resource: retained.surface2, observedAt: at(&quot;2026-09-19T12:00:18Z&quot;) },
+    { kind: &quot;occupancy&quot;, resource: retained.occupancy51, observedAt: at(&quot;2026-09-19T12:00:45Z&quot;) },
+    { kind: &quot;surface&quot;, resource: retained.surface51, observedAt: at(&quot;2026-09-19T12:00:45.010Z&quot;) },
   ],
 } satisfies MapCheckpoint &amp; { layers: MapLayer[] };
-const mappedRegions = [
-  { entityId: &quot;space-1&quot;, mask: retained.livingMask, coverage: &quot;partial&quot; as const },
-  { entityId: &quot;space-2&quot;, mask: retained.kitchenMask, coverage: &quot;partial&quot; as const },
-  { entityId: &quot;passage-1&quot;, mask: retained.passageMask, coverage: &quot;bounded&quot; as const },
-].map(({ entityId, mask, coverage }) =&gt; ({
-  entityId, mapId: expandedCheckpoint.mapId, expectedRevision: 0n,
-  extent: { mapRevision: 2n, occupancyResourceId: retained.occupancy2.id, mask, coverage },
-  observationIds: [&quot;obs-layout-1&quot;, &quot;obs-layout-2&quot;, &quot;obs-3&quot;],
-})) satisfies Parameters&lt;WorldMemory[&quot;projectRegion&quot;]&gt;[0][];
-// Each mask aligns with occupancy2. Region IDs are created through trusted association, not from room names.
-// projectRegion commits revision 1 for each region after validating the retained mask and checkpoint.
-// Semantic observations propose living area for space-1 and kitchen for space-2; neither assigns the name.
-// Evidenced relations: backpack-A located_in space-1; passage-1 connects space-1 and space-2.
-// Obstruction evidence overlaps the passage extent; this does not certify passage traversability.
-// Changing objects remain independently tracked; static mapping must handle dynamic returns/occupancy decay.
-// Further views refine the same regions. Moving out of view never erases backpack-A.</code></pre></div></div></details>
-<details class="example-item" id="flow-naming"><summary><span class="example-index">08</span><span><span class="example-title">Assign names without changing spatial identity</span><span class="example-summary">World Master annotation · stable region IDs</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master reviews the mapped regions and supporting views, then names space-1 Living area and space-2 Kitchen. Either region may still be partial. Names help resolve mission language; they do not make a region complete, unique or safe. More observations can refine the same extent, and a later rename leaves identity and accepted historical findings intact.</p></div><div class="example-code"><pre><code class="language-ts">const regionNames = [
-  { entityId: &quot;space-1&quot;, expectedRevision: 1n, name: &quot;Living area&quot; },
-  { entityId: &quot;space-2&quot;, expectedRevision: 1n, name: &quot;Kitchen&quot; },
-] satisfies Parameters&lt;WorldMemory[&quot;nameRegion&quot;]&gt;[0][];
-// World Master submits these annotations after reviewing views and map extents at 12:00:20.
-// Each region advances to revision 2; authenticated identity and server time populate RegionName.
-// Names do not replace semantic hypotheses or alter masks, map frame, evidence or entity identity.
-// passage-1 stays unnamed at revision 1; its connection to Kitchen can resolve the mission description.
-const namedCheckpoint = {
-  ...expandedCheckpoint, revision: 3n, parentRevision: 2n, // reuse unchanged spatial layer resources
+const passageRefinement = {
+  entityId: &quot;passage-1&quot;, mapId: &quot;local-map-1&quot;, expectedRevision: 5n,
+  extent: { mapRevision: 51n, occupancyResourceId: retained.occupancy51.id,
+    mask: retained.passageMask51, coverage: &quot;bounded&quot; },
+  observationIds: [&quot;obs-3&quot;, &quot;obs-layout-52&quot;],
+} satisfies Parameters&lt;WorldMemory[&quot;projectRegion&quot;]&gt;[0];
+// After checkpoint 51 is retained, this qualified region update advances passage-1 to revision 6.
+const inspectionCheckpoint = {
+  ...spatialCheckpoint, revision: 52n, parentRevision: 51n,
   regionVersions: [
-    { entityId: &quot;space-1&quot;, revision: 2n }, { entityId: &quot;space-2&quot;, revision: 2n },
-    { entityId: &quot;passage-1&quot;, revision: 1n },
+    { entityId: &quot;space-1&quot;, revision: 4n }, { entityId: &quot;space-2&quot;, revision: 2n },
+    { entityId: &quot;passage-1&quot;, revision: 6n },
   ],
-  evidenceIndex: retained.evidenceIndex, producer: mapperPackage,
+  evidenceIndex: retained.evidenceIndex52, producer: mapperPackage,
 } satisfies LocalMapManifest;
-// Retain all referenced bytes/archived components, then WorldMemory.commitMapRevision advances head to 3.
-// Another Kitchen label is allowed. Ambiguous mission references still need evidence or clarification.
-// An assigned name helps interpret intent; only objective review can accept a mission finding.</code></pre></div></div></details>
-<details class="example-item" id="flow-findings"><summary><span class="example-index">09</span><span><span class="example-title">Compile the next step and report both findings</span><span class="example-summary">one evidence set → two independently reviewed outcomes</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The adapter compiles both mission summaries and new evidence into one frozen Eve context. Navigator proposes a backpack match and an obstructed-passage report. Both cite obs-2, but each must satisfy its own criterion. These are typed draft findings, not trusted facts or completion flags. The reviewer checks the proposed place identities, object match and last-seen location separately from the passage extent and obstruction evidence. Competing kitchen candidates require more evidence or clarification; the agent cannot silently select one.</p></div><div class="example-code"><pre><code class="language-ts">// At 12:00:22, context includes both missions, candidate places, their connection and the retained evidence.
+// WorldMemory.commitMapRevision publishes head 52 only after every referenced resource/version is retained.
+// Region masks keep their exact basis checkpoints; unchanged regions can still refer to checkpoint 41.
+// New views support Kitchen for space-2 and the backpack's overlap with the passage extent.
+// Labels, region boundaries and object identity remain separate; a moving backpack is not permanent room geometry.</code></pre></div></div></details>
+<details class="example-item" id="flow-findings"><summary><span class="example-index">09</span><span><span class="example-title">Prepare a fresh step and draft both findings</span><span class="example-summary">12:00:46–12:01:16 · arrival event + refreshed world view</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>A retained execution outcome and useful new evidence make another reasoning step eligible. The adapter prepares a fresh world view, not a backlog of the intermediate views from step 1. Navigator uses the new measurements to draft a backpack location and an obstructed-passage finding. During this second 30-second inference the world continues advancing. Findings report what the cited observations establish, not guaranteed current conditions.</p></div><div class="example-code"><pre><code class="language-ts">const arrivalWake = {
+  id: &quot;wake-arrival-3&quot;, worldId: &quot;apartment&quot;, agentId: &quot;navigator&quot;,
+  eventIds: [&quot;event-execution-finished-1&quot;], // important occurrence retained until explicitly handled
+  changedEntityIds: [&quot;go2-01&quot;, &quot;backpack-A&quot;, &quot;space-2&quot;, &quot;passage-1&quot;], rescan: false,
+} satisfies WorldWake;
+declare const stepTwo: Readonly&lt;WorldView&gt;; // fresh adapter projection at 12:00:46, including checkpoint 52
+// Step 2 reads the mission log, arrival receipt and observations obs-1/2/3 + obs-layout-52 from this projection.
+// It does not replay each intermediate snapshot produced during step 1.
+// At 12:01:16, after another 30 seconds of reasoning, Navigator drafts:
 const backpackFinding = {
   tag: &quot;located&quot;, value: {
-    entityId: &quot;backpack-A&quot;, searchAreaId: &quot;space-1&quot;, searchAreaRevision: 2n, // assigned name plus evidenced extent
-    observationIds: [&quot;obs-1&quot;, &quot;obs-2&quot;, &quot;obs-layout-1&quot;, &quot;obs-layout-2&quot;],
-    description: &quot;Blue backpack last seen at 12:00:14 on the living-area side of the opening.&quot;,
+    entityId: &quot;backpack-A&quot;, searchAreaId: &quot;space-1&quot;, searchAreaRevision: 4n,
+    observationIds: [&quot;obs-1&quot;, &quot;obs-2&quot;, &quot;obs-layout-52&quot;],
+    description: &quot;Blue backpack last seen at 12:00:45 on the living-area side of the passage.&quot;,
   },
 } satisfies MissionFinding;
 const passageFinding = {
   tag: &quot;inspected&quot;, value: {
-    regionId: &quot;passage-1&quot;, regionRevision: 1n, conclusion: &quot;obstructed&quot;, // exact inspected extent, not a moving label
-    obstructionEntityIds: [&quot;backpack-A&quot;], observationIds: [&quot;obs-2&quot;, &quot;obs-3&quot;, &quot;obs-layout-2&quot;],
-    description: &quot;A backpack occupies the inspected passage. This report does not certify a safe route.&quot;,
+    regionId: &quot;passage-1&quot;, regionRevision: 6n, conclusion: &quot;obstructed&quot;,
+    obstructionEntityIds: [&quot;backpack-A&quot;], observationIds: [&quot;obs-2&quot;, &quot;obs-3&quot;, &quot;obs-layout-52&quot;],
+    description: &quot;At 12:00:45 the backpack occupied the inspected passage. This is not a traversal clearance.&quot;,
   },
 } satisfies MissionFinding;
-// Navigator presents these drafts for review through Eve; they do not mutate world truth.
-// Review place identity as well: does space-1 match the living area, and does passage-1 lead to the intended kitchen?
-// Multiple plausible kitchens → ask which one; no supported match → keep investigating within granted limits.
-// Same obs-2, different checks: requested-object match/location versus obstruction within the region.
-// Models can help compare evidence. Their confidence is not mission acceptance or safety clearance.
-// If a view remains inconclusive, report unknown and investigate another safe viewpoint or ask for help.
-// Context, selected evidence, reasoning and receipts share trace correlation under the capture policy.</code></pre></div></div></details>
-<details class="example-item" id="flow-mission-finished"><summary><span class="example-index">10</span><span><span class="example-title">Accept findings and close each mission</span><span class="example-summary">review → durable objective progress → safe closure</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>For these review policies, the World Master submits each accepted finding through Missions.recordObjectiveProgress. The backpack mission may close while passage review remains pending. Finding an obstruction successfully completes the inspection; clearing it was never requested. Unknown visibility cannot complete inspection, and a clear report would require evidence covering the entire named region. Neither outcome authorizes traversal.</p></div><div class="example-code"><pre><code class="language-ts">const progressSubmissions = [
+// These are proposed outcomes. Only the configured review boundary can accept them.
+// Later world changes remain available to review; a frozen context is not a promise that nothing changed.
+// The same obs-2 supports different checks: object match/location versus obstruction in the inspected extent.
+// Trace the context identity, cited evidence, reasoning and execution receipts under the capture policy.</code></pre></div></div></details>
+<details class="example-item" id="flow-naming"><summary><span class="example-index">10</span><span><span class="example-title">Confirm the room's meaning</span><span class="example-summary">12:01:18 · World Master names an existing region</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master reviews the mapped region and supporting views, then names space-2 Kitchen. That region already existed and supported local navigation before its meaning was confirmed. Naming changes neither its geometry nor coordinate frame, and it does not itself complete either mission. If several regions plausibly match the description, clarify instead of choosing silently.</p></div><div class="example-code"><pre><code class="language-ts">const kitchenName = {
+  entityId: &quot;space-2&quot;, expectedRevision: 2n, name: &quot;Kitchen&quot;,
+} satisfies Parameters&lt;WorldMemory[&quot;nameRegion&quot;]&gt;[0];
+// At 12:01:18 World Master reviews the retained views and submits the name; region revision becomes 3.
+// A concurrent extent/name edit would conflict: reread and review, never overwrite blindly.
+// The component keeps its extent, frame and identity. The old revision remains archived with checkpoint 52.
+// The living-area name already existed; this confirms only the previously uncertain adjoining room.
+// Names need not be unique. A name assignment is neither new sensor evidence nor mission completion.</code></pre></div></div></details>
+<details class="example-item" id="flow-mission-finished"><summary><span class="example-index">11</span><span><span class="example-title">Review fresh evidence and record progress</span><span class="example-summary">12:01:20 · independent acceptance, safe closure</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>The World Master reviews both findings against the retained region versions, the requested places, evidence age and any newer contradictory evidence. The 12:00:45 measurements are about 35 seconds old, within this example's 60-second acceptance window. A delayed or contradicted finding needs reconsideration; the system does not refresh a timestamp to make old evidence valid. An evidenced obstruction completes inspection without authorizing removal or traversal.</p></div><div class="example-code"><pre><code class="language-ts">const progressSubmissions = [
   { missionId: &quot;mission-1&quot;, objectiveId: &quot;locate&quot;, evidence: { tag: &quot;finding&quot;, value: backpackFinding } },
   { missionId: &quot;mission-2&quot;, objectiveId: &quot;inspect&quot;, evidence: { tag: &quot;finding&quot;, value: passageFinding } },
 ] satisfies Parameters&lt;Missions[&quot;recordObjectiveProgress&quot;]&gt;[0][];
-// World Master reviews and submits each independently at 12:00:25 and 12:00:26.
-// Agent attempts to self-approve these reviewed findings are rejected, regardless of Unit authority.
-// Load cited records; check readiness, criterion, evidence access/age and authority.
-// Review grounds each place description in discovered entities and evidence; an ambiguous referent stays pending.
-// Accepted findings retain region revisions and evidence; later renaming/refinement cannot change that proof.
-// The original description in MissionSpec remains unchanged.
-// Persist accepted finding + objective progress + authenticated reviewer audit atomically.
-// mission-1: locate completed → closing → succeeded; mission-2 can still be awaiting its own review.
-// mission-2: inspect completed with obstructed → closing → succeeded after every linked attempt is safe.
-// The navigation receipt is already safely closed. Pending/unknown physical work would hold closing.
-// Obstruction is an inspection result, not mission failure. Removing it requires different authorized work.
-// Repeated submission returns the retained proof; it cannot overwrite acceptance or increment progress.</code></pre></div></div></details>
-<details class="example-item" id="flow-resume"><summary><span class="example-index">11</span><span><span class="example-title">Recover the world and resume useful work</span><span class="example-summary">world state and accepted progress survive an Eve reset</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>A restarted agent reloads both assignments, accepted findings, retained observations, map checkpoints and execution receipts. It reconstructs outstanding work from those records. Draft reasoning is not objective progress. If Go2 has lost localization, the map remains readable but spatial actions wait for qualified localization or a new frame.</p></div><div class="example-code"><pre><code class="language-ts">const recovered = {
-  agentId: &quot;navigator&quot;, missionIds: [&quot;mission-1&quot;, &quot;mission-2&quot;],
-  completedObjectives: [&quot;mission-1/locate&quot;, &quot;mission-2/inspect&quot;], // read accepted progress, not conversation claims
-  localMapId: &quot;local-map-1&quot;, headRevision: 3, entityIds: [&quot;backpack-A&quot;, &quot;space-1&quot;, &quot;space-2&quot;, &quot;passage-1&quot;],
-  regionNames: { &quot;space-1&quot;: &quot;Living area&quot;, &quot;space-2&quot;: &quot;Kitchen&quot; }, // reload names and archived extent revisions too
-  localization: &quot;relocalization_required&quot;, // recovery of map bytes does not prove the current Unit pose
-}; // both mission outcomes, accepted findings, evidence and safe-closure receipts are durable
-// A reset before review leaves place hypotheses and the objective unaccepted; reconstruct from retained evidence.
-// If evidence has aged beyond the review policy, gather fresh evidence before accepting the finding.
-// Reconcile receipts before new motion. Reconcile observations beyond checkpoint coverage by their IDs.
-// No useful pending work → idle, with relevant changes/deadlines still observed; no repeated LLM polling.
-// Additional Units can retain their own local frames; these outcomes require no perfect global alignment.</code></pre></div></div></details></div></div></section>
+// World Master reviews and submits each independently at 12:01:20.
+// Validate authority, readiness, intended places, archived region versions and actual acquisition ages.
+// 12:00:45 → 12:01:20 is about 35 seconds: within the 60-second policy, not a guarantee of unchanged state.
+// Check newer contradictory evidence too. Here the backpack/place interpretation still holds.
+// Review after expiry → use newer qualified evidence and reconsider; never retimestamp an old finding.
+// Atomically retain accepted proof + objective progress + authenticated reviewer audit.
+// Each mission closes only after its linked physical work has confirmed safe closure.
+// Obstructed completes inspection; unknown visibility does not. Clearing the passage is different work.
+// Repeated submission returns the retained proof, without double completion or replaying navigation.</code></pre></div></div></details>
+<details class="example-item" id="flow-resume"><summary><span class="example-index">12</span><span><span class="example-title">Retain the world between reasoning steps</span><span class="example-summary">idle agent ≠ idle sensors</span></span><span class="example-toggle" aria-hidden="true"></span></summary><div class="example-body"><div class="example-description"><p>With both missions complete, Navigator can become idle while sensing and world maintenance continue under their operating policy. Another assignment starts from the accumulated world, not an empty context. An Eve reset does not erase maps, tracks, names or accepted progress. A separate localization loss blocks dependent spatial actions until recovery; it does not erase recorded knowledge.</p></div><div class="example-code"><pre><code class="language-ts">declare const nextWorld: Readonly&lt;WorldView&gt;; // latest authorized projection after idle or an Eve restart
+const nextMissionLog = nextWorld.agents.get(&quot;navigator&quot;)?.missionLog;
+const retainedMap = nextWorld.localMaps.find(map =&gt; map.map.id === &quot;local-map-1&quot;);
+const retainedBackpack = nextWorld.entities.get(&quot;backpack-A&quot;);
+// Read accepted progress, the current map head, names, tracks and receipts; do not start from an empty scene.
+// Reasoning can remain idle while perception and mapping continue under their operating policy.
+// A future mission begins with this accumulated world and a fresh bounded projection.
+if (retainedMap?.localization === &quot;relocalization_required&quot;) {
+  // A separate localization loss blocks dependent spatial actions, not reading retained knowledge.
+  // Reconcile the Unit and controller receipts before new motion; an Eve reset alone does not lose localization.
+}
+// More Units can contribute independent local frames without requiring a perfectly aligned global map.</code></pre></div></div></details></div></div></section>
 <section class="section" id="tracing" aria-labelledby="tracing-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">08 / Tracing &amp; decision context</div><h2 id="tracing-title">Tracing &amp; decision context</h2></div><p>Inspect what led to a decision, including approved sensitive application content. The world and local execution receipts remain authoritative; diagnostic traces never control the robot.</p></div><div class="abstraction-list"><details class="abstraction" id="step-level-observability"><summary><span class="abstraction-index">01</span><span><span class="abstraction-title">Step-level observability</span><span class="abstraction-summary">inspect what the client saw, requested and received</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Trace the inbox batch, compiled context, selected evidence, model request/response, tool calls and action outcome. Include the relevant world projection and event content needed to understand a decision, not only IDs and duration. Instrument both model and ordinary code through OpenTelemetry, exported to Laminar. Use standard spans and one SDK provider per process; no Nemeia-specific trace transport is needed.</p><code>inbox → context → inference → validation → execution</code></div></details>
 <details class="abstraction" id="controlled-content-capture"><summary><span class="abstraction-index">02</span><span><span class="abstraction-title">Controlled content capture</span><span class="abstraction-summary">sensitive application content can be part of the trace</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Capture authorized context, prompts, transcripts, responses and selected images under a reviewed policy. Sensitive does not automatically mean forbidden. Exclude credentials, signed access URLs and unrelated private data; apply the same rules to exceptions, status text and child spans. Restrict access, choose an approved hosted or self-hosted destination, and set retention and byte limits before enabling capture. Use metadata-only spans when content is not authorized. Laminar's optional PII redaction acts on input/output after ingestion; it does not cover all metadata or rewrite existing traces.</p><code>approved application content · excluded secrets · explicit access and retention</code></div></details>
 <details class="abstraction" id="evidence-selection"><summary><span class="abstraction-index">03</span><span><span class="abstraction-title">Evidence selection</span><span class="abstraction-summary">trace the input to a decision, not every sensor frame</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>Attach selected images or masks when they explain a model input. Keep continuous video and large point clouds in evidence storage; traces carry authorized references or bounded samples. A reference is not a promise of perpetual availability: report expired evidence explicitly. Log truncation and omitted content instead of presenting a partial capture as the complete original context.</p><code>compiled world context + selected evidence + input/output</code></div></details>
