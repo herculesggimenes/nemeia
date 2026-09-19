@@ -18,9 +18,9 @@ need, and the runtime derives the current affordances from the world itself.
 
 ## Status
 
-Pre-production prototype. The [protocol](./docs/protocol.md) is the canonical
-implementation target, with [checked contracts](./contracts/protocol/protocol.ts),
-an [end-to-end example](./contracts/protocol/example.ts), and a
+Pre-production prototype. The [SpacetimeDB protocol](./docs/protocol-spacetimedb.md) is the selected
+implementation target, with [checked contracts](./contracts/spacetimedb/contracts.ts),
+an [end-to-end example](./contracts/spacetimedb/example.ts), and a
 [design review](./docs/protocol-review.md). Existing packages are experiments,
 not a completed implementation of that protocol.
 
@@ -39,7 +39,7 @@ to preserve old APIs, formats, databases, or archived protocol designs.
 | Action | Applies a meaningful change to the world. |
 | System | Continuously senses, updates, executes, or emits events. |
 
-See [docs/protocol.md](./docs/protocol.md) for the full explanation,
+See [the SpacetimeDB protocol](./docs/protocol-spacetimedb.md) for the full explanation,
 [the architecture website](./docs/) for a visual walkthrough,
 [the visual framework story](http://localhost:5173/framework), and
 [the detailed documentation](http://localhost:5173/docs).

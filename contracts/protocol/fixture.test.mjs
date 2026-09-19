@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import * as example from "./example.ts";
-import { services, tables } from "../../docs/protocol-content.mjs";
+import { contractRows, tableNotes } from "../../docs/spacetimedb-content.mjs";
 
 test("example preserves input, event and recording times", () => {
   const { observation, observationEvent, recordedObservation } = example;
@@ -48,8 +48,8 @@ test("one execution identity and measured completion; fixture performs no IO", (
 
 test("each service and database table has its own disclosure; no action controls", () => {
   const html = readFileSync(new URL("../../docs/index.html", import.meta.url), "utf8");
-  assert.equal((html.match(/class="contract-item"/g) ?? []).length, services.length);
-  assert.equal((html.match(/class="schema-item"/g) ?? []).length, tables.length);
+  assert.equal((html.match(/class="contract-item"/g) ?? []).length, contractRows.length);
+  assert.equal((html.match(/class="schema-item"/g) ?? []).length, Object.keys(tableNotes).length);
   const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
   assert.equal(new Set(ids).size, ids.length);
   for (const [,id] of html.matchAll(/href="#([^"]+)"/g)) assert.ok(ids.includes(id));
@@ -57,8 +57,8 @@ test("each service and database table has its own disclosure; no action controls
   assert.doesNotMatch(html, /(?:href|src)="(?:world-runtime\/|README\.md|scene-model\.md)/);
   assert.doesNotMatch(html, /MissionService|ExecutionGrant|bbox_3d/);
   assert.doesNotMatch(html, /\bbox[23]\b/);
-  assert.match(html, /kind: &quot;boundingBox3D&quot;/);
-  assert.match(html, /kind: &quot;boundingBox2D&quot;/);
+  assert.match(html, /boundingBox3D/);
+  assert.match(html, /boundingBox2D/);
   assert.match(html, /name="viewport"/);
   assert.match(html, /@media \(max-width: 600px\)/);
   for (const [,script] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) new vm.Script(script);

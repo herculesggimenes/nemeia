@@ -1,7 +1,7 @@
 # Nemeia with SpacetimeDB
 
-Alternative implementation design, 2026-09-19. The existing protocol remains
-available for comparison. This page does not deploy a database or control a
+Selected implementation design, 2026-09-19. This is the only protocol presented
+on the architecture site. This page does not deploy a database or control a
 robot. The accompanying module examples target SpacetimeDB 2.10.1 and are
 type-checked; type checking is not a server integration or hardware test.
 
@@ -58,10 +58,21 @@ custom state engine.
 
 ## Model composition
 
-SAM3 supplies image/video segmentation and tracks; calibrated spatial processing
+Use YOLOE as the first candidate for frequent local detection/segmentation and
+tracking, with SAM3 scheduled selectively for richer segmentation or ambiguous
+targets. Both feed the same observation and association boundaries. Calibrated spatial processing
 supplies measured geometry; ASR supplies transcripts; semantic models add
 hypotheses. Validated association commits these to the same typed world.
 Neither masks nor generated descriptions imply known 3D geometry or permission.
+
+Keep bounded inference concurrency and one latest pending frame per stream.
+Preserve capture time; stale completions and tracking predictions must not
+refresh measured evidence. Cross-model association requires evidence, not a
+same-label merge. Pin model, prompt profile and runtime in producer provenance.
+Start with a small YOLOE checkpoint and task-scoped classes; qualify resolution,
+rate, end-to-end p95 latency, memory and accuracy on the actual host. No frame
+rate is promised. Exported prompted models may freeze classes; changing the
+vocabulary can require re-export. SAM3 is not on every frame's critical path.
 
 Typesafe, LLMs and rules consume a task-scoped projection of that world.
 Typesafe supplies focused choices/scores/probabilities; LLMs interpret unfamiliar
@@ -76,6 +87,43 @@ For the first slice, decision records belong in the worker's bounded audit
 store; they are not world components. Retain their exact input context or a
 durable reference when audit is required. No live provider connection or
 database deployment is included here.
+
+`contracts/spacetimedb/intelligence.ts` defines the detached JSON projection of
+SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
+do not perform serialization or validate runtime input. Preserve evidence and
+row versions; do not serialize a mutable subscription cache or Map directly.
+
+## Tracing and sensitive data
+
+Use OpenTelemetry spans and OTLP export to Laminar for both LLM and ordinary
+code. Trace perception, fusion, decision context/evaluation/admission, reducer
+requests, local execution boundaries and measured completion. Use W3C context
+on trusted request paths; subscription delivery does not automatically inherit
+the writer's trace. Correlate observation/context/execution references and use
+OTel links when originating context is available. A trace ID is never an
+authorization credential or a physical retry identity.
+
+Default to reviewed metadata, not content. Disable automatic input/output and
+unreviewed library capture. Sanitize exception events, status text, URLs and
+child attributes before export. Never export raw sensor media, full world
+snapshots, transcripts, prompts, credentials or signed media URLs by default.
+Laminar's PII redaction operates after ingestion on input/output fields; it
+does not replace local filtering, cover all metadata, or rewrite old traces.
+Content debugging requires an approved destination, restricted access and a
+retention policy. Evaluate self-hosting if sensitive data must remain local.
+
+Use bounded asynchronous export outside reducers and local control. On queue
+overflow or an unavailable exporter, drop diagnostics and count the loss;
+never delay safe stop or a domain commit. Sample frequent perception, aggregate
+control-loop metrics and attempt to retain diagnostic errors/outcomes within
+resource limits. Required audit records stay in domain storage: Laminar's
+sampled/redacted traces cannot replace world_event, local execution receipts,
+or exact decision evidence. Tracing is not a dependency of physical action.
+
+The checked tracing file is illustrative metadata/options, not an installed
+SDK or a complete privacy filter. Before enabling export, test secret canaries
+in inputs, outputs, errors, URLs and nested spans; verify the outbound payload.
+Test exporter outage/overload without delaying local stop or reducer calls.
 
 ## Verification scope
 
@@ -94,3 +142,9 @@ hardware qualification remain implementation work.
 - [Durability and transient events](https://spacetimedb.com/docs/upgrade/): confirmed reads and event-table limits.
 - [Table storage](https://spacetimedb.com/docs/tables/): typed, memory-resident tables with persistence.
 - [License](https://github.com/clockworklabs/SpacetimeDB/blob/master/LICENSE.txt): deployment terms.
+- [YOLOE](https://docs.ultralytics.com/models/yoloe/): prompting modes, tracking and export constraints.
+- [SAM3](https://github.com/facebookresearch/sam3): segmentation and tracking.
+- [Laminar OTLP](https://laminar.sh/docs/tracing/otel): standard tracing transport.
+- [Laminar capture options](https://laminar.sh/docs/sdk/observe): function inputs, outputs and exceptions.
+- [Laminar PII redaction](https://laminar.sh/docs/platform/pii-redaction): ingestion-time scope and limits.
+- [OpenTelemetry context](https://opentelemetry.io/docs/concepts/context-propagation/): trusted propagation and baggage boundaries.

@@ -1,26 +1,36 @@
-import type { ComponentPin, Entity, Id, Timestamp } from "./protocol.ts";
+import type { Timestamp } from "spacetimedb";
+import type { EntityView, Row } from "./contracts.ts";
 
 // region context
+export type JsonProjection<T> =
+  T extends bigint | Timestamp ? string : // decimal u64 and UTC timestamp strings; conversion is explicit
+  T extends readonly (infer U)[] ? JsonProjection<U>[] :
+  T extends object ? { [K in keyof T]: JsonProjection<T[K]> } : T; // type only; adapter must serialize and validate
+export type ComponentPin = {
+  entityId: string; component: "pose" | "geometry" | "semantic"; // relevant subscribed facet
+  version: string; // exact row version as a decimal string, not a lossy JSON number
+};
 export type DecisionContext = {
-  id: Id; // immutable evaluation identity; duplicate results must not create duplicate actions
-  worldId: Id; // same world as the UI, planner and executor
-  goal: { id: Id; version: number; text: string }; // authorized task, not instructions inferred from sensor content
-  entities: Entity[]; // detached, task-scoped projection; preserve component evidence and uncertainty
-  options: { key: string; entityId: Id; description: string }[]; // exact option-to-entity mapping; no invented targets
+  id: string; // immutable evaluation identity; duplicate results must not create duplicate actions
+  worldId: string; // same world as the UI, planner and executor
+  goal: { id: string; version: number; text: string }; // authorized task, not instructions inferred from sensor content
+  entities: JsonProjection<Pick<EntityView, "entity" | "pose" | "geometry" | "semantic">>[]; // authorized detached facets; no controller identities or credentials
+  relationships: JsonProjection<Row<"relation">>[]; // relevant facts, with both endpoints in the candidate context
+  options: { key: string; entityId: string; description: string }[]; // exact option-to-entity mapping; no invented targets
   basis: ComponentPin[]; // relevant input revisions; recheck candidate membership and goal version as well
-  generatedAt: Timestamp; // time this projection was prepared
-  validUntil: Timestamp; // late model responses cannot authorize a new action
+  generatedAt: string; // UTC timestamp when this projection was prepared
+  validUntil: string; // UTC deadline; late responses cannot authorize a new action
 }; // derived read model, NOT a second authoritative world or a Typesafe-specific database
 export type TargetSelection =
-  | { kind: "candidate"; entityId: Id } // must resolve to an option in this exact context
+  | { kind: "candidate"; entityId: string } // must resolve to an option in this exact context
   | { kind: "abstain" }; // none match, inadequate evidence, timeout or unqualified uncertainty
 export type DecisionRecord = {
-  id: Id; contextId: Id; // persist context or a durable reference sufficient to inspect the decision
+  id: string; contextId: string; // persist context or a durable reference sufficient to inspect the decision
   questionVersion: string; modelVersion: string; // pin the question and concrete answering model
   probabilities: Record<string, number>; // distribution over this evaluation's option keys
   confidence: number; // provider statistic, not probability of physical safety
   selection: TargetSelection; // inference output, never a measured world fact
-  receivedAt: Timestamp; // capture latency and detect stale answers
+  receivedAt: string; // UTC timestamp; capture latency and detect stale answers
 }; // optional audit data; the existing action request remains the only execution boundary
 // endregion
 
@@ -33,7 +43,7 @@ export interface TargetSelector {
 // region admission
 export interface DecisionAdmission {
   admit(context: DecisionContext, result: DecisionRecord): Promise<
-    | { kind: "proposal"; entityId: Id; requestId: Id } // stable request ID bound to this decision; submit through the normal action API
+    | { kind: "proposal"; entityId: string; executionId: string } // stable attempt identity; submit through ActionRequests
     | { kind: "abstain"; reason: string } // expired, superseded, unrecognized option, insufficient confidence or changed evidence
   >; // repeat membership, goal, dependency, freshness and permission checks before accepting a proposal
 }

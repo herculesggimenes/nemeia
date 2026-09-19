@@ -1,6 +1,7 @@
 # Nemeia protocol
 
-Status: canonical implementation target, 2026-09-15. Nemeia is a pre-production
+Status: earlier design reference, superseded by [the SpacetimeDB design](./protocol-spacetimedb.md)
+as the selected implementation target on 2026-09-19. Nemeia is a pre-production
 prototype. This specification replaces the previous protocol designs outright.
 There is no backward-compatibility requirement, old-format adapter, dual-write
 period, or data migration. Existing experiments are evidence to learn from,
@@ -60,7 +61,7 @@ author tested, versioned questions. Typesafe evaluates bounded choices, rubrics
 or yes/no judgments over structured state. Exact arithmetic, requirements and
 permissions remain code. No provider owns a separate authoritative world.
 
-The checked decision types are in `contracts/protocol/intelligence.ts`.
+The current decision types are in `contracts/spacetimedb/intelligence.ts`.
 Decision workers retain goal/context/question/model versions, preserve evidence
 times and uncertainty, and discard expired or superseded answers. Candidate
 membership and relevant dependencies must be rechecked during admission.

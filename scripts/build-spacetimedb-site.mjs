@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { ownership, objectRows, contractRows, tableNotes, exampleRows, failureRows } from "../docs/spacetimedb-content.mjs";
 import { renderIntelligence } from "../docs/intelligence-content.mjs";
+import { renderTracing } from "../docs/tracing-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -34,13 +35,13 @@ const tableHtml = tables.map((item,i)=>{
   return `<details class="schema-item" id="table-${item.name}">${summary("schema",i,item.name,description)}<div class="schema-body"><div class="column-table-wrap" tabindex="0" role="region" aria-label="${item.name} columns"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>${item.columns.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="reference-note">${escape(notes)}</p></div></details>`;
 }).join("\n");
 
-const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia with SpacetimeDB"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / SpacetimeDB protocol</h1><p class="reference-note">Design variant · shared world state, specialized model workers, robot-local execution</p><div class="diagram-shell" role="img" aria-label="Sensors feed perception workers. Reducers commit structured world tables in SpacetimeDB. Subscriptions feed Typesafe, LLMs, rules and the UI. Validated requests become executions; local controllers act and send new observations."><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>models outside transactions · control outside the database</span></div><div class="diagram">${[
+const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia with SpacetimeDB"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / SpacetimeDB protocol</h1><p class="reference-note">Implementation target · shared world state, specialized workers, robot-local execution</p><div class="diagram-shell" role="img" aria-label="Sensors feed YOLOE and optional SAM3 perception. SpacetimeDB owns structured world state. Typesafe, LLMs and rules propose actions. Local controllers execute and return measured evidence. Privacy-filtered OpenTelemetry spans go to Laminar, outside the control path."><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>models outside transactions · control outside the database</span></div><div class="diagram">${[
   ["Inputs","Camera, LiDAR, audio, telemetry.","frames + acquisition times"],
-  ["Perception","SAM3, spatial processing, ASR, semantic models.","observations + association"],
+  ["Perception","YOLOE frequent; SAM3 selective. Spatial and audio workers.","observations + association"],
   ["SpacetimeDB","Reducers commit typed world state.","tables + authorized subscriptions"],
   ["Decisions","Typesafe, LLMs and rules read the same world.","context → proposed action"],
   ["Execution","Admission and claim; robot-local control.","receipts + measured feedback"],
-].map(([title,description,code],i)=>`${i?'<div class="diagram-arrow" aria-hidden="true"></div>':""}<div class="diagram-node"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Feedback → world</strong><p>Measurements return through ingestion reducers. Intent never becomes a measured pose.</p></div><div><strong>Read-only consumers</strong><p>UI and planners share authorized views. Raw media stays in streams or object storage.</p></div></div></div></div></section>`;
+].map(([title,description,code],i)=>`${i?'<div class="diagram-arrow" aria-hidden="true"></div>':""}<div class="diagram-node"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Feedback → world</strong><p>Measured observations return through ingestion. UI reads authorized views; raw media stays elsewhere.</p></div><div><strong>Tracing → Laminar</strong><p>OpenTelemetry spans across workers, decisions and execution. Privacy-filtered; never a control dependency.</p></div></div></div></div></section>`;
 
 const platform = [
   ["module","Native module schema","thirteen private tables, one state owner","Checked against the pinned SpacetimeDB 2.10.1 TypeScript SDK. These are schema and function examples, not a deployed or integration-tested backend."],
@@ -82,23 +83,25 @@ const refs = [
   ["Table storage","https://spacetimedb.com/docs/tables/","Typed, memory-resident state with durable backing."],
   ["Engine license","https://github.com/clockworklabs/SpacetimeDB/blob/master/LICENSE.txt","Verify release-specific deployment terms before fleet use."],
 ];
-const main = `<main id="main-content"><nav class="protocol-nav section-inner" aria-label="Protocol design"><a href="/">Core protocol</a><a href="/spacetimedb/" aria-current="page">SpacetimeDB variant</a></nav>${diagram}
-${section("ownership","01","What changes","Keep Nemeia's eight foundations. Replace the custom state synchronization and persistence machinery with native tables, transactions and subscriptions.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
+const main = `<main id="main-content">${diagram}
+${section("ownership","01","Foundations & ownership","Nemeia's eight foundations use native tables, transactions and subscriptions. Each boundary has one owner.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & world view","Typed geometry, independently timed evidence, a narrow action contract and a read-only world projection.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,region(sources[file],id),`object-${id}`)).join("\n")}</div>`)}
 ${section("contracts","03","Service & reducer contracts","Each boundary has one owner. These interfaces specify behavior; generated SDK bindings come from the completed module, not these handwritten design interfaces.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,region(sources.contracts,id),`contract-${id}`)).join("\n")}</div>`)}
 ${section("tables","04","Database tables","Thirteen typed tables for this slice. More explicit data shapes replace generic journal machinery; all base tables are private. Columns below come from the checked schema.",`<div class="schema-list">${tableHtml}</div>`)}
 ${section("platform","05","Native SpacetimeDB mechanics","Schema, transaction and authorized-view examples use the real SDK. Model inference and physical execution remain external.",`<div class="object-list">${platform}</div>${readRows}${codeRow("example",0,"Subscribe and reconcile","generated client pattern","This consumer fragment assumes generated bindings for the completed module. Only schema/function examples and domain fixtures are type-checked here; connection behavior still requires a running-server integration test.",subscription,"sdk-subscribe")}`)}
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${section("example","07","End-to-end information flow","One Go2 approaches a backpack. Static, type-checked fixtures show ingestion, decision, admission, claim, physical execution and measured completion; they do not execute anything.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(sources.example,id),`flow-${id}`)).join("\n")}</div>`)}
-${section("boundaries","08","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
-${section("references","09","Platform basis","Implementation target, not a deployed backend. Next: complete reducers/views, verify against a local server, evaluate model decisions in shadow mode, then qualify the robot-local controller.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}
+${renderTracing({section,codeRow,proseRow,region},"08")}
+${section("boundaries","09","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
+${section("references","10","Platform basis","Implementation target, not a deployed backend. Next: complete reducers/views, benchmark perception locally, test privacy-filtered tracing, evaluate decisions in shadow mode, then qualify local control.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}
 </main>`;
 
 const shell=read("docs/index.html");
 const html=shell.replace(/<main id="main-content">[\s\S]*?<\/main>/,main)
-  .replace("<title>Nemeia · Protocol</title>","<title>Nemeia · SpacetimeDB protocol</title>")
-  .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="Nemeia with SpacetimeDB: shared world tables, SAM3 and multimodal perception, Typesafe decisions, service contracts and end-to-end execution.">');
-for (const path of ["docs/spacetimedb/index.html","dist/spacetimedb/index.html"]) {
+  .replace(/<title>[^<]*<\/title>/,"<title>Nemeia · SpacetimeDB protocol</title>")
+  .replace(/<meta name="description" content="[^"]*">/,'<meta name="description" content="Nemeia protocol: SpacetimeDB world state, YOLOE and SAM3 perception, Typesafe decisions, Laminar tracing, contracts and end-to-end execution.">');
+// One architecture. Preserve the existing /spacetimedb/ bookmark as an identical alias.
+for (const path of ["docs/index.html","dist/index.html","docs/spacetimedb/index.html","dist/spacetimedb/index.html"]) {
   if(process.argv.includes("--check")) {
     if(read(path)!==html) throw new Error(`Out of date: ${path}`);
   } else { mkdirSync(resolve(root,path,".."),{recursive:true}); writeFileSync(resolve(root,path),html); }

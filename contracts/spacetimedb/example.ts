@@ -9,7 +9,7 @@ const controller = Identity.fromString("2".repeat(64));
 // region inputs
 export const camera = {
   streamId: "go2/camera", sessionId: "camera-session-1", sequence: 2048n,
-  capturedAt: at("2026-09-19T12:00:00.010Z"), // image acquisition, not SAM3 completion
+  capturedAt: at("2026-09-19T12:00:00.010Z"), // image acquisition, not YOLOE/SAM3 completion
 };
 export const lidar = {
   streamId: "go2/lidar", sessionId: "lidar-session-1", sequence: 991n,
@@ -29,7 +29,7 @@ export const input: ObservationInput = {
     value: { tag: "boundingBox3D", value: {
       frameId: "map",
       pose: { positionM: { x: 2.4, y: -0.6, z: 0.35 }, orientation: { x: 0, y: 0, z: 0, w: 1 } },
-      sizeM: { x: 0.4, y: 0.3, z: 0.7 }, // measured full extents; SAM3 alone does not provide this
+      sizeM: { x: 0.4, y: 0.3, z: 0.7 }, // measured full extents; neither YOLOE nor SAM3 supplies depth alone
     } },
   },
 }; // this fixture assumes already world-aligned evidence; real frame conversion must retain transform samples
