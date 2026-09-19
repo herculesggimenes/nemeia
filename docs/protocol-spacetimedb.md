@@ -12,6 +12,10 @@ SpacetimeDB is the selected world-storage and synchronization implementation,
 not a foundational concept. This document does not deploy a database or control
 a robot. Module examples target SpacetimeDB 2.10.1; type checking is not a server
 integration or hardware test.
+Eve is the selected agent runtime. This planning update changes the website and
+specification only; the channel, sandbox and backend implementation remain work
+for a later phase. Integration details were reviewed against Eve 0.63.0 bundled
+documentation; Eve is in preview and must be pinned and qualified.
 
 ## Ownership
 
@@ -286,44 +290,28 @@ dependencies. A row entering or leaving a query is not evidence that an object
 physically appeared or disappeared. A display-only client can render its cache
 directly without a durable inbox or reasoning-step lifecycle.
 
-Each logical client keeps independent progress. Coalesce replaceable state by
-entity/component, but retain must-handle events such as user instructions, tool
-results and important transitions, including messages received outside world
-subscriptions. Latest state does not reconstruct events
-that occurred between steps. One client consuming an event must not consume it
-for every other client.
+Each logical client keeps independent progress. The Nemeia adapter coalesces
+replaceable entity/component changes, retains must-handle messages/occurrences,
+and evaluates the configured subscription wake/cadence policies. Latest state
+cannot reconstruct an event that happened between steps. A rate cap is not a
+requirement to poll; `maxWaitMs` is a desired batching bound, not guaranteed
+inference latency. Emit bounded useful wakes, never a model turn per sensor frame.
 
-Wait until the required subscriptions are ready. Prepare context immediately
-before a reasoning step: reserve an exact event
-batch at a consistent committed-cache boundary, detach the relevant world,
-include the authorized goal/constraints, available actions, execution state and
-relevant history, then freeze the input with a context ID. Preserve acquisition
-times and unknown values. Bound tokens and retained bytes; defer excess events
-without silently discarding required meaning. While inference runs, new updates
-remain pending for another step. The prompt already in flight does not mutate.
-After a disconnect, resynchronize and review dependencies before proposing new
-physical work.
+Eve owns the reasoning lifecycle. At its next inference boundary, after any
+delivery delay, the adapter selects a consistent authorized projection and
+publishes a frozen context manifest and files. Preserve acquisition times,
+unknown values and relevant revisions. Eve supplies history and compaction;
+the projection supplies current mission, Unit, evidence and message context.
+Defer excess must-handle work explicitly rather than silently truncating it.
+Recover the persisted context identity on retry; do not silently rerun a command
+against a different snapshot. Recheck current authority and evidence at admission.
 
-Start with one active reasoning step per logical agent. Wake on meaningful
-changes, user input, tool completion or deadlines, not every frame. Task
-cancellation supersedes work immediately; reject late results even when model
-cancellation is unavailable. Local stop never waits for this queue. UI, rules
-and faster model workers may consume the same world at different cadences.
-
-An agent may have several `agent_subscription` policies, each with scoped interests,
-allowlisted wake triggers, priority and a minimum interval between eligible steps.
-`maxWaitMs` bounds desired batching after useful work arrives, subject to that
-interval and available compute; it is not a latency promise. All policies feed
-one agent inbox and a durably leased step across worker replicas. They are rate
-caps and wake rules, not independent inference loops or mandatory polling.
-
-Worker scheduling states are `idle` (no useful work), `ready` (awaiting budget),
-`thinking` (one active step), and `waiting` (execution/resource/message/condition).
-Administrative pause and connection health are separate. Keep availability and
-deadline subscriptions active when all Units are unavailable; avoid repetitive
-inference. Coordination, analysis or help requests can still make work useful
-without any Unit. General AgentContext can span zero or multiple missions; the
-focused DecisionContext used by TargetSelector is intentionally narrower.
+Keep `idle`, `ready`, `thinking` and `waiting` only as an activity projection of
+pending useful work, Eve events and domain dependencies. They are not another
+persisted runtime state machine. Eve's `session.waiting` alone does not distinguish
+domain-idle from waiting on a physical execution. Administrative pause and
+synchronization remain independent. Unavailable Units do not justify repetitive
+LLM inference; availability changes or coordination can make work useful again.
 
 The client may propose an action, ask for clarification or do nothing. Receiving
 an update does not require inference or grant permission to execute. Review
@@ -332,20 +320,74 @@ claim and robot-local limits remain mandatory. Receipts and measured outcomes
 return through subscriptions and can wake the next step. Avoid wake rules that
 turn the client's own bookkeeping writes into a self-triggering inference loop.
 
-Durable clients persist required events, active-step identity, outcomes and
-acknowledgements in a worker store. Complete only after verifying the durable
-handled outcome; acknowledge the exact reserved event IDs, not later arrivals.
-Delivery retries use the same identity. Releasing a failed/superseded step
-retains unhandled events and invalidates late completion; re-evaluation gets a
-new step ID. Reconcile durable outcomes before retrying physical actions.
-Queue limits require explicit backpressure/admission errors, never silent loss
-of required messages. A replaceable-state key overflow can instead request a
-fresh projection. Reuse domain audit events only when they actually contain
-the required occurrence and retention covers the consumer's progress.
+## Agent runtime: Eve
 
-AgentSteps is a worker-side design interface. Its persistent schema and crash
-recovery are not yet implemented or included in the world tables.
-No separate message broker or concurrency framework is required for this first slice.
+Eve owns sessions, turns, model/tool execution, history, compaction, checkpoints,
+session state and subagents. Do not implement a parallel Nemeia thread, turn or
+step store, custom step lease or conversation engine. The durable Nemeia agent
+identity is independent of an Eve session: resets and session expiry must not
+erase mission progress, Unit assignments, execution receipts or pending messages.
+
+### World channel
+
+A custom `defineChannel` adapter uses a collision-safe continuation address made
+from `[worldId, agentId]`. Do not create a session per mission, Unit or subscription.
+Eve manages address ownership and serialized turns. Use `turnPolicy: "queue"`
+for normal world updates; the default is steering. Eve may fold adjacent queued
+deliveries into a turn, so one wake does not imply one turn. Filter and coalesce
+before calling `send` rather than asking Eve to digest the perception stream.
+
+Authenticate bridge deliveries and derive the agent principal from trusted
+configuration. Enforce pause, scope and size/rate limits. Eve metadata and
+continuation addresses route work; they do not grant world authority. A cancellation
+of reasoning is not physical stop: revoke domain permissions and cancel physical
+attempts through their own boundaries.
+
+Eve's durable command inbox is not a general-purpose domain message bus. Retain
+narrow bridge delivery bookkeeping: source event IDs, pending batch, accepted
+delivery and explicit handling receipts. Do not acknowledge domain work merely
+because `send` returned or a turn ended. Reconcile uncertain deliveries and
+session resets without losing must-handle events; use explicit backpressure.
+Choose that adapter persistence during implementation, without copying Eve's history.
+
+### just-bash world access
+
+Use Eve's native `justbash()` backend and its `customCommands`/`filesystem`
+extension points. Mount `/world` as a bounded read-only projection; keep Eve's
+`/workspace`, temporary and home paths intact for writable scratch work. Publish
+a manifest plus immutable context files at a step boundary; the model can inspect
+JSON with shell tools instead of receiving the whole world in every prompt.
+Persist audit/retry-critical context separately from disposable sandbox files.
+
+A registered `nemeia` custom command translates typed CLI input into the existing
+world operations. It runs trusted host code, not a real binary in the interpreter.
+Derive the principal from the active authenticated session on every command and
+read; never from model-selected flags, environment variables or files. Keep
+credentials outside the virtual filesystem. Writing a scratch action request does
+not execute it; only the validated bridge/reducer boundary can admit it.
+
+Enforce read-only semantics against all mutators, links, rename and traversal.
+The stock Eve just-bash backend has no network isolation and rejects
+`setNetworkPolicy`; do not claim a deny-all configuration exists there. Before
+handling sensitive data or autonomous commands, constrain host egress or qualify
+an adapted backend, bound execution/output, and test active-session identity
+propagation through custom commands and filesystem hooks. Fail closed if the
+bridge cannot establish the principal. Bash approval alone does not provide
+per-command domain authorization.
+
+Interrupted Eve steps can rerun; stable physical execution IDs and world/local
+receipts still provide idempotency. Eve durability does not make robot effects
+exactly once. Eve subagents are reasoning helpers, not automatically new Nemeia
+agents with mission membership or Unit grants. Perception, focused Typesafe
+workers and deterministic control need not run through Eve.
+
+The website shows API sketches, not a deployed integration. Existing runtime
+draft declarations are not being migrated in this planning phase.
+
+References: [custom channels](https://eve.dev/docs/channels/custom),
+[sandboxes](https://eve.dev/docs/sandbox),
+[durability](https://eve.dev/docs/concepts/execution-model-and-durability),
+and [context control](https://eve.dev/docs/concepts/context-control).
 
 ## Tracing and sensitive data
 

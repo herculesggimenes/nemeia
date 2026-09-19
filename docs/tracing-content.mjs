@@ -12,7 +12,7 @@ const boundaries = [
 export const traceStages = [
   ["perception.detect / perception.refine", "Record versions, frame age, counts and selected authorized evidence—not the continuous sensor stream."],
   ["perception.fuse → world.ingest", "Join calibrated evidence, then measure the reducer call and acknowledgement. No OTLP network export inside reducers."],
-  ["client.prepare → decision.evaluate", "Trace the reserved event batch, frozen context and approved model inputs/outputs. New arrivals belong to a later step."],
+  ["world.project → Eve / decision.evaluate", "Correlate the wake, frozen context and approved model inputs/outputs with Eve session/turn/step coordinates. Direct focused workers use their own spans; no second thread identity is needed."],
   ["decision.admit → execution.request", "Record accepted/rejected/abstain with a context reference and the stable execution reference."],
   ["execution.claim → controller.execute", "Trace reconciliation and local admission. A running row does not prove the robot moved."],
   ["perception.verify → execution.finish", "Fresh measured outcome and safe closure precede the terminal transaction. Correlate with the same execution reference."],

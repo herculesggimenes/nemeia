@@ -61,7 +61,12 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/id="clients-title">Client subscriptions/);
     assert.match(page,/id="subscription-scope"/);
     assert.match(page,/id="decisions-feedback"/);
-    assert.match(page,/AgentSteps/);
+    assert.match(page,/WorldWake/);
+    assert.match(page,/id="eve-runtime"/);
+    assert.match(page,/Eve 0\.63\.0/);
+    assert.match(page,/customCommands/);
+    assert.match(page,/no network isolation/);
+    assert.doesNotMatch(page,/interface AgentSteps|interface PreparedStep|interface AgentRuntime/);
     assert.match(page,/id="missions"/);
     assert.match(page,/id="contract-missions"/);
     assert.match(page,/id="object-mission-view"/);
