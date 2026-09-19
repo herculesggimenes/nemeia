@@ -7,6 +7,8 @@ export interface DiagnosticAttributes {
   "nemeia.context_ref"?: string; // identify the compiled context, with approved content captured in the trace
   "nemeia.step_ref"?: string; // correlate the inbox batch, context preparation and model call
   "nemeia.mission_ref"?: string; // durable mission context across clients, steps and physical attempts
+  "nemeia.agent_ref"?: string; // logical decision-maker; independent of worker process and Unit
+  "nemeia.unit_ref"?: string; // controllable entity selected for the execution
   "nemeia.execution_ref"?: string; // correlate attempts; never use a trace ID as an idempotency key
   "nemeia.model_version"?: string; // qualified checkpoint/provider version from trusted configuration
   "nemeia.question_version"?: string; // tested decision definition, not its prompt text
@@ -44,6 +46,8 @@ export const correlationExample = {
   "nemeia.context_ref": "decision-context-1",
   "nemeia.step_ref": "step-1",
   "nemeia.mission_ref": "mission-1",
+  "nemeia.agent_ref": "navigator",
+  "nemeia.unit_ref": "go2-01",
   "nemeia.execution_ref": "execution-1",
   "nemeia.model_version": "jev-1.13.0",
   "nemeia.question_version": "target-match@1",

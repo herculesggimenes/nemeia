@@ -2,8 +2,10 @@ import { Identity, Timestamp } from "spacetimedb";
 import type { Row, LocalReceipt } from "./contracts.ts";
 import type { ObservationInput, ApproachRequest, Completion } from "./values.ts";
 const at = (iso: string) => Timestamp.fromDate(new Date(iso));
-const operator = Identity.fromString("1".repeat(64));
+const worldMaster = Identity.fromString("1".repeat(64));
 const controller = Identity.fromString("2".repeat(64));
+const navigatorPrincipal = Identity.fromString("3".repeat(64));
+const analystPrincipal = Identity.fromString("4".repeat(64));
 // Static fixtures only. Readable ID aliases stand in for production UUIDs. No network or robot IO.
 
 // region inputs
@@ -55,43 +57,92 @@ export const semanticRow: Row<"semantic"> = {
 
 // region mission
 export const activeMission: Row<"mission"> = {
-  id: "mission-1", owner: operator, // durable domain identity, independent of the decision client
+  id: "mission-1", owner: worldMaster, // authored by a World Master, not owned by one reasoning agent
   spec: {
-    goal: "Approach the selected backpack", template: undefined, actorIds: ["go2-01"],
+    goal: "Approach the selected backpack", template: undefined,
     objectives: [{ id: "approach", description: "Reach the measured standoff", dependsOn: [], optional: false,
-      criterion: { tag: "approached", value: { actorId: "go2-01", targetId: backpack.id, standoffM: 0.8 } } }],
-    maxLinearMps: 0.25, maxRunMs: 15_000, deadlineAt: at("2026-09-19T12:01:00.000Z"),
+      criterion: { tag: "approached", value: { targetId: backpack.id, standoffM: 0.8 } } }],
+    deadlineAt: at("2026-09-19T12:01:00.000Z"), // outcome and deadline; no hardware choice or motion policy
   }, // bind the target and authorize this specification before activating the mission
   state: { tag: "active" }, revision: 1n, closingOutcome: undefined,
   createdAt: at("2026-09-19T12:00:00.050Z"), updatedAt: at("2026-09-19T12:00:00.050Z"),
 }; // typed fixture; createMission would commit mission + audit, not start the robot
 // endregion
 
+// region team
+export const navigator: Row<"agent"> = {
+  id: "navigator", principal: navigatorPrincipal, displayName: "Navigator",
+  readScope: { tag: "entities", value: ["go2-01", backpack.id] }, paused: false, revision: 1n,
+};
+export const analyst: Row<"agent"> = {
+  id: "analyst", principal: analystPrincipal, displayName: "Scene analyst",
+  readScope: { tag: "entities", value: [backpack.id] }, paused: false, revision: 1n,
+}; // this agent can advise without owning any Unit
+export const team: Row<"missionAgent">[] = [navigator, analyst].map(agent => ({
+  key: JSON.stringify([activeMission.id, agent.id]), missionId: activeMission.id, agentId: agent.id, active: true,
+}));
+export const assignedMission: Row<"mission"> = {
+  ...activeMission, revision: 3n, updatedAt: at("2026-09-19T12:00:00.070Z"),
+}; // each World Master roster assignment increments the shared mission revision
+export const go2Assignment: Row<"unitAssignment"> = {
+  unitId: "go2-01", agentId: navigator.id, revision: 1n, actionNames: ["approach@1"],
+  expiresAt: at("2026-09-19T12:01:00.000Z"), updatedAt: at("2026-09-19T12:00:00.075Z"),
+}; // assignment permits proposals; controller claim still reserves the physical execution slot
+export const advice: Row<"agentMessage"> = {
+  id: "message-1", missionId: activeMission.id, fromAgentId: analyst.id, toAgentId: navigator.id,
+  content: "Backpack-A has a backpack hypothesis and measured 3D geometry. Recheck freshness before approach.",
+  createdAt: at("2026-09-19T12:00:00.080Z"),
+}; // explanation, not trusted evidence or an instruction that bypasses the request boundary
+// World Masters configure roles/grants; agents cannot assign themselves a Unit through chat.
+// endregion
+
 // region subscribed
-export const subscribedClient = {
-  clientId: "operator-agent-1", // logical consumer, independent from the UI or another worker
+export const subscribedAgent = {
+  agentId: navigator.id, // durable logical consumer, independent from hardware and the worker connection
   missionId: activeMission.id, // follow mission lifecycle and objective credits, not a private goal string
-  interests: ["mission and credits", "actor state", "candidate objects and evidence", "relevant relationships", "action bindings", "own executions"], // task scope through authorized views, not executable queries
+  interests: ["mission and credits", "unit state", "candidate objects and evidence", "relevant relationships", "action bindings", "own executions"], // task scope through authorized views, not executable queries
   ready: true, // fixture assumes the required subscriptions have applied
   changedEntityIds: [backpack.id], // coalesced state changes; do not queue every perception update
-  eventIds: ["task-message-1"], // separately delivered user instruction; retained until handled
-  wakeReason: "task-message", // scheduling policy chooses a step; row delivery alone does not
+  eventIds: [advice.id], // addressed team message retained until a durable handled outcome
+  wakeReason: "message", // scheduling policy chooses a step; row delivery alone does not
 } as const; // illustrative client state, not a new wire format or world table
 // Other clients keep their own interests, inboxes and progress over the same world.
 // endregion
 
+// region cadence
+export const subscriptions: Row<"agentSubscription">[] = [
+  { id: "navigator-world", agentId: navigator.id, revision: 1n, policy: {
+    missionIds: [activeMission.id], entityIds: ["go2-01", backpack.id], facets: ["geometry", "control", "assignment"],
+    wakeOn: ["meaningful_change", "availability", "execution", "deadline"], minIntervalMs: 2_000, maxWaitMs: 5_000, priority: 1,
+  } },
+  { id: "navigator-team", agentId: navigator.id, revision: 1n, policy: {
+    missionIds: [activeMission.id], entityIds: [], facets: [],
+    wakeOn: ["message", "objective_ready"], minIntervalMs: 0, maxWaitMs: 100, priority: 2,
+  } },
+]; // illustrative batching settings, not promised inference latency or control frequencies
+export const scheduling = [
+  { state: "idle", reason: "No useful pending work; availability subscriptions remain live." },
+  { state: "ready", reason: "Analyst message arrived; wait for compute budget and synchronized views." },
+  { state: "thinking", reason: "One navigator step covers both subscriptions; later events remain pending." },
+  { state: "waiting", reason: "Approach was admitted; wait for outcome while local control runs independently." },
+] as const;
+// If all Units go offline, wait for availability instead of repeatedly asking the model to act.
+// New coordination work can still wake the agent; no Unit does not mean no useful work.
+// endregion
+
 // region prepared
 export const preparedStep = {
-  id: "step-1", clientId: subscribedClient.clientId, // one active reasoning step for this logical client
+  id: "step-1", agentId: subscribedAgent.agentId, // one active reasoning step for this logical client
   contextId: "decision-context-1", // immutable context retained by the worker; shared with the decision below
-  missionId: activeMission.id, missionRevision: activeMission.revision, // freeze the mission pin as well as evidence versions
-  eventIds: [...subscribedClient.eventIds], // reserve this exact batch; later arrivals remain pending
-  changedEntityIds: [...subscribedClient.changedEntityIds], // detach the coalesced changes for this step
+  missionId: assignedMission.id, missionRevision: assignedMission.revision, // freeze roster/lifecycle revision
+  agentRevision: navigator.revision, assignmentRevision: go2Assignment.revision, // distinct configuration and Unit authority pins
+  eventIds: [...subscribedAgent.eventIds], // reserve this exact batch; later arrivals remain pending
+  changedEntityIds: [...subscribedAgent.changedEntityIds], // detach the coalesced changes for this step
   evidenceVersions: { geometry: geometryRow.version, semantic: semanticRow.version }, // detach latest committed relevant values
   inputs: ["authorized mission and ready objectives", "current world projection", "pending events", "relevant history"], // context recipe, not a provider prompt
 } as const; // lifecycle summary, not a full PreparedStep or an implemented persistent inbox
 // Subscriptions keep updating the client's read cache while inference runs; this input stays frozen.
-// The outcome and progress are persisted before task-message-1 is acknowledged.
+// The outcome and progress are persisted before message-1 is acknowledged.
 // Failed or superseded attempts retain unhandled events; they must not issue a late action.
 // endregion
 
@@ -113,18 +164,19 @@ export const decisionStage = {
 // region accepted
 export const request: ApproachRequest = {
   executionId: "execution-1", // same ID on every retry; execution row is the receipt
-  actorId: "go2-01", targetId: backpack.id, standoffM: 0.8,
+  unitId: "go2-01", targetId: backpack.id, standoffM: 0.8,
+  assignment: { agentId: navigator.id, revision: go2Assignment.revision }, // grant is rechecked against authenticated caller at acceptance and claim
   expectedGeometryVersion: 1n, acceptBy: at("2026-09-19T12:00:01.000Z"),
-  mission: { missionId: activeMission.id, objectiveId: "approach", expectedRevision: activeMission.revision }, // pin active mission and ready objective
+  mission: { missionId: assignedMission.id, objectiveId: "approach", expectedRevision: assignedMission.revision }, // pin mission roster/lifecycle and ready objective
 };
 export const binding: Row<"actionBinding"> = {
-  actorId: request.actorId, version: 1n,
+  unitId: request.unitId, version: 1n,
   executor: { name: "go2-approach", version: "1.0.0", sha256: "a".repeat(64) },
   mode: { tag: "physical" }, maxEvidenceAgeMs: 500,
   maxLinearMps: 0.25, maxRunMs: 15_000, toleranceM: 0.05, // illustrative policy, not qualified hardware limits
 };
 export const accepted: Row<"execution"> = {
-  id: request.executionId, requestedBy: operator, actorId: request.actorId, missionId: activeMission.id,
+  id: request.executionId, requestedBy: navigatorPrincipal, agentId: navigator.id, unitId: request.unitId, missionId: activeMission.id,
   input: request, binding, targetGeometryVersion: geometryRow.version,
   state: { tag: "accepted" }, controller: undefined, controllerEpoch: undefined,
   createdAt: at("2026-09-19T12:00:00.150Z"), updatedAt: at("2026-09-19T12:00:00.150Z"), result: undefined,
@@ -136,11 +188,11 @@ export const running: Row<"execution"> = {
   ...accepted, state: { tag: "running" }, controller, controllerEpoch: 4n,
   updatedAt: at("2026-09-19T12:00:00.180Z"),
 };
-export const reservedRobot: Row<"robotControl"> = {
-  actorId: request.actorId, controller, epoch: 4n, activeExecutionId: request.executionId,
+export const reservedUnit: Row<"unitControl"> = {
+  unitId: request.unitId, controller, epoch: 4n, activeExecutionId: request.executionId,
   stopLatched: false, safeStateConfirmed: true, observedAt: at("2026-09-19T12:00:00.170Z"),
 };
-// claim_execution checks actor ownership, epoch, fresh evidence, target pin and no active physical attempt.
+// claim_execution checks unit ownership, epoch, fresh evidence, target pin and no active physical attempt.
 // The execution transition, robot reservation and audit row commit together.
 // The worker waits for confirmed state, reconciles its local receipt, then starts at most one attempt.
 // endregion
@@ -157,8 +209,8 @@ export const localStarted: LocalReceipt = {
 // endregion
 
 // region measurements
-export const finalActor: Row<"pose"> = {
-  entityId: request.actorId, frameId: "map", version: 24n, observationId: "observation-actor-24",
+export const finalUnit: Row<"pose"> = {
+  entityId: request.unitId, frameId: "map", version: 24n, observationId: "observation-unit-24",
   observedAt: at("2026-09-19T12:00:08.000Z"),
   value: { positionM: { x: 1.6, y: -0.6, z: 0.3 }, orientation: { x: 0, y: 0, z: 0, w: 1 } },
 };
@@ -170,7 +222,7 @@ export const localClosed: LocalReceipt = {
   ...localStarted, outcome: "succeeded", safeState: "confirmed",
 };
 export const completion: Completion = { tag: "succeeded", value: {
-  distanceM: 0.8, actorObservationId: finalActor.observationId,
+  distanceM: 0.8, unitObservationId: finalUnit.observationId,
   targetObservationId: finalTarget.observationId, localReceiptId: localClosed.id,
 } }; // ground-plane distance measured from final poses; not a copy of the requested goal
 // endregion
@@ -194,12 +246,12 @@ export const approachCredit: Row<"missionCredit"> = {
   recordedAt: at("2026-09-19T12:00:08.060Z"),
 };
 export const closingMission: Row<"mission"> = {
-  ...activeMission, state: { tag: "closing" }, closingOutcome: { tag: "succeeded" },
-  revision: 2n, updatedAt: approachCredit.recordedAt,
+  ...assignedMission, state: { tag: "closing" }, closingOutcome: { tag: "succeeded" },
+  revision: 4n, updatedAt: approachCredit.recordedAt,
 }; // all required milestones credited; new action admission is now blocked
 export const completedMission: Row<"mission"> = {
   ...closingMission, state: { tag: "succeeded" }, closingOutcome: undefined,
-  revision: 3n, updatedAt: at("2026-09-19T12:00:08.070Z"),
+  revision: 5n, updatedAt: at("2026-09-19T12:00:08.070Z"),
 }; // only after every linked attempt is safely closed; this fixture has one confirmed local receipt
 // Mission credit, lifecycle and audit are authoritative; subscribers render them without writing progress.
 // endregion

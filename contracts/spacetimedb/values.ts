@@ -88,12 +88,15 @@ export const MissionLink = t.object("MissionLink", {
 });
 export const ApproachRequest = t.object("ApproachRequest", {
   executionId: t.string(), // caller-generated UUID; both attempt identity and retry key
-  actorId: t.string(), // robot or simulated actor, never a caller-chosen executor
+  unitId: t.string(), // controllable entity chosen by an agent; never a separate robot identity
+  assignment: t.option(t.object("AssignmentPin", {
+    agentId: t.string(), revision: t.u64(), // verify caller mapping, current Unit grant, allowed action and expiry at admission AND claim
+  })), // required for agents; absent only on the explicit World Master intervention path
   targetId: t.string(), // existing entity with usable 3D geometry
   standoffM: t.f64(), // positive ground-plane distance to target center; not obstacle clearance
   expectedGeometryVersion: t.u64(), // reject if the selected target changed since the client read it
   acceptBy: t.timestamp(), // short acceptance deadline; not a physical motion deadline
-  mission: t.option(MissionLink), // absent only for an explicitly authorized standalone operator action
+  mission: t.option(MissionLink), // required for agents; absent only for an audited standalone World Master intervention
 });
 export type ApproachRequest = Infer<typeof ApproachRequest>;
 export const ExecutionState = t.enum("ExecutionState", [
@@ -101,8 +104,8 @@ export const ExecutionState = t.enum("ExecutionState", [
 ]); // terminal states are immutable; running means claimed, not proof of motion
 export const Completion = t.enum("Completion", {
   succeeded: t.object("ApproachResult", {
-    distanceM: t.f64(), // measured distance, checked against actor/target observations
-    actorObservationId: t.string(), targetObservationId: t.string(), // exact final measurements
+    distanceM: t.f64(), // measured distance, checked against unit/target observations
+    unitObservationId: t.string(), targetObservationId: t.string(), // exact final measurements
     localReceiptId: t.string(), // durable controller receipt confirming safe closure
   }),
   cancelled: t.object("Cancelled", { localReceiptId: t.string() }), // safe state confirmed
@@ -112,6 +115,6 @@ export const Completion = t.enum("Completion", {
   }),
 });
 export type Completion = Infer<typeof Completion>;
-export const Role = t.enum("Role", ["viewer", "operator", "perception", "controller", "admin"]);
+export const Role = t.enum("Role", ["viewer", "world_master", "agent", "perception", "controller", "admin"]); // admin provisions; World Master governs missions; neither overrides local safety
 export const Mode = t.enum("Mode", ["simulation", "physical"]);
 // endregion

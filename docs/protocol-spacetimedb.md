@@ -5,6 +5,9 @@ client subscriptions, decisions and bounded execution. Its foundations
 are world, entity, component, relationship, affordance, action, system and event.
 Mission is a first-class domain abstraction built on those foundations: durable
 intent, typed objectives, constraints and evidence-backed progress.
+World Masters assign missions and authority. Agents collaborate on outcomes and
+coordinate Units: entities with installed controllable capabilities. Systems
+handle perception, classification, pathfinding and local execution.
 SpacetimeDB is the selected world-storage and synchronization implementation,
 not a foundational concept. This document does not deploy a database or control
 a robot. Module examples target SpacetimeDB 2.10.1; type checking is not a server
@@ -28,6 +31,59 @@ Perception, inference, navigation and physical execution run outside the
 database. The robot-local controller owns motion, command bounds, monotonic
 watchdogs, stop and durable admission receipts. A database outage must not
 prevent local stop. No database transaction spans robot IO.
+
+## World Masters, agents and Units
+
+Entity is the common identity for a chair, room, Go2 or vacuum. Unit is the role
+of an entity with controllable capabilities, not a new identity or a hardware
+class hierarchy. An offline Unit remains a Unit but is unavailable. This slice
+specifies one installed action, `approach@1`; other devices need their own typed
+bindings and validators, not an unvalidated universal command payload.
+
+A World Master is a privileged client role, human-operated or automated, not a
+mandatory singleton service. It sees the whole recorded world, establishes or
+cancels missions, assigns teams and Unit grants, and can pause/reassign agents.
+It cannot invent observations, bypass admission or override robot-local safety.
+Platform administrators provision credentials/bindings separately; the World
+Master role governs domain work rather than inheriting unrestricted sensor writes.
+
+An agent is a durable logical decision-maker, not a robot, model, worker process
+or connection. It may use LLMs, Typesafe or rules, work on multiple missions,
+control several Units, or contribute advice without controlling any Unit.
+Multiple agents collaborate on the same mission and objective credit ledger.
+`mission_agent` stores participation; inbox progress is independent per agent.
+
+Keep three boundaries separate:
+
+- Visibility: the World Master's `agent.readScope` grant; subscriptions narrow
+  interest within it. Participation exposes that mission, its credits and shared
+  execution outcomes, not all world entities. Scope must include needed evidence.
+- Assignment: one command-owning agent per Unit in `unit_assignment`, with named
+  allowed actions, a monotonically increasing revision and optional expiry.
+  Observers/advisers may coexist; split capability ownership is deferred.
+- Reservation: `unit_control.activeExecutionId` records the physical attempt
+  currently occupying the Unit. Assignment alone never makes a busy Unit free.
+
+World Masters compare expected revisions when editing grants/rosters. Roster
+changes bump mission revision; Unit grants have a separate authority revision.
+Pause, revocation and expiry invalidate affected proposals and block admission
+and claim, request cancellation, and retain reservations until confirmed local
+closure. New owners wait for this reconciliation. Expiry needs a timer even
+without sensor writes; it is not proof of physical stop. Local controller epochs
+fence executors independently from agent assignment revisions.
+
+Shared objectives, assignments, reservations and measured outcomes coordinate
+facts. `agent_message` carries bounded addressed requests/explanations between
+active mission participants. Derive sender from authenticated identity; authorize
+read access for sender, recipient and World Masters only. Message text is data,
+not a control grant or proof. A handoff needs an explicit World Master assignment
+operation. Retain must-handle messages until durable recipient acknowledgement;
+enforce byte/rate limits and explicit backpressure, not silent loss. A coordinator
+agent is optional, not an extra mandatory abstraction.
+
+Observation, decision and control clocks are independent. Agents choose RTS-level
+intent; systems execute lower-level work without waiting for each LLM step or
+needing a mission of their own. No fixed update rates are assumed before measurement.
 
 ## State and history
 
@@ -127,10 +183,12 @@ This is a Nemeia design, not an established universal mission protocol.
 A mission is one accepted, immutable specification plus a durable lifecycle.
 Keep the bound specification inline in `mission`; an optional template pin is
 authoring provenance, not a mutable lookup. Resolve target identities and
-authorize the specification before creation. The owner is the authenticated
-operator. Owner/admin mutations are allowed; subscription access alone is not
-delegation. Dedicated mission/credit views must enforce this boundary, with
-scoped read access for assigned controllers. Those views remain unimplemented.
+authorize the specification before creation. The owner records the creating
+World Master's identity; it does not lock the mission to one agent. World Masters
+create/cancel and assign participants; active assigned agents may submit proof.
+Subscription access alone grants neither participation nor Unit authority.
+Dedicated views enforce these boundaries, with scoped controller access. Those
+views remain unimplemented.
 
 Creation with the same owner, ID and specification returns the existing instance;
 a changed body conflicts. The specification never changes in place. Repeating
@@ -151,8 +209,8 @@ The first slice has two criteria:
   exist, be acquired at/after objective readiness, and satisfy `maxAgeMs` at
   credit time with the world's clock-error policy. A semantic facet proves that
   hypotheses were acquired, not that a label is true.
-- `approached`: a successful `approach@1` receipt for the exact actor, target and
-  standoff. Verify the request's mission/objective link, admission after objective
+- `approached`: a successful `approach@1` receipt for the required target and
+  standoff, using an eligible assigned Unit selected by an agent. Verify the request's mission/objective link, admission after objective
   readiness, successful measured completion and the pinned effective policy.
   A sent command, model answer or unlinked standalone action is not credit.
 
@@ -162,7 +220,7 @@ a newly unlocked objective; repeated frames cannot stand in for distinct objects
 Live physical freshness is still rechecked for every action.
 
 `mission_credit` stores one immutable proof per `[missionId, objectiveId]`.
-Check owner/admin and evidence access; load authoritative domain records instead
+Check World Master or active participant authority and evidence access; load authoritative domain records instead
 of accepting caller-provided progress. The first valid proof wins. Redelivery
 returns the existing credit without replacing evidence. Validate and record the
 credit, audit event and any transition to closing in one transaction. Retain
@@ -193,18 +251,21 @@ revision precondition; cancellation cannot rewrite another terminal outcome.
 Terminal mission outcomes are immutable. A failed action alone need not fail the
 mission: reconcile it before considering a fresh execution with a new ID.
 
-Action requests pin mission ID, objective ID and lifecycle revision. Admission
-and claim verify active state, deadline, ready matching objective, authorized
-owner and allowed actor. Reject a second nonterminal attempt for that objective.
-Pin the tighter installed/mission speed and per-execution duration caps in the
-accepted policy; local control enforces those caps independently. Only the
-explicit standalone operator path permits an absent mission link; workers must
-not strip a mission link to bypass closing or cancellation. Entity removal must
+Action requests pin mission ID, objective ID, mission revision and Unit assignment
+revision. Admission and claim verify the current caller role, unpaused agent,
+participation, current unexpired grant for the action, active mission, deadline,
+ready matching objective, evidence freshness and target version. Reject a second
+nonterminal attempt for that objective. MissionSpec has no Unit list, speed cap
+or motor duration. Pin installed execution policy in the accepted row; local
+control may tighten it. Only an explicit audited World Master intervention can
+omit agent assignment and, for standalone actions, mission linkage. Agents cannot
+strip either pin to bypass cancellation or revocation. Entity removal must
 reject references from active/closing missions as well as active executions.
 
-Start with two tables and one `Missions` boundary. Counted objectives need an
+Goal progress uses mission and credit tables; teamwork adds participation and
+assignment records without per-agent mission copies. Counted objectives need an
 explicit distinct-item identity and deduplication policy before addition.
-Dynamic branches, nested missions, pause/resume, party permissions, rewards,
+Dynamic branches, nested missions, mission pause/resume, rewards,
 reset calendars and automatic mission chains are intentionally deferred.
 The typed schema and fixtures specify this design; mission reducers, validators,
 authorized views, scheduler and crash/race tests are not implemented here.
@@ -249,6 +310,21 @@ cancellation supersedes work immediately; reject late results even when model
 cancellation is unavailable. Local stop never waits for this queue. UI, rules
 and faster model workers may consume the same world at different cadences.
 
+An agent may have several `agent_subscription` policies, each with scoped interests,
+allowlisted wake triggers, priority and a minimum interval between eligible steps.
+`maxWaitMs` bounds desired batching after useful work arrives, subject to that
+interval and available compute; it is not a latency promise. All policies feed
+one agent inbox and a durably leased step across worker replicas. They are rate
+caps and wake rules, not independent inference loops or mandatory polling.
+
+Worker scheduling states are `idle` (no useful work), `ready` (awaiting budget),
+`thinking` (one active step), and `waiting` (execution/resource/message/condition).
+Administrative pause and connection health are separate. Keep availability and
+deadline subscriptions active when all Units are unavailable; avoid repetitive
+inference. Coordination, analysis or help requests can still make work useful
+without any Unit. General AgentContext can span zero or multiple missions; the
+focused DecisionContext used by TargetSelector is intentionally narrower.
+
 The client may propose an action, ask for clarification or do nothing. Receiving
 an update does not require inference or grant permission to execute. Review
 current task dependencies before proposing an action; admission, controller
@@ -267,9 +343,9 @@ of required messages. A replaceable-state key overflow can instead request a
 fresh projection. Reuse domain audit events only when they actually contain
 the required occurrence and retention covers the consumer's progress.
 
-ClientSteps is a worker-side design interface. Its persistent schema and crash
+AgentSteps is a worker-side design interface. Its persistent schema and crash
 recovery are not yet implemented or included in the world tables.
-No separate message broker or actor framework is required for this first slice.
+No separate message broker or concurrency framework is required for this first slice.
 
 ## Tracing and sensitive data
 
@@ -312,9 +388,11 @@ Test exporter outage/overload without delaying local stop or reducer calls.
 
 ## Verification scope
 
-The fifteen-table SDK schema, cancellation reducer, authorized execution view, design
+The twenty-table SDK schema, cancellation reducer, authorized execution view, design
 interfaces and static flow fixtures are type-checked against 2.10.1. Mission
-validators/lifecycle, remaining reducers and world views are specified, not implemented. The illustrative
+validators/lifecycle, World Master operations, assignment/expiry reconciliation,
+message authorization/retention, scheduling, remaining reducers and world views
+are specified, not implemented. The illustrative
 generated-client fragment requires bindings from the completed module.
 Server integration, auth revocation, crash/retry tests, model evaluation and
 hardware qualification remain implementation work.

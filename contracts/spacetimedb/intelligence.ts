@@ -13,6 +13,8 @@ export type ComponentPin = {
 export type DecisionContext = {
   id: string; // immutable evaluation identity; duplicate results must not create duplicate actions
   worldId: string; // same world as the UI, planner and executor
+  agentId: string; agentRevision: string; // durable decision-maker and administrative configuration pin
+  assignments: JsonProjection<Row<"unitAssignment">>[]; // available authority, separate from mission intent and physical reservations
   mission: JsonProjection<Pick<Row<"mission">, "id" | "revision" | "state" | "spec">>; // authorized mission, not instructions inferred from sensor content
   readyObjectiveIds: string[]; // derived subscribed progress; admission rechecks the chosen objective
   objectiveId: string; // one ready objective selected for this focused evaluation; not a new task identity
@@ -23,6 +25,9 @@ export type DecisionContext = {
   generatedAt: string; // UTC timestamp when this projection was prepared
   validUntil: string; // UTC inference deadline; physical evidence freshness is checked separately at action admission
 }; // derived read model, NOT a second authoritative world or a Typesafe-specific database
+export type AgentContext = Omit<DecisionContext, "mission" | "readyObjectiveIds" | "objectiveId" | "options"> & {
+  missions: { mission: DecisionContext["mission"]; readyObjectiveIds: string[] }[]; // zero or many authorized missions; coordination need not focus on a ready objective
+}; // general reasoning context; DecisionContext is the narrower input for a focused target choice
 export type TargetSelection =
   | { kind: "candidate"; entityId: string } // must resolve to an option in this exact context
   | { kind: "abstain" }; // none match, inadequate evidence, timeout or unqualified uncertainty
@@ -38,22 +43,25 @@ export type DecisionRecord = {
 
 // region clients
 export interface PreparedStep {
-  id: string; clientId: string; // one logical client identity across reconnects; one active step per client
+  id: string; agentId: string; // one logical agent across reconnects; one active step across all its subscriptions
+  subscriptionRevisions: Readonly<Record<string, string>>; // included scopes and policies; changing scope requires dependency review
   eventIds: readonly string[]; // exact reserved must-handle events; not acknowledged by reading them
   changedEntityIds: readonly string[]; // coalesced changes since the prior step, not every intermediate observation
   rescan: boolean; // rebuild relevant state after dirty-key overflow, subscription reconnect or scope change
-  context: DecisionContext; // detached world/task projection frozen for this evaluation
+  context: AgentContext; // detached world/team projection; no Unit or ready objective is required just to reason
   actions: JsonProjection<Row<"actionBinding">>[]; // installed operations visible to this client, not permission to run them
-  executions: JsonProjection<Pick<Row<"execution">, "id" | "actorId" | "input" | "state" | "result">>[]; // relevant in-progress and completed attempts
-  constraints: readonly string[]; // advisory context; typed mission limits are enforced at admission and local control
+  executions: JsonProjection<Pick<Row<"execution">, "id" | "unitId" | "input" | "state" | "result">>[]; // relevant in-progress and completed attempts
+  constraints: readonly string[]; // advisory context; typed mission criteria, grants and installed policy are checked at admission
   eventContext: readonly { eventId: string; kind: string; content: string; recordRef: string }[]; // authorized event content with durable originals; do not omit must-handle meaning to fit a token budget
   historyRef?: string; // immutable authorized history slice resolved before inference; never a mutable conversation pointer
 }
-export interface ClientSteps {
-  prepare(clientId: string): Promise<PreparedStep | undefined>; // once required subscriptions are ready, reserve a batch and freeze context; at most one active step
+export interface AgentSteps {
+  prepare(agentId: string): Promise<PreparedStep | undefined>; // when eligible, unpaused and synchronized, durably claim the per-agent step lease and freeze one batch
   complete(stepId: string, durableOutcomeRef: string): Promise<void>; // verify durable handled outcome; atomically record it and acknowledge only this batch; idempotent retry
   release(stepId: string): Promise<void>; // failed/invalidated attempt: retain unhandled events for another step; reject later completion of this attempt
-} // worker-side lifecycle contract, not another world authority; persistence/recovery remain implementation work
+} // worker-side durable lease/batch/outcome contract; not one loop per subscription or one agent per mission
+// Enforce the lease across worker replicas; reject late completion from superseded leases.
+// Recover incomplete delivery/outcomes before issuing more actions; the execution ID remains the retry key.
 // endregion
 
 // region evaluator

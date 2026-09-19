@@ -6,6 +6,7 @@ import { renderIntelligence } from "../docs/intelligence-content.mjs";
 import { renderTracing } from "../docs/tracing-content.mjs";
 import { renderClients } from "../docs/client-content.mjs";
 import { renderMissions } from "../docs/mission-content.mjs";
+import { renderAgents } from "../docs/agent-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -37,12 +38,12 @@ const tableHtml = tables.map((item,i)=>{
   return `<details class="schema-item" id="table-${item.name}">${summary("schema",i,item.name,description)}<div class="schema-body"><div class="column-table-wrap" tabindex="0" role="region" aria-label="${item.name} columns"><table class="column-table"><thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody>${item.columns.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div><p class="reference-note">${escape(notes)}</p></div></details>`;
 }).join("\n");
 
-const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell" role="img" aria-label="Perception turns sensor input into evidence. One shared world owns observed facts, mission intent and objective progress. Subscriptions deliver mission and relevant world changes to each client. Clients prepare context and propose actions for ready objectives. Validated local execution returns measured feedback; evidence credits objectives and safe closure gates mission completion. Tracing explains the loop without controlling it."><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>continuous observation · deliberate decisions · local control</span></div><div class="diagram">${[
+const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell"><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span><span>observation, decision and control run independently</span></div><div class="architecture-rows"><div class="architecture-row"><strong>World Masters</strong><div>Set missions → assign agent teams → grant Unit control and visibility.</div></div><div class="architecture-row"><strong>Agents · Units · Systems</strong><div>Agents coordinate Units to achieve shared objectives. Units are controllable entities. Systems handle perception, pathfinding and execution.</div></div></div><div class="diagram">${[
   ["Perception","Camera, depth, audio and telemetry become evidence.","observe + associate"],
-  ["World","Observed entities and relationships; mission intent and progress.","facts + missions + events"],
-  ["Subscriptions","Each client follows its mission and relevant world changes.","scope → relevant updates"],
-  ["Decisions","Clients prepare context and propose actions for ready objectives.","context → intent"],
-  ["Execution","Validate current requirements; execute under local limits.","action → measured outcome"],
+  ["World","Shared entities, mission progress, assignments and outcomes.","facts + intent + authority"],
+  ["Subscriptions","Scoped changes and team messages feed each agent's inbox.","many interests → one inbox"],
+  ["Agents","Collaborate; compile context when useful; choose eligible Units.","context → proposed action"],
+  ["Execution","Systems validate, reserve the Unit and execute under local limits.","admit → execute → measure"],
 ].map(([title,description,code],i)=>`${i?'<div class="diagram-arrow" aria-hidden="true"></div>':""}<div class="diagram-node"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Feedback → world</strong><p>Measurements update the world. Intent, predictions and sent commands never stand in for observed outcomes.</p></div><div><strong>Trace the whole step</strong><p>Inspect compiled context, selected evidence, model inputs, outputs and action results under a controlled capture policy.</p></div></div></div></div></section>`;
 
 const platform = [
@@ -78,7 +79,7 @@ const connection = DbConnection.builder()
 // Generate bindings instead of maintaining a second handwritten HTTP/snapshot/delta client.`;
 const readRows = `<div class="architecture-rows">${[
   ["UI / decision worker", "Authorized views of missions, objective credits, live entities, components, relations and action bindings. Each client selects its relevant scope. UIs render the cache; reasoning workers prepare detached mission context at their own cadence."],
-  ["Controller", "Its robot's executions and necessary actor/target evidence. Private tables plus scoped views; no subscribeToAllTables shortcut."],
+  ["Controller", "Its robot's executions and necessary unit/target evidence. Private tables plus scoped views; no subscribeToAllTables shortcut."],
   ["Freshness", "Subscriptions update when data changes. Evidence can become stale without a write, so evaluate acquisition timestamps with the current world clock."],
   ["History", "Read bounded audit pages through an authorized history boundary when needed. Audit sequence is not the SDK subscription cursor; a reconnect gives current state, not missed transitions."],
 ].map(([title,body])=>`<div class="architecture-row"><strong>${title}</strong><div>${escape(body)}</div></div>`).join("")}</div>`;
@@ -93,15 +94,16 @@ const refs = [
   ["Engine license","https://github.com/clockworklabs/SpacetimeDB/blob/master/LICENSE.txt","Verify release-specific deployment terms before fleet use."],
 ];
 const main = `<main id="main-content">${diagram}
-${section("ownership","01","Foundations & ownership","Eight world foundations plus Mission: the first-class domain abstraction for intent and progress. Storage engines, models and tracing tools implement these responsibilities.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
+${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Masters govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & world view","Typed geometry, independently timed evidence, a narrow action contract and a read-only world projection.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,region(sources[file],id),`object-${id}`)).join("\n")}</div>`)}
 ${renderMissions({section,codeRow,proseRow,region})}
+${renderAgents({section,proseRow})}
 ${section("contracts","03","Service contracts","Each boundary has one owner. These interfaces specify behavior, not separate microservices. The selected database binding implements world writes as reducers.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,region(sources.contracts,id),`contract-${id}`)).join("\n")}</div>`)}
-${section("tables","04","Database tables",`The selected SpacetimeDB implementation maps this world slice to ${tables.length} private tables, including missions and objective credits. Columns come from the checked schema; client inbox persistence remains separate.`,`<div class="schema-list">${tableHtml}</div>`)}
+${section("tables","04","Database tables",`The selected SpacetimeDB implementation maps this model to ${tables.length} private tables, including shared missions, agents, Unit assignments, subscription policies and addressed messages. Columns come from the checked schema; durable worker inbox/step storage remains separate.`,`<div class="schema-list">${tableHtml}</div>`)}
 ${section("platform","05","Implementation choices","Concrete tools underneath the model. These are implementation targets, not live integrations or new foundational abstractions.",`${implementationChoices}<div class="object-list">${platform}</div>${readRows}${codeRow("example",0,"Subscribe and reconcile","generated client pattern","This consumer fragment assumes generated bindings for the completed module. Only schema/function examples and domain fixtures are type-checked here; connection behavior still requires a running-server integration test.",subscription,"sdk-subscribe")}`)}
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${renderClients({section,codeRow,proseRow,region},"06b")}
-${section("example","07","End-to-end information flow","One mission asks a Go2 to approach a backpack. Static, type-checked fixtures connect evidence, mission activation, subscriptions, decisions, execution and verified mission completion; they do not execute anything.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(sources.example,id),`flow-${id}`)).join("\n")}</div>`)}
+${section("example","07","End-to-end information flow","A World Master assigns one mission to Navigator and Scene analyst. They collaborate; Navigator selects its Go2 Unit for approach. Static, type-checked fixtures follow evidence, team messages, scheduling, execution and shared mission completion. They perform no IO.",`<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,region(sources.example,id),`flow-${id}`)).join("\n")}</div>`)}
 ${renderTracing({section,codeRow,proseRow,region},"08")}
 ${section("boundaries","09","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("references","10","Implementation references","The schema and fixtures are checked examples. World services, durable client steps, controlled content tracing and robot-local execution still require integration and failure testing.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}

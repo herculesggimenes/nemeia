@@ -18,15 +18,15 @@ test("sensor facets retain independent acquisition times and complete measured g
 });
 
 test("one execution is the request receipt through claim, control and measured completion",()=>{
-  const { request, accepted, running, succeeded, reservedRobot, localStarted, localClosed, finalActor, finalTarget, completion }=example;
+  const { request, accepted, running, succeeded, reservedUnit, localStarted, localClosed, finalUnit, finalTarget, completion }=example;
   for(const row of [accepted,running,succeeded]) assert.equal(row.id,request.executionId);
-  assert.equal(reservedRobot.activeExecutionId,running.id);
+  assert.equal(reservedUnit.activeExecutionId,running.id);
   assert.equal(localStarted.controllerEpoch,running.controllerEpoch);
   assert.equal(localClosed.safeState,"confirmed");
-  const actor=finalActor.value.positionM;
+  const unit=finalUnit.value.positionM;
   const target=finalTarget.value.value.pose.positionM;
-  assert.ok(Math.abs(Math.hypot(target.x-actor.x,target.y-actor.y)-completion.value.distanceM)<1e-9);
-  assert.equal(completion.value.actorObservationId,finalActor.observationId);
+  assert.ok(Math.abs(Math.hypot(target.x-unit.x,target.y-unit.y)-completion.value.distanceM)<1e-9);
+  assert.equal(completion.value.unitObservationId,finalUnit.observationId);
   assert.equal(completion.value.targetObservationId,finalTarget.observationId);
   assert.ok(succeeded.updatedAt.microsSinceUnixEpoch>finalTarget.observedAt.microsSinceUnixEpoch);
 });
@@ -61,7 +61,7 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/id="clients-title">Client subscriptions/);
     assert.match(page,/id="subscription-scope"/);
     assert.match(page,/id="decisions-feedback"/);
-    assert.match(page,/ClientSteps/);
+    assert.match(page,/AgentSteps/);
     assert.match(page,/id="missions"/);
     assert.match(page,/id="contract-missions"/);
     assert.match(page,/id="object-mission-view"/);
@@ -80,17 +80,17 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
 });
 
 test("subscription fixture gives the prepared step independent pending-work arrays",()=>{
-  const { subscribedClient, preparedStep, decisionStage } = example;
-  assert.equal(subscribedClient.ready,true);
-  assert.equal(subscribedClient.wakeReason,"task-message");
-  assert.equal(preparedStep.clientId,subscribedClient.clientId);
-  assert.deepEqual(preparedStep.changedEntityIds,subscribedClient.changedEntityIds);
-  assert.notEqual(preparedStep.changedEntityIds,subscribedClient.changedEntityIds);
-  assert.deepEqual(preparedStep.eventIds,subscribedClient.eventIds);
-  assert.notEqual(preparedStep.eventIds,subscribedClient.eventIds);
+  const { subscribedAgent, preparedStep, decisionStage } = example;
+  assert.equal(subscribedAgent.ready,true);
+  assert.equal(subscribedAgent.wakeReason,"message");
+  assert.equal(preparedStep.agentId,subscribedAgent.agentId);
+  assert.deepEqual(preparedStep.changedEntityIds,subscribedAgent.changedEntityIds);
+  assert.notEqual(preparedStep.changedEntityIds,subscribedAgent.changedEntityIds);
+  assert.deepEqual(preparedStep.eventIds,subscribedAgent.eventIds);
+  assert.notEqual(preparedStep.eventIds,subscribedAgent.eventIds);
   assert.equal(decisionStage.contextId,preparedStep.contextId);
-  assert.equal(subscribedClient.missionId,example.activeMission.id);
-  assert.equal(preparedStep.missionRevision,example.activeMission.revision);
+  assert.equal(subscribedAgent.missionId,example.activeMission.id);
+  assert.equal(preparedStep.missionRevision,example.assignedMission.revision);
   const clients=readFileSync(new URL("../../docs/client-content.mjs",import.meta.url),"utf8");
   assert.match(clients,/Subscription access never grants execution permission/);
   assert.match(clients,/not every subscriber needs a durable inbox/);
@@ -99,11 +99,11 @@ test("subscription fixture gives the prepared step independent pending-work arra
 test("mission fixtures connect intent, action, objective proof and safe completion",()=>{
   const { activeMission, request, accepted, succeeded, approachCredit, closingMission, completedMission, localClosed }=example;
   assert.equal(request.mission.missionId,activeMission.id);
-  assert.equal(request.mission.expectedRevision,activeMission.revision);
+  assert.equal(request.mission.expectedRevision,example.assignedMission.revision);
   assert.equal(accepted.missionId,activeMission.id);
   const objective=activeMission.spec.objectives.find(o=>o.id===request.mission.objectiveId);
   assert.equal(objective.criterion.tag,"approached");
-  assert.deepEqual(objective.criterion.value,{actorId:request.actorId,targetId:request.targetId,standoffM:request.standoffM});
+  assert.deepEqual(objective.criterion.value,{targetId:request.targetId,standoffM:request.standoffM});
   assert.equal(approachCredit.key,JSON.stringify([activeMission.id,objective.id]));
   assert.equal(approachCredit.evidence.value.executionId,succeeded.id);
   assert.equal(closingMission.state.tag,"closing");
@@ -112,8 +112,40 @@ test("mission fixtures connect intent, action, objective proof and safe completi
   assert.ok(accepted.createdAt.microsSinceUnixEpoch>=activeMission.createdAt.microsSinceUnixEpoch);
   assert.ok(approachCredit.recordedAt.microsSinceUnixEpoch>=succeeded.updatedAt.microsSinceUnixEpoch);
   assert.ok(completedMission.updatedAt.microsSinceUnixEpoch<activeMission.spec.deadlineAt.microsSinceUnixEpoch);
-  assert.ok(accepted.binding.maxLinearMps<=activeMission.spec.maxLinearMps);
-  assert.ok(accepted.binding.maxRunMs<=activeMission.spec.maxRunMs);
+  for (const field of ["actorIds","unitIds","maxLinearMps","maxRunMs"]) assert.ok(!(field in activeMission.spec));
+  assert.ok(accepted.binding.maxLinearMps>0);
+  assert.ok(accepted.binding.maxRunMs>0);
+});
+
+test("shared mission, Unit grant, addressed advice and independent subscription policies are distinct",()=>{
+  const {team,navigator,analyst,go2Assignment,advice,subscriptions,request,accepted,scheduling,assignedMission,activeMission}=example;
+  assert.deepEqual(new Set(team.map(row=>row.agentId)),new Set([navigator.id,analyst.id]));
+  assert.ok(team.every(row=>row.missionId===activeMission.id && row.active));
+  assert.equal(assignedMission.revision,activeMission.revision+BigInt(team.length));
+  assert.equal(request.assignment.agentId,go2Assignment.agentId);
+  assert.equal(request.assignment.revision,go2Assignment.revision);
+  assert.equal(request.unitId,go2Assignment.unitId);
+  assert.ok(go2Assignment.actionNames.includes("approach@1"));
+  assert.ok(accepted.requestedBy.isEqual(navigator.principal));
+  assert.equal(accepted.agentId,navigator.id);
+  assert.notEqual(go2Assignment.agentId,analyst.id);
+  assert.equal(advice.fromAgentId,analyst.id);
+  assert.equal(advice.toAgentId,navigator.id);
+  assert.deepEqual(example.preparedStep.eventIds,[advice.id]);
+  assert.ok(subscriptions.length>1 && subscriptions.every(row=>row.agentId===navigator.id));
+  assert.notEqual(subscriptions[0].policy.minIntervalMs,subscriptions[1].policy.minIntervalMs);
+  assert.deepEqual(scheduling.map(row=>row.state),["idle","ready","thinking","waiting"]);
+});
+
+test("published design includes roles, authority fences and separate cadences without old Actor vocabulary",()=>{
+  const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
+  for(const id of ["unit","agent","world-master","teams","contract-world-masters","contract-coordination","object-unit-agent-view","object-agent-scope","object-agent-runtime","table-agent","table-mission_agent","table-unit_assignment","table-agent_subscription","table-agent_message"]){
+    assert.ok(page.includes(`id="${id}"`),id);
+  }
+  assert.doesNotMatch(page,/actorId|ActorView|robot_control|ClientSteps|owner\/admin|Owner\/admin|mission speed/);
+  const agentSource=readFileSync(new URL("../../docs/agent-content.mjs",import.meta.url),"utf8");
+  assert.match(agentSource,/read scope ≠ Unit control grant ≠ execution reservation/);
+  assert.match(agentSource,/until the local executor confirms safe closure/);
 });
 
 test("the mission graph fixture specifies parallel roots and ordered milestones",()=>{
@@ -156,6 +188,8 @@ test("trace profiles support controlled content and a restricted metadata fallba
   assert.equal(correlationExample["nemeia.execution_ref"],example.request.executionId);
   assert.equal(correlationExample["nemeia.step_ref"],example.preparedStep.id);
   assert.equal(correlationExample["nemeia.mission_ref"],example.activeMission.id);
+  assert.equal(correlationExample["nemeia.agent_ref"],example.navigator.id);
+  assert.equal(correlationExample["nemeia.unit_ref"],example.request.unitId);
   assert.equal(example.preparedStep.contextId,example.decisionStage.contextId);
   assert.deepEqual(example.preparedStep.changedEntityIds,[example.backpack.id]);
   assert.ok(Object.values(correlationExample).every(value=>["string","number"].includes(typeof value)));

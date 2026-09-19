@@ -38,15 +38,22 @@ to preserve old APIs, formats, databases, or archived protocol designs.
 | Entity | Gives one thing a stable identity. |
 | Component | Adds composable state or ability to an entity. |
 | Relationship | Connects two entities with a directed fact. |
-| Affordance | Describes an action currently available to an actor and target. |
+| Affordance | Describes an action currently available to a Unit and target. |
 | Action | Applies a meaningful change to the world. |
 | System | Continuously senses, updates, executes, or emits events. |
 | Event | Retains an occurrence that current state alone may not preserve. |
 | Mission | Binds authorized intent to typed objectives, constraints and evidence-backed progress. |
+| Unit | An entity with installed controllable capabilities; offline does not erase that role. |
+| Agent | A durable decision-maker that collaborates on missions and may coordinate many Units. |
+| World Master | A privileged human or automated client that assigns missions, agents and Unit authority. |
 
 Mission is a first-class domain abstraction built on the eight world foundations.
 Its specification and progress survive client restarts; clients subscribe and
 propose actions, while validated domain evidence determines objective completion.
+Many agents can share one mission; each keeps its own subscriptions and inbox.
+World Masters grant visibility and Unit command rights separately. Systems handle
+perception, pathfinding and local execution at their own rates. One active reasoning
+step per agent does not constrain the frequency of those lower-level systems.
 
 See [the Nemeia protocol](./docs/protocol-spacetimedb.md) for the full explanation,
 [the architecture website](./docs/) for a visual walkthrough,
