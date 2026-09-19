@@ -91,7 +91,7 @@ export function objectPlanningCode(id, code) {
   if (id === "action") return code
     .replace('mission and ready approached objective this attempt advances', 'mission and ready objective this attempt serves; investigation actions do not themselves complete it')
     .replace('  expectedGeometryVersion: t.u64()', '  expectedGeometryFrameId: t.string(), // identify the exact frame-qualified target facet; require a usable transform to the executor\n  expectedGeometryVersion: t.u64()')
-    .concat('\n// For approached, require the specified target/standoff. For located or inspected, require a target\n// in the authorized investigation area or a verified adjacent viewpoint; reject unrelated motion.\n// This action can support an investigation, but only the objective criterion determines progress.');
+    .concat('\n// For approached, require the specified target/standoff. For located or inspected, investigation may\n// precede place resolution. Require measured local targets within separately authorized exploration limits.\n// This action can support an investigation, but only the objective criterion determines progress.');
   return code;
 }
 
@@ -165,13 +165,14 @@ export function plannedTables(tables) {
 }
 
 export const v0ExampleRows = [
-  ["mission", "Find the backpack · inspect the passage", "search + inspection · shared world", "The World Master asks Navigator to find a blue backpack and inspect the passage to the kitchen. The living area and passage are already named, bounded regions in the local map; the backpack has no known entity or location. If those regions are ambiguous, resolve them before accepting the missions. Both objectives use explicit World Master review of evidence-backed findings."],
+  ["mission", "Find the backpack · inspect the passage", "search + inspection · shared world", "The World Master asks Navigator to find a blue backpack in the living area and inspect the passage to the kitchen. Neither room, passage nor backpack has a known entity or location at assignment. The objectives retain those place descriptions. Discovery is part of the work; evidence-backed findings must establish the intended places before review can complete either objective."],
   ["team", "Assign Navigator and grant Go2", "one mission log · one Unit · separate authority", "The World Master creates both missions, assigns them to Navigator and separately grants Go2 control. Nemeia derives awareness from Go2 observations, its usable local neighborhood and both mission dependencies. Neither assignment starts the robot or creates a separate Eve loop."],
-  ["prepared", "Choose an investigation from the mission log", "read known evidence → identify a gap → choose a viewpoint", "Navigator reads both assignments. Existing observations do not establish a backpack match, and the passage is partly occluded. Investigating the kitchen doorway can help both missions. Exploration chooses which missing information to pursue; navigation gets Go2 to a useful viewpoint. Neither behavior is itself a mission type."],
-  ["navigation", "Navigate to a useful viewpoint", "agent intent → admission → local planner → measured receipt", "A recent observation locates the kitchen doorway in Go2’s local frame. Navigator requests approach@1 under the inspection objective. The controller chooses a safe path and local stopping pose; it does not blindly follow the LLM. If the bound action cannot provide a useful, safely reachable viewpoint, report it unavailable and reconsider. Arrival only enables inspection; it does not complete it."],
-  ["inputs", "Discover a candidate while inspecting", "camera candidate → associated depth → wider view", "At the viewpoint, YOLOE detects a blue backpack candidate. Qualified camera/depth association adds local geometry; a wider observation shows how the object occupies the passage. Perception keeps committing evidence while Navigator is reasoning. A label is not an accepted identity, and the absence of detections is not proof of a clear passage."],
+  ["prepared", "Choose an investigation from the mission log", "read known evidence → identify a gap → choose a viewpoint", "Navigator reads both assignments and sees that the place references are unresolved. It first examines Go2’s current observations and any retained local knowledge. No kitchen destination is available to navigate to. Exploration seeks information that could identify the rooms and their connections; it does not require knowing their names or complete layout in advance."],
+  ["discovery", "Observe first; identify a local viewpoint", "unnamed surroundings → candidate places + measured landmark", "Perception observes the current room and an opening, assigns local entity identities, and retains its evidence. Room labels remain hypotheses. A fresh local measurement can make the opening a useful investigation target without proving it leads to the kitchen. This scenario assumes separately authorized nearby exploration and qualified local navigation. If either is unavailable, keep observing from the current position or ask the World Master."],
+  ["navigation", "Navigate to a useful viewpoint", "agent intent → admission → local planner → measured receipt", "A recent observation locates an unnamed opening in Go2’s local frame. Navigator requests approach@1 to get a better view while the kitchen remains unresolved. The controller chooses a safe path and local stopping pose; it does not blindly follow the LLM. If the bound action cannot provide a useful, safely reachable viewpoint, report it unavailable and reconsider. Arrival only enables inspection; it does not complete it."],
+  ["inputs", "Discover a candidate while inspecting", "camera candidate → associated depth → wider view", "At the viewpoint, YOLOE detects a blue backpack candidate. Qualified camera/depth association adds local geometry. Wider observations reveal room features, the connection between spaces and how the backpack occupies the passage. These support proposed living-area and kitchen identities; none is assumed from a pre-existing map. Perception keeps committing evidence while Navigator is reasoning. A label is not an accepted identity, and the absence of detections is not proof of a clear passage."],
   ["projection", "Retain evidence and refine the map", "one discovered entity · independent facets · durable checkpoints", "Association creates backpack-A and refines it with measured local geometry. Retain exact acquisitions and resources before publishing the map checkpoint. Moving out of view does not erase the entity. Camera viewpoints and retained evidence help reconstruct what was inspected; they do not automatically prove complete search coverage."],
-  ["findings", "Compile the next step and report both findings", "one evidence set → two independently reviewed outcomes", "The adapter compiles both mission summaries and new evidence into one frozen Eve context. Navigator proposes a backpack match and an obstructed-passage report. Both cite obs-2, but each must satisfy its own criterion. These are typed draft findings, not trusted facts or completion flags. The reviewer checks identity and last-seen location separately from obstruction evidence."],
+  ["findings", "Compile the next step and report both findings", "one evidence set → two independently reviewed outcomes", "The adapter compiles both mission summaries and new evidence into one frozen Eve context. Navigator proposes a backpack match and an obstructed-passage report. Both cite obs-2, but each must satisfy its own criterion. These are typed draft findings, not trusted facts or completion flags. The reviewer checks the proposed place identities, object match and last-seen location separately from the passage extent and obstruction evidence. Competing kitchen candidates require more evidence or clarification; the agent cannot silently select one."],
   ["mission-finished", "Accept findings and close each mission", "review → durable objective progress → safe closure", "For these review policies, the World Master submits each accepted finding through Missions.recordObjectiveProgress. The backpack mission may close while passage review remains pending. Finding an obstruction successfully completes the inspection; clearing it was never requested. Unknown visibility cannot complete inspection, and a clear report would require evidence covering the entire named region. Neither outcome authorizes traversal."],
   ["resume", "Recover the world and resume useful work", "world state and accepted progress survive an Eve reset", "A restarted agent reloads both assignments, accepted findings, retained observations, map checkpoints and execution receipts. It reconstructs outstanding work from those records. Draft reasoning is not objective progress. If Go2 has lost localization, the map remains readable but spatial actions wait for qualified localization or a new frame."],
 ];
@@ -185,7 +186,8 @@ const backpackSpec = {
     id: "locate", description: "Identify the requested backpack and report its evidenced location.",
     dependsOn: [], optional: false,
     criterion: { tag: "located", value: {
-      description: "Blue backpack", searchAreaId: "living-area", // resolve the search area, not the unknown object
+      description: "Blue backpack",
+      searchArea: { tag: "description", value: { text: "the living area" } }, // no room entity or coordinates yet
       maxAgeMs: 60_000, review: "world_master", // example acceptance policy; not an automatic detector verdict
     } },
   }],
@@ -197,7 +199,8 @@ const passageSpec = {
     id: "inspect", description: "Report whether the defined passage is obstructed, with evidence.",
     dependsOn: [], optional: false,
     criterion: { tag: "inspected", value: {
-      regionId: "kitchen-passage", question: "Is anything obstructing this passage?",
+      region: { tag: "description", value: { text: "the passage to the kitchen" } },
+      question: "Is anything obstructing this passage?", // finding the intended passage is part of the work
       maxAgeMs: 60_000, review: "world_master", // obstructed can be a successful inspection result
     } },
   }],
@@ -207,8 +210,8 @@ const creationInputs = [
   { id: "mission-1", spec: backpackSpec },
   { id: "mission-2", spec: passageSpec },
 ] satisfies Parameters<Missions["createMission"]>[0][];
-// The bounded kitchen-passage region is inside living-area in this example.
-// These are existing region entities, not invented global coordinates or an existing backpack target.
+// Both PlaceTargets are descriptions: no living-area, kitchen or passage IDs exist at assignment.
+// Mission creation records intent. It does not require resolving these places or supply a destination.
 // No Unit, route, viewpoint, motor speed or execution duration is part of either MissionSpec.
 // Not found yet is not success; declaring a bounded search exhausted needs a separate coverage criterion.`,
   team: `const missionAssignments = [
@@ -222,7 +225,8 @@ const unitGrant = {
 // World Master submits creation, assignment and Unit grant as separate operations.
 // Each mission is now at revision 2; this first Unit grant produces assignment revision 1.
 // Participation is not command authority. Command authority is not a physical execution reservation.
-// Both assignments share one Eve agent loop and automatically prepared Unit awareness.`,
+// Both assignments share one Eve agent loop and automatically prepared Unit awareness.
+// The grant does not turn a room name into a geofence. Local exploration limits are independently enforced.`,
   prepared: `// Decision-context excerpt, not another writable world table.
 const initialContext = {
   agentId: "navigator", unitId: "go2-01",
@@ -231,26 +235,40 @@ const initialContext = {
     { missionId: "mission-2", objectiveId: "inspect", progress: "pending", need: "passage inspection" },
   ],
   relevantKnowledge: {
-    backpackCandidateIds: [], // no match established; retained prior observations are still available
-    passageVisibility: "partial", // unknown behind the occlusion is not clear
-    landmarkId: "kitchen-doorway", // a known, freshly located entity near a useful viewpoint
-    frameId: "go2/map:epoch-7", navigation: "qualified", // assumed measured local capability in this scenario
+    unresolvedPlaces: ["the living area", "the passage to the kitchen"],
+    placeCandidateIds: [], backpackCandidateIds: [], // nothing has been identified from these descriptions yet
+    nextInvestigation: "inspect current sensor evidence", // not a command to drive to an unknown destination
   },
 };
-// Navigator chooses passage inspection first because that viewpoint can also help the backpack search.
+// The first useful step is observation, not navigateTo(kitchen). No geometry is invented for a place name.
 // Read retained evidence before revisiting locations; do not treat old negative detections as exhaustive.
 // Exploration chooses an information gap. Navigation reaches a viewpoint. Perception supplies evidence.
 // A second mission stays active while attention is on the first; focus changes no deadlines.`,
+  discovery: `// Perception excerpts from the first local survey at 12:00:05; not complete ingestion inputs.
+const firstSurvey = {
+  observations: ["obs-layout-1", "obs-opening-1"], // retain camera/depth sources and acquisition times
+  placeCandidates: [{ entityId: "space-1", hypothesis: "living area" }], // tentative meaning, not mission acceptance
+  landmark: {
+    entityId: "opening-1", frameId: "go2/map:epoch-7", geometryVersion: 1n,
+    meaning: "opening into another space", // the space beyond is not yet identified as the kitchen
+  },
+};
+// Entity IDs arise from observed local association; no living-room or kitchen ID was seeded at creation.
+// Room semantics may use image/LLM analysis. Measured geometry requires a qualified spatial pipeline.
+// Here, nearby exploration is independently permitted and a local route to a viewing pose is qualified.
+// No such route/permission → observe in place, request assistance, or wait; unknown is not free space.
+// Fresh landmark geometry can support a local action even while its semantic role remains uncertain.`,
   navigation: `const approachInput = {
   executionId: "d0cb5435-aed4-45b5-933c-fb47b29cff42", // stable retry identity for this attempt
   unitId: "go2-01", assignment: { agentId: "navigator", revision: 1n },
-  targetId: "kitchen-doorway", standoffM: 0.8, // chosen investigation action, not a mission outcome
-  expectedGeometryFrameId: "go2/map:epoch-7", expectedGeometryVersion: 8n,
+  targetId: "opening-1", standoffM: 0.8, // observed landmark; not a fabricated kitchen destination
+  expectedGeometryFrameId: "go2/map:epoch-7", expectedGeometryVersion: 1n,
   acceptBy: at("2026-09-19T12:00:08Z"), // fresh target evidence acquired at 12:00:05
   mission: { missionId: "mission-2", objectiveId: "inspect", expectedRevision: 2n },
 } satisfies ApproachRequest;
 // ActionRequests.requestApproach receives this input; the example performs no IO.
-// Admission checks authority, ready objective, permitted target scope, fresh geometry and local capability.
+// Admission checks authority, ready objective, independent exploration limits, fresh geometry and local capability.
+// The requested place is still unresolved; reaching this landmark is an evidence-gathering step.
 // Claim reserves Go2 across all missions; robot-local planning and obstacle checks run at their own rates.
 // accepted → claimed → local motion → measured arrival at 12:00:12 → confirmed safe-closure receipt.
 // Retry by executionId. An unknown physical outcome holds the reservation until reconciled.
@@ -268,37 +286,49 @@ const locatedObservation = {
 }; // association/calibration links the depth to the candidate; labels alone are insufficient
 const passageObservation = {
   id: "obs-3", acquiredAt: "2026-09-19T12:00:18Z",
-  subjectId: "kitchen-passage", evidence: "wide view of the backpack occupying the passage",
+  subjectId: "passage-1", evidence: "wide view of the backpack on the current-room side of the opening",
 }; // prose abbreviates the retained image/depth evidence; it is not an authoritative geometry field
+const roomObservation = {
+  id: "obs-layout-2", acquiredAt: "2026-09-19T12:00:18Z",
+  candidates: [
+    { entityId: "space-1", hypothesis: "living area" },
+    { entityId: "space-2", hypothesis: "kitchen" },
+  ],
+  connection: { passageId: "passage-1", between: ["space-1", "space-2"] },
+}; // abbreviated evidence-backed hypotheses; labels or object co-occurrence alone do not prove connectivity
 // A lower-frequency SAM3 refinement may help an ambiguous mask; no model is mandatory on every frame.
 // Unknown calibration preserves the camera evidence but blocks unsupported spatial claims.`,
   projection: `const progression = [
   { revision: 1, entityId: "backpack-A", observationId: "obs-1", spatialState: "unlocated" },
   { revision: 2, entityId: "backpack-A", observationId: "obs-2", frameId: "go2/map:epoch-7" },
-  { revision: 3, entityId: "kitchen-passage", observationId: "obs-3", frameId: "go2/map:epoch-7" },
+  { revision: 3, entityId: "passage-1", observationId: "obs-3", frameId: "go2/map:epoch-7" },
 ]; // checkpoint excerpt; association established one candidate identity, not a new object per frame
 const head = {
   mapId: "local-map-1", rootFrameId: "go2/map:epoch-7", revision: 3, manifestId: "map-manifest-3",
 }; // publish retained bytes first, then atomically advance the durable checkpoint head
-// Evidence supports a candidate in a local region; the World Master has not accepted either finding yet.
+// space-1, space-2 and their observed connection are retained too; labels remain revisable hypotheses.
+// Evidence supports proposed place identities; the World Master has not accepted either finding yet.
 // Map manifests preserve acquisitions, source frames and checkpoint coverage; audit is not a map backup.
 // Rejected candidates and inspected viewpoints can be revisited from retained evidence and Eve reasoning.
 // Losing view of backpack-A changes visibility/freshness, not the retained entity or last-seen evidence.`,
-  findings: `// At 12:00:22, the next frozen context includes both pending missions and obs-1, obs-2, obs-3.
+  findings: `// At 12:00:22, context includes both missions, candidate places, their connection and the retained evidence.
 const backpackFinding = {
   tag: "located", value: {
-    entityId: "backpack-A", observationIds: ["obs-1", "obs-2"],
-    description: "Blue backpack last seen in the kitchen passage at 12:00:14, in Go2’s local map.",
+    entityId: "backpack-A", searchAreaId: "space-1", // proposes space-1 as the intended living area
+    observationIds: ["obs-1", "obs-2", "obs-layout-1", "obs-layout-2"],
+    description: "Blue backpack last seen at 12:00:14 on the living-area side of the opening.",
   },
 } satisfies MissionFinding;
 const passageFinding = {
   tag: "inspected", value: {
-    regionId: "kitchen-passage", conclusion: "obstructed",
-    obstructionEntityIds: ["backpack-A"], observationIds: ["obs-2", "obs-3"],
+    regionId: "passage-1", conclusion: "obstructed", // proposes this connection as the passage to the kitchen
+    obstructionEntityIds: ["backpack-A"], observationIds: ["obs-2", "obs-3", "obs-layout-2"],
     description: "A backpack occupies the inspected passage. This report does not certify a safe route.",
   },
 } satisfies MissionFinding;
 // Navigator presents these drafts for review through Eve; they do not mutate world truth.
+// Review place identity as well: does space-1 match the living area, and does passage-1 lead to the intended kitchen?
+// Multiple plausible kitchens → ask which one; no supported match → keep investigating within granted limits.
 // Same obs-2, different checks: requested-object match/location versus obstruction within the region.
 // Models can help compare evidence. Their confidence is not mission acceptance or safety clearance.
 // If a view remains inconclusive, report unknown and investigate another safe viewpoint or ask for help.
@@ -309,7 +339,9 @@ const passageFinding = {
 ] satisfies Parameters<Missions["recordObjectiveProgress"]>[0][];
 // World Master reviews and submits each independently at 12:00:25 and 12:00:26.
 // Agent attempts to self-approve these reviewed findings are rejected, regardless of Unit authority.
-// Load cited records; check readiness, exact criterion, area/region scope, evidence access and age.
+// Load cited records; check readiness, criterion, evidence access/age and authority.
+// Review grounds each place description in discovered entities and evidence; an ambiguous referent stays pending.
+// Accepted findings retain that resolution. The original description in MissionSpec remains unchanged.
 // Persist accepted finding + objective progress + authenticated reviewer audit atomically.
 // mission-1: locate completed → closing → succeeded; mission-2 can still be awaiting its own review.
 // mission-2: inspect completed with obstructed → closing → succeeded after every linked attempt is safe.
@@ -319,10 +351,10 @@ const passageFinding = {
   resume: `const recovered = {
   agentId: "navigator", missionIds: ["mission-1", "mission-2"],
   completedObjectives: ["mission-1/locate", "mission-2/inspect"], // read accepted progress, not conversation claims
-  localMapId: "local-map-1", headRevision: 3, entityIds: ["backpack-A", "kitchen-passage"],
+  localMapId: "local-map-1", headRevision: 3, entityIds: ["backpack-A", "space-1", "space-2", "passage-1"],
   localization: "relocalization_required", // recovery of map bytes does not prove the current Unit pose
 }; // both mission outcomes, accepted findings, evidence and safe-closure receipts are durable
-// A reset before review leaves the objective pending; reconstruct a draft from retained evidence.
+// A reset before review leaves place hypotheses and the objective unaccepted; reconstruct from retained evidence.
 // If evidence has aged beyond the review policy, gather fresh evidence before accepting the finding.
 // Reconcile receipts before new motion. Reconcile observations beyond checkpoint coverage by their IDs.
 // No useful pending work → idle, with relevant changes/deadlines still observed; no repeated LLM polling.

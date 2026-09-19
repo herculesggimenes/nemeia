@@ -1,5 +1,15 @@
 // Selected website specification only. No application module imports these planning types.
 export const missionCode = {
+  "mission-place": `type PlaceTarget =
+  | { tag: "entity"; value: { entityId: string } } // a known place identity; validate access and existence
+  | { tag: "description"; value: { text: string } }; // e.g. "the kitchen"; no entity or location assumed
+// A described place may be unresolved when the mission is created and assigned.
+// Discovery associates retained observations with candidate place entities, not invented room IDs.
+// A candidate label is a hypothesis. Several matches require more evidence or clarification.
+// Accepted findings identify the discovered place and cite evidence tying it to this description.
+// Preserve the original mission wording; discovering its referent does not rewrite MissionSpec.
+// Place identity, geometric extent, and a safe route are separate questions.
+// Mission wording never expands Unit authority or the controller's permitted exploration boundary.`,
   "mission-criteria": `type ObjectiveCriterion =
   | { tag: "observed"; value: {
       entityId: string; // existing target identity, bound before mission creation
@@ -12,12 +22,12 @@ export const missionCode = {
     } }
   | { tag: "located"; value: {
       description: string; // what to find; no target entity or destination must already exist
-      searchAreaId: string; // authorized, bounded search area represented in the world
+      searchArea: PlaceTarget; // where the object is sought; may begin as an unresolved place description
       maxAgeMs: number; // positive maximum acquisition age when the finding is accepted
       review: "world_master"; // explicit acceptance policy; a detector label cannot approve its own match
     } }
   | { tag: "inspected"; value: {
-      regionId: string; // resolve the named region and its inspection extent before activation
+      region: PlaceTarget; // what to inspect; discovery may establish identity and extent during the mission
       question: string; // obstruction question for this region, not a navigation command
       maxAgeMs: number; // positive acquisition-age limit at review
       review: "world_master"; // review evidence and coverage; unknown is not a completed inspection
@@ -52,19 +62,22 @@ interface Mission {
   "mission-finding": `type MissionFinding =
   | { tag: "located"; value: {
       entityId: string; // discovered candidate accepted as the requested object during review
-      observationIds: readonly string[]; // nonempty retained evidence of identity and last-seen location
+      searchAreaId: string; // discovered place matching searchArea; not required at mission creation
+      observationIds: readonly string[]; // nonempty evidence of place identity, object match and location within it
       description: string; // human-readable location; coordinates/time come from cited evidence
     } }
   | { tag: "inspected"; value: {
-      regionId: string; // must match the objective's resolved inspection region
+      regionId: string; // discovered place matching region, or the exact ID when the target was already bound
       conclusion: "obstructed" | "clear" | "unknown"; // a finding, not navigation clearance
       obstructionEntityIds: readonly string[]; // evidenced obstructions; nonempty for obstructed
-      observationIds: readonly string[]; // nonempty retained observations covering the reported extent
+      observationIds: readonly string[]; // nonempty retained evidence of place identity and reported inspection extent
       description: string; // what was inspected, what was found and any visibility limits
     } };
 // Agents draft findings in Eve; drafts are not authoritative world facts or objective progress.
 // For these reviewed criteria, only an authenticated World Master can accept a finding.
-// The reducer checks criterion/tag, references, scope, freshness and readiness; review supplies judgment.
+// The reducer checks criterion/tag, references, authority, freshness and readiness; review supplies judgment.
+// An entity PlaceTarget requires the same ID. A description requires reviewed evidence of its referent.
+// Unresolved or ambiguous places cannot complete an objective; ask for clarification when evidence cannot decide.
 // Located requires an evidenced match and location within the search area; not-found is not success.
 // Obstructed requires an evidenced obstruction in the region. Clear requires whole-region coverage and no obstruction IDs.
 // Unknown or insufficient coverage cannot complete inspection. Review never invents sensor evidence.
@@ -104,7 +117,7 @@ export const missionLogCode = `interface MissionLog {
 // The shared Unit reservation prevents conflicting physical work across the entire log.`;
 
 export const missionsContractCode = `interface Missions {
-  createMission(input: { id: string; spec: MissionSpec }): Promise<void>; // World Master only; validate description/objectives, bound references/scopes and deadline; activate + audit
+  createMission(input: { id: string; spec: MissionSpec }): Promise<void>; // World Master only; validate objectives, known references, nonempty place descriptions and deadline; activate + audit
   readMissionLog(input: { agentId: string }): Promise<MissionLog>; // own agent or authorized World Master; projected from assignments, missions and progress
   recordObjectiveProgress(input: { missionId: string; objectiveId: string; evidence: MissionEvidence }): Promise<void>; // validate proof/readiness and criterion-specific authority; atomically record progress + audit and request closure if required objectives complete
   cancelMission(input: { missionId: string; expectedRevision: bigint }): Promise<void>; // record cancellation, block new work and reconcile linked executions

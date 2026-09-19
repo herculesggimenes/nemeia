@@ -168,6 +168,16 @@ test("architecture documents durable local knowledge, automatic awareness and re
   for (const text of ["Find the blue backpack", "Inspect the passage", "satisfies MissionFinding", "satisfies ApproachRequest", "World Master reviews", "obstructed", "obs-2"]) assert.ok(flow.includes(text), text);
   assert.doesNotMatch(flow,/Acquire a fresh semantic observation|Acquire a fresh local geometry measurement/);
   assert.ok(page.includes('id="object-mission-finding"'));
+  assert.ok(page.includes('id="object-mission-place"'));
+  assert.ok(page.includes('id="flow-discovery"'));
+  assert.match(v0FlowCode.mission, /searchArea: \{ tag: "description", value: \{ text: "the living area" \} \}/);
+  assert.match(v0FlowCode.mission, /region: \{ tag: "description", value: \{ text: "the passage to the kitchen" \} \}/);
+  assert.doesNotMatch(v0FlowCode.mission, /searchAreaId:|regionId:|entityId:/);
+  assert.match(v0FlowCode.navigation, /targetId: "opening-1"/);
+  assert.match(v0FlowCode.discovery, /entityId: "opening-1"/);
+  assert.match(v0FlowCode.findings, /searchAreaId: "space-1"/);
+  assert.match(v0FlowCode.findings, /regionId: "passage-1"/);
+  assert.doesNotMatch(flow, /regions are already named|resolve them before accepting|targetId: &quot;kitchen-doorway&quot;/);
   assert.doesNotMatch(page,/local_map_checkpoint|minNewObservations|spec\.goal|goal:|creditObjective|id="table-mission_credit"/);
   assert.doesNotMatch(flow,/fromAgentId|toAgentId|analystPrincipal|readScope:/);
   const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];

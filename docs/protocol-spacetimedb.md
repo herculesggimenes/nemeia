@@ -56,10 +56,11 @@ authorized projection; prompt omission never deletes durable knowledge.
 
 World persistence and restart recovery are platform responsibilities, not mission
 objectives. The walkthrough assigns one agent two missions: find a blue backpack
-in a bounded living area and inspect the kitchen passage for obstructions. A
-useful viewpoint supports both investigations. The backpack need not exist in
-the world before the search; the search area and inspection region must be
-resolved. Shared observations support independently reviewed findings. An
+in the living area and inspect the kitchen passage for obstructions. Neither
+place nor the backpack needs a known entity or location at assignment. The
+mission keeps place descriptions; discovery is part of the work. A measured
+local opening can provide a useful viewpoint before its destination is identified.
+Shared observations support independently reviewed place and object findings. An
 obstructed passage is a valid inspection result, not a navigation clearance.
 Restart recovery is a platform property, independent of mission completion.
 
@@ -247,9 +248,15 @@ A mission is one accepted, immutable specification plus a durable lifecycle.
 briefing. `objectives[]` defines the measurable conditions.
 Description is useful reasoning context, not executable completion logic.
 Keep the bound specification inline in `mission`; an optional template pin is
-authoring provenance, not a mutable lookup. Resolve bound targets and region
-extents before creation. A search binds a description and bounded area rather
-than an entity that has not yet been discovered. The owner records the creating
+authoring provenance, not a mutable lookup. `PlaceTarget` is either a known
+entity reference or a description whose referent may be unknown. Validate known
+IDs, but allow described places to remain unresolved at creation and assignment.
+Observation can reveal candidate places, their geometry and connections without
+proving their names. Completion requires evidence of the intended place and
+reported extent; ambiguity calls for further observation or clarification.
+Accepted findings retain discovered place IDs without rewriting the specification.
+Mission wording does not grant motion permission or define a safety boundary.
+The owner records the creating
 World Master's identity; it does not lock the mission to one agent. World Masters
 create/cancel and assign participants; active assigned agents may submit proof.
 Subscription access alone grants neither participation nor Unit authority.
@@ -300,15 +307,17 @@ The contract defines criteria with distinct evidence requirements:
   standoff, using an eligible assigned Unit selected by an agent. Verify the request's mission/objective link, admission after objective
   readiness, successful measured completion and the pinned effective policy.
   A sent command, model answer or unlinked standalone action is not credit.
-- `located`: find the described object within a resolved search area. The
-  finding identifies a discovered entity and cites retained observations of
-  its identity and last-seen location. The explicit `world_master` review policy
+- `located`: find the described object in the requested `PlaceTarget`. The
+  finding identifies the discovered object and `searchAreaId`, citing retained
+  observations of place identity, object identity and location within that place.
+  The explicit `world_master` review policy
   requires authenticated acceptance; a detector label cannot approve its own
   match. Not-found-yet is not success. Exhausting a search requires a separate,
   bounded coverage criterion rather than counting negative frames.
-- `inspected`: answer the specified obstruction question for a resolved region.
-  A typed finding reports `obstructed`, `clear` or `unknown`, with observations
-  and any obstruction entity IDs. Under `world_master` review, an evidenced
+- `inspected`: discover and inspect the requested `PlaceTarget`. A typed finding
+  names the discovered `regionId` and reports `obstructed`, `clear` or `unknown`,
+  with observations of place identity, inspection extent and any obstruction
+  entity IDs. Under `world_master` review, an evidenced
   obstruction can complete the objective. Clear requires evidence covering the
   entire defined region; unknown or insufficient visibility cannot complete it.
   Inspection findings do not certify traversability for any particular Unit.
@@ -316,8 +325,10 @@ The contract defines criteria with distinct evidence requirements:
 Agents draft `MissionFinding` results through Eve. Drafts are neither authoritative
 world state nor objective progress. For the reviewed criteria, only a World
 Master may submit acceptance through `recordObjectiveProgress`; reducers validate
-the criterion/finding tag, referenced evidence, acquisition age, readiness, access
-and region scope. Review supplies the identity or coverage judgment that the
+the criterion/finding tag, referenced evidence, acquisition age, readiness and access.
+Known-entity targets require the same ID. Described targets require reviewed
+evidence of the intended place; unresolved or ambiguous candidates cannot complete
+an objective. Review supplies the place, object-identity or coverage judgment that the
 deterministic reference checks cannot establish. No inference runs in a reducer.
 Store the accepted finding inline in the progress evidence and the authenticated
 reviewer identity in audit. A model cannot gain review authority by echoing a role
@@ -375,9 +386,12 @@ Action requests pin mission ID, objective ID, mission revision and Unit assignme
 revision. Admission and claim verify the current caller role, unpaused agent,
 participation, current unexpired grant for the action, active mission, deadline,
 ready objective, evidence freshness and target version. An `approached` objective
-requires its exact target and standoff. For a search or inspection, the approach
-target must be in the authorized investigation area or a verified adjacent
-viewpoint; reject unrelated motion. Arrival supports investigation but does not
+requires its exact target and standoff. Search and inspection may need local
+investigation before the requested place is identified. A motion target must be
+measured, with a qualified local route inside independently authorized exploration
+limits. A place description or candidate label never grants access or makes
+unknown space safe. Without that authority or local capability, observe from the
+current position or seek assistance. Arrival supports investigation but does not
 complete `located` or `inspected`. Reject a second
 nonterminal attempt for that objective. MissionSpec has no Unit list, speed cap
 or motor duration. Pin installed execution policy in the accepted row; local
