@@ -17,6 +17,67 @@ specification only; the channel, sandbox and backend implementation remain work
 for a later phase. Integration details were reviewed against Eve 0.63.0 bundled
 documentation; Eve is in preview and must be pinned and qualified.
 
+## V0: durable world state for one agent
+
+The release gate is one logical agent accumulating and recovering a progressive
+local map through one Unit. World Master creates a mission, selects the agent,
+and grants Unit authority separately. A perfect reconstruction, motion execution,
+another Unit, cross-Unit calibration and automatic map fusion are not required.
+
+WorldView is a read projection, not another database. Persist entity identities,
+source-local tracks, independently timed facets, retained observations, mission
+progress and local-map checkpoint heads outside Eve history. Missing depth stays
+unknown. Leaving the current view does not delete an entity or prove absence.
+The same source acquisition cannot be counted twice through retries or multiple
+model outputs. New evidence may refine a known entity only after validated
+association, never by matching labels alone.
+
+The selected schema plan adds `spatial_frame`, `local_map` and `map_revision`.
+Pose and geometry are keyed by entity plus frame, with one owning projection
+pipeline per facet/frame in v0. Remove the mandatory world-wide frame from
+`world_config`. Reset origins receive new immutable frame IDs; historical
+coordinates must not silently change meaning. Exact calibration/transform
+provenance belongs with observations. Image-only evidence remains useful before
+metric mapping is possible.
+
+A local map retains current knowledge plus immutable checkpoint manifests.
+Each manifest records its root frame, revision and parent, complete referenced
+spatial chunks, exact input evidence coverage and optional native mapper export.
+Large data stays in immutable resource storage. The trusted mapper/storage
+boundary verifies retained bytes before an atomic compare-and-set advances
+`local_map` head, inserts `map_revision` and records audit. An identical manifest
+retry resolves to its existing revision. Storage IO and SLAM stay outside reducers.
+Retention must preserve the reference closure of supported checkpoints and
+mission proofs; an audit log alone cannot reconstruct the map.
+
+After restart, recover the last committed checkpoint and reconcile newer retained
+observations against its input coverage. Restoring map bytes does not establish
+the Unit's current position. Require relocalization before reusing a previous
+frame; otherwise start a new local frame. Eve session reset does not erase map,
+agent, mission, entity or execution identities. Each inference gets a bounded
+authorized projection; prompt omission never deletes durable knowledge.
+
+The planned `local_map_checkpoint` objective requires a positive bounded number
+of distinct qualified source acquisitions after objective readiness, retained in
+a checkpoint of an assigned Unit's local map. It does not certify scene
+completeness. Validator implementation must inspect immutable evidence and
+storage receipts; an agent cannot assert success. Restart recovery remains an
+independent release acceptance test, not a mission success boolean.
+
+Acceptance tests to implement: ingest observations; refine an associated entity;
+retain map chunks and evidence; interrupt before/after head commit; recover the
+last valid head; deduplicate redelivery; reset Eve without losing the world; and
+continue local observation with localization uncertainty explicit. Reject stale
+spatial actions without blocking evidence reading or reporting. These tests are
+specified here, not passed by the website checks.
+
+Sequence: (1) single-agent local durability; (2) additional Units with separate
+views and non-spatial coordination; (3) qualified, versioned frame alignment;
+(4) collaborative mapping only where missions justify it. Frame alignment and
+cross-Unit entity association are separate decisions. Preserve original local
+evidence so reconciliation can be revised later. Do not implement a distributed
+SLAM engine inside the world database.
+
 ## Ownership
 
 One world owns committed state. Perception associates observations with stable
@@ -40,8 +101,8 @@ prevent local stop. No database transaction spans robot IO.
 
 Entity is the common identity for a chair, room, Go2 or vacuum. Unit is the role
 of an entity with controllable capabilities, not a new identity or a hardware
-class hierarchy. An offline Unit remains a Unit but is unavailable. This slice
-specifies one installed action, `approach@1`; other devices need their own typed
+class hierarchy. An offline Unit remains a Unit but is unavailable. The optional
+motion extension specifies `approach@1`; other devices need their own typed
 bindings and validators, not an unvalidated universal command payload.
 
 A World Master is a privileged client role, human-operated or automated, not a
@@ -59,9 +120,10 @@ Multiple agents collaborate on the same mission and objective credit ledger.
 
 Keep three boundaries separate:
 
-- Visibility: the World Master's `agent.readScope` grant; subscriptions narrow
-  interest within it. Participation exposes that mission, its credits and shared
-  execution outcomes, not all world entities. Scope must include needed evidence.
+- Visibility: the World Master's `agent.readScope` grants the world in the
+  single-agent v0 deployment. Automatically derived Unit awareness narrows
+  interest, never permission. Restricted multi-user spatial visibility is later
+  work; a preselected entity list must not hide newly discovered objects.
 - Assignment: one command-owning agent per Unit in `unit_assignment`, with named
   allowed actions, a monotonically increasing revision and optional expiry.
   Observers/advisers may coexist; split capability ownership is deferred.
@@ -276,7 +338,17 @@ authorized views, scheduler and crash/race tests are not implemented here.
 
 ## Client subscriptions
 
-A subscription selects its mission, credits and relevant authorized world changes.
+Subscriptions are transport, not agent-managed configuration. Nemeia derives
+interest from assigned Units, their observations and local maps, mission
+dependencies and pending outcomes. A world-managed `AwarenessPolicy` controls
+batching and an optional radius; `agent_subscription` and `putSubscription` are
+not part of the selected plan. Direct perceptions and unlocated evidence remain
+available without a metric position. Apply radius filtering only where positions
+can be compared reliably. Discovery must not depend on the radius whose spatial
+relationship it is trying to establish. Across unaligned views, distance is
+unknown, not outside the radius. Interest never grants control.
+
+A native subscription delivers relevant authorized world changes.
 An inbox buffers work that needs attention; context is the detached, frozen
 input prepared when the client is ready to decide. These are separate concerns,
 not three world authorities or three required services.
@@ -292,9 +364,9 @@ directly without a durable inbox or reasoning-step lifecycle.
 
 Each logical client keeps independent progress. The Nemeia adapter coalesces
 replaceable entity/component changes, retains must-handle messages/occurrences,
-and evaluates the configured subscription wake/cadence policies. Latest state
+and evaluates world-managed wake/cadence policy. Latest state
 cannot reconstruct an event that happened between steps. A rate cap is not a
-requirement to poll; `maxWaitMs` is a desired batching bound, not guaranteed
+requirement to poll; `maxBatchWaitMs` is a desired batching bound, not guaranteed
 inference latency. Emit bounded useful wakes, never a model turn per sensor frame.
 
 Eve owns the reasoning lifecycle. At its next inference boundary, after any
@@ -430,8 +502,13 @@ Test exporter outage/overload without delaying local stop or reducer calls.
 
 ## Verification scope
 
-The twenty-table SDK schema, cancellation reducer, authorized execution view, design
-interfaces and static flow fixtures are type-checked against 2.10.1. Mission
+The existing twenty-table SDK scaffold, cancellation reducer, authorized execution
+view and older static flow fixtures are type-checked against 2.10.1. The selected
+website plan has twenty-two tables: three local-map/frame records replace the
+per-agent subscription table, with explicit changes to world config and spatial
+component keys. The v0 WorldView, WorldMemory, awareness and checkpoint criterion
+are documentation-only designs that supersede the scaffold where they differ.
+No runtime `.ts` implementation was changed for this planning update. Mission
 validators/lifecycle, World Master operations, assignment/expiry reconciliation,
 message authorization/retention, scheduling, remaining reducers and world views
 are specified, not implemented. The illustrative

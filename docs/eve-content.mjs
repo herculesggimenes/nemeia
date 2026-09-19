@@ -69,11 +69,13 @@ const workspace = {
   "/world/current.json": "Manifest: context ID, freshness, scope, versions and referenced immutable files",
   "/world/contexts/decision-context-1/missions.json": "Authorized missions, objectives, credits and participants",
   "/world/contexts/decision-context-1/entities.json": "Relevant entities and independently timed components",
+  "/world/contexts/decision-context-1/local-maps.json": "Retained checkpoint heads, frame-qualified views, unlocated evidence and current localization status",
   "/world/contexts/decision-context-1/units.json": "Capabilities, assignments, availability and active executions",
   "/world/contexts/decision-context-1/messages.json": "Exact retained messages for this context",
   "/workspace/": "Eve-owned writable notes and scratch work; never authoritative world state",
 };
 // Freeze one bounded context per step. Refresh at a later step, not halfway through its reads.
+// These files can be rebuilt from durable world records. Deleting an Eve session never deletes its local map.
 // Persist context identity outside disposable sandbox files when retries/audit depend on it.
 // Latest state coalesces; must-handle events retain identities and explicit handling outcomes.`;
 

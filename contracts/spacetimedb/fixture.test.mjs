@@ -31,14 +31,12 @@ test("one execution is the request receipt through claim, control and measured c
   assert.ok(succeeded.updatedAt.microsSinceUnixEpoch>finalTarget.observedAt.microsSinceUnixEpoch);
 });
 
-test("each contract and table has an independent disclosure and all columns come from schema",()=>{
+test("each planned contract and table has an independent disclosure",()=>{
   const page=readFileSync(new URL("../../docs/spacetimedb/index.html",import.meta.url),"utf8");
   assert.equal((page.match(/class="contract-item"/g)??[]).length,contractRows.length);
   assert.equal((page.match(/class="schema-item"/g)??[]).length,Object.keys(tableNotes).length);
   for(const [id] of exampleRows) assert.ok(page.includes(`id="flow-${id}"`));
-  const schema=readFileSync(new URL("./schema.ts",import.meta.url),"utf8");
-  const columns=[...schema.matchAll(/^  (\w+): .+, \/\/ .+$/gm)];
-  for(const [,name] of columns) assert.ok(page.includes(`<td>${name}</td>`),name);
+  for(const name of ["rootFrameId","headRevisionId","parentRevision","manifest","awarenessPolicy"]) assert.ok(page.includes(`<td>${name}</td>`),name);
   assert.match(page,/SpacetimeDB 2.10.1/);
   assert.match(page,/not a deployed or integration-tested backend/);
 });
@@ -54,7 +52,7 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/<title>Nemeia · Architecture<\/title>/);
     const opening=page.split('<section class="section" id="ownership"')[0];
     assert.doesNotMatch(opening,/SpacetimeDB|YOLOE|SAM3|Typesafe|Laminar/);
-    assert.match(opening,/<strong>Subscriptions<\/strong>/);
+    assert.match(opening,/<strong>Awareness<\/strong>/);
     assert.doesNotMatch(opening,/<strong>Client context<\/strong>/);
     assert.match(page,/Implementation choices/);
     assert.match(page,/id="clients"/);
@@ -144,13 +142,28 @@ test("shared mission, Unit grant, addressed advice and independent subscription 
 
 test("published design includes roles, authority fences and separate cadences without old Actor vocabulary",()=>{
   const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
-  for(const id of ["unit","agent","world-master","teams","contract-world-masters","contract-coordination","object-unit-agent-view","object-agent-scope","object-agent-runtime","table-agent","table-mission_agent","table-unit_assignment","table-agent_subscription","table-agent_message"]){
+  for(const id of ["unit","agent","world-master","teams","contract-world-masters","contract-coordination","object-unit-agent-view","object-agent-scope","object-agent-runtime","table-agent","table-mission_agent","table-unit_assignment","table-local_map","table-agent_message"]){
     assert.ok(page.includes(`id="${id}"`),id);
   }
   assert.doesNotMatch(page,/actorId|ActorView|robot_control|ClientSteps|owner\/admin|Owner\/admin|mission speed/);
   const agentSource=readFileSync(new URL("../../docs/agent-content.mjs",import.meta.url),"utf8");
   assert.match(agentSource,/read scope ≠ Unit control grant ≠ execution reservation/);
   assert.match(agentSource,/until the local executor confirms safe closure/);
+});
+
+test("v0 documents durable local knowledge, automatic awareness and single-agent recovery",()=>{
+  const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
+  for(const id of ["v0-world","object-local-map","object-world-view","contract-world-memory","table-spatial_frame","table-map_revision","flow-resume"]) assert.ok(page.includes(`id="${id}"`),id);
+  assert.doesNotMatch(page,/putSubscription|id="table-agent_subscription"|world-frame 3D box|Shared frame, e\.g\. map/);
+  const worldView=page.split('id="object-world-view"')[1].split('</details>')[0];
+  assert.match(worldView,/localMaps/); assert.match(worldView,/poses:/);
+  const flow=page.split('id="example"')[1].split('<section class="section" id="tracing"')[0];
+  assert.match(flow,/relocalization_required/);
+  assert.match(flow,/minNewObservations/);
+  assert.doesNotMatch(flow,/fromAgentId|toAgentId|analystPrincipal|readScope:/);
+  const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];
+  assert.doesNotMatch(worldConfig,/<td>frameId<\/td>/);
+  assert.match(worldConfig,/awarenessPolicy/);
 });
 
 test("the mission graph fixture specifies parallel roots and ordered milestones",()=>{
