@@ -6,5 +6,5 @@ const coordination = [
 ];
 
 export function renderAgents({section,proseRow}) {
-  return section("teams","02c","Agents, Units & coordination","V0: World Master creates the mission, assigns one agent and grants one Unit. Multiple agents and coordination remain extensions; systems provide mapping, perception and execution independently.",`<div class="abstraction-list">${coordination.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`);
+  return section("teams","02c","Agents, Units & coordination","V0: one agent coordinates multiple missions through its mission log, with a separate Unit grant. Additional agents remain an extension; systems provide mapping, perception and execution independently.",`<div class="abstraction-list">${coordination.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`);
 }

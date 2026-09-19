@@ -16,7 +16,7 @@ try {
       await page.goto(new URL(route, root).href);
       assert.equal(await page.locator("details[open]").count(), 0);
       assert.equal(await page.locator("button, input, form").count(), 0);
-      for (const id of ["unit", "agent", "world-master", "object-world-view", "object-local-map", "v0-acceptance", "durability-and-recovery", "contract-world-memory", "flow-resume", "table-map_revision", "contract-world-masters", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment"]) {
+      for (const id of ["unit", "agent", "world-master", "object-world-view", "object-local-map", "v0-acceptance", "durability-and-recovery", "contract-world-memory", "flow-resume", "table-map_revision", "contract-world-masters", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment", "object-mission-log", "object-mission-spec", "objective-progress", "table-mission_objective_progress", "flow-mission"]) {
         const summary = page.locator(`#${id} > summary`);
         await summary.focus();
         await page.keyboard.press("Enter");
@@ -45,6 +45,8 @@ try {
         await page.screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-v0-${width}.png`, root)) });
         await page.locator("#object-local-map > summary").click();
         await page.locator("#object-local-map").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-local-map-${width}.png`, root)) });
+        await page.locator("#object-mission-log > summary").click();
+        await page.locator("#object-mission-log").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-mission-log-${width}.png`, root)) });
       }
       console.log(`${route} ${width}px: disclosures, keyboard, syntax rendering, overflow and read-only checks passed`);
       await page.close();

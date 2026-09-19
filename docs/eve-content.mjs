@@ -67,7 +67,7 @@ export default defineSandbox({
 const workspaceCode = `// Proposed per-step projection; world files are views, not a second database.
 const workspace = {
   "/world/current.json": "Manifest: context ID, freshness, scope, versions and referenced immutable files",
-  "/world/contexts/decision-context-1/missions.json": "Authorized missions, objectives, credits and participants",
+  "/world/contexts/decision-context-1/mission-log.json": "Compact MissionLog summary: all assigned missions, descriptions, objectives, progress and outcomes; deeper details through authorized reads",
   "/world/contexts/decision-context-1/entities.json": "Relevant entities and independently timed components",
   "/world/contexts/decision-context-1/local-maps.json": "Retained checkpoint heads, frame-qualified views, unlocated evidence and current localization status",
   "/world/contexts/decision-context-1/units.json": "Capabilities, assignments, availability and active executions",
@@ -82,7 +82,7 @@ const workspace = {
 const commandCode = `// Proposed shell surface; these commands are not implemented or executed by this page.
 const commands = [
   "cat /world/current.json", // inspect the current frozen context manifest
-  "jq '.[] | {id, goal: .spec.goal}' /world/contexts/decision-context-1/missions.json", // inspect only authorized projected content
+  "cat /world/contexts/decision-context-1/mission-log.json", // inspect every assignment before selecting work; fetch detailed MissionViews as needed
   "nemeia action request --file /workspace/approach.json", // parse a typed ApproachRequest; trusted bridge injects caller identity
   "nemeia execution get execution-1", // reconcile the authoritative receipt, including after an ambiguous result
   "nemeia message send --file /workspace/advice.json", // existing AgentCoordination rules, not an Eve-private mission chat

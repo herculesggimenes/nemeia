@@ -20,8 +20,9 @@ documentation; Eve is in preview and must be pinned and qualified.
 ## V0: durable world state for one agent
 
 The release gate is one logical agent accumulating and recovering a progressive
-local map through one Unit. World Master creates a mission, selects the agent,
-and grants Unit authority separately. A perfect reconstruction, motion execution,
+local map through one Unit. World Master creates missions, assigns the agent,
+and grants Unit authority separately. One agent can coordinate multiple missions
+through its mission log. A perfect reconstruction, motion execution,
 another Unit, cross-Unit calibration and automatic map fusion are not required.
 
 WorldView is a read projection, not another database. Persist entity identities,
@@ -57,12 +58,11 @@ frame; otherwise start a new local frame. Eve session reset does not erase map,
 agent, mission, entity or execution identities. Each inference gets a bounded
 authorized projection; prompt omission never deletes durable knowledge.
 
-The planned `local_map_checkpoint` objective requires a positive bounded number
-of distinct qualified source acquisitions after objective readiness, retained in
-a checkpoint of an assigned Unit's local map. It does not certify scene
-completeness. Validator implementation must inspect immutable evidence and
-storage receipts; an agent cannot assert success. Restart recovery remains an
-independent release acceptance test, not a mission success boolean.
+World persistence and restart recovery are platform responsibilities, not mission
+objectives. The walkthrough uses two missions for an already known target: acquire
+a fresh semantic observation and acquire measured local geometry. Their typed
+objectives validate domain evidence; they do not certify complete scene coverage.
+Restart recovery remains an independent release acceptance test.
 
 Acceptance tests to implement: ingest observations; refine an associated entity;
 retain map chunks and evidence; interrupt before/after head commit; recover the
@@ -231,7 +231,7 @@ SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
 do not perform serialization or validate runtime input. Preserve evidence and
 row versions; do not serialize a mutable subscription cache or Map directly.
 
-## Missions and objectives
+## Missions, mission log and objective progress
 
 The reference patterns come from open-source MMO server implementations, not
 claims about the commercial games' internal systems. AzerothCore separates
@@ -241,12 +241,15 @@ claims about the commercial games' internal systems. AzerothCore separates
 typed goals, counts, optional activities and ordered steps.
 [TrinityCore QuestObjective](https://github.com/TrinityCore/TrinityCore/blob/master/src/server/game/Quests/QuestDef.h)
 has distinct identity, type, target and amount fields. We adopt the separation
-of definition, progress and objective credit, not their game-specific schemas.
+of description, objectives, quest log and objective progress, not their game-specific schemas.
 This is a Nemeia design, not an established universal mission protocol.
 
 ### Definition and identity
 
 A mission is one accepted, immutable specification plus a durable lifecycle.
+`MissionSpec.description` explains the intended outcome and context, like a quest
+briefing; it replaces `goal`. `objectives[]` defines the measurable conditions.
+Description is useful reasoning context, not executable completion logic.
 Keep the bound specification inline in `mission`; an optional template pin is
 authoring provenance, not a mutable lookup. Resolve target identities and
 authorize the specification before creation. The owner records the creating
@@ -262,13 +265,34 @@ or replacing a mission requires a new ID. Plans may adapt without changing the
 agreed outcome. One mission can span clients and executions; there is no separate
 Run, Plan or Task record. A stopped client does not erase or cancel the mission.
 
-### Objectives and credit
+### Mission log and coordination
+
+One agent can have multiple assigned missions in v0. `MissionLog` is a read
+projection over `mission_agent`, `mission` and `mission_objective_progress`, not
+a new table, an audit log or an Eve conversation. It contains the agent's
+authorized assignments and retained outcomes. Later teams may share progress on
+one mission; there is no duplicate mission instance per participant.
+
+The World Master defines and assigns work. The agent coordinates its log through
+one reasoning loop, selecting work across missions according to deadlines,
+readiness, available evidence and Unit availability. Focus is not a mission
+lifecycle state: other missions stay active, their deadlines continue and
+independent evidence may advance them. Changing focus does not cancel physical
+work. A Unit reservation prevents conflicts across the entire log.
+
+Before each step, prepare a compact summary of every assignment, relevant changes
+and outstanding work; load deeper authorized details as needed. Do not hide an
+assignment simply because its target is outside a Unit's awareness radius. If no
+useful work is possible, retain change/deadline subscriptions without repeatedly
+invoking inference. Eve owns the runtime loop; the log introduces no scheduler.
+
+### Objectives and objective progress
 
 An objective has an ID, explanatory text, all-of dependencies, an optional flag
 and a typed criterion. Validate 1–32 nodes, unique IDs, existing references,
 acyclic dependencies and at least one required objective. Optional objectives
 cannot gate required ones. Independent objectives may progress in parallel.
-The first slice has two criteria:
+The planning contract defines two criteria; only observation is needed for v0:
 
 - `observed`: acquire a geometry or semantic facet for an already bound entity.
   Load the retained observation and its association. The required facet must
@@ -285,15 +309,25 @@ These are latched milestones, not perpetual conditions. Old proof cannot satisfy
 a newly unlocked objective; repeated frames cannot stand in for distinct objects.
 Live physical freshness is still rechecked for every action.
 
-`mission_credit` stores one immutable proof per `[missionId, objectiveId]`.
+`mission_objective_progress` stores one immutable completion proof per
+`[missionId, objectiveId]`. Pending entries in `ObjectiveProgress` derive from the
+specification and do not need persisted rows. There is no caller-writable status
+flag, percentage or second progress counter.
 Check World Master or active participant authority and evidence access; load authoritative domain records instead
 of accepting caller-provided progress. The first valid proof wins. Redelivery
 returns the existing credit without replacing evidence. Validate and record the
 credit, audit event and any transition to closing in one transaction. Retain
 proof records for the supported mission audit lifetime; a missing reference
-cannot grant new credit. Derive ready/completed IDs from the specification and
-credits, with no additional mutable progress table. A client inbox acknowledgement
-and a mission objective credit are different operations.
+cannot advance progress. `MissionView.objectiveProgress` includes every objective
+as pending or completed, with evidence for completed ones. Derive
+`readyObjectiveIds` from dependencies, lifecycle and deadline. Readiness does not
+imply that a Unit or a safe action is available. One observation may advance
+multiple objectives only after each independently validates it. A client inbox
+acknowledgement and objective progress are different operations.
+
+`Missions.readMissionLog` exposes the authorized projection;
+`Missions.recordObjectiveProgress` accepts evidence references, not asserted
+progress. Creation and assignment remain separate World Master operations.
 
 ### Lifecycle and execution
 
@@ -328,13 +362,14 @@ omit agent assignment and, for standalone actions, mission linkage. Agents canno
 strip either pin to bypass cancellation or revocation. Entity removal must
 reject references from active/closing missions as well as active executions.
 
-Goal progress uses mission and credit tables; teamwork adds participation and
+Objective progress uses mission and evidence-backed progress tables; teamwork adds participation and
 assignment records without per-agent mission copies. Counted objectives need an
 explicit distinct-item identity and deduplication policy before addition.
 Dynamic branches, nested missions, mission pause/resume, rewards,
 reset calendars and automatic mission chains are intentionally deferred.
-The typed schema and fixtures specify this design; mission reducers, validators,
-authorized views, scheduler and crash/race tests are not implemented here.
+The website defines the selected planning types; the checked SDK scaffold still
+uses the older names. Mission reducers, validators, authorized views and
+crash/race tests are not implemented here.
 
 ## Client subscriptions
 
@@ -506,7 +541,9 @@ The existing twenty-table SDK scaffold, cancellation reducer, authorized executi
 view and older static flow fixtures are type-checked against 2.10.1. The selected
 website plan has twenty-two tables: three local-map/frame records replace the
 per-agent subscription table, with explicit changes to world config and spatial
-component keys. The v0 WorldView, WorldMemory, awareness and checkpoint criterion
+component keys. It renames the mission proof table to `mission_objective_progress`,
+uses `MissionSpec.description`, and adds derived `MissionLog` and `ObjectiveProgress`
+views without adding storage tables. The v0 WorldView, WorldMemory and awareness
 are documentation-only designs that supersede the scaffold where they differ.
 No runtime `.ts` implementation was changed for this planning update. Mission
 validators/lifecycle, World Master operations, assignment/expiry reconciliation,

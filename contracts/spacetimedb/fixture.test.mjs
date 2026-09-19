@@ -6,6 +6,10 @@ import * as example from "./example.ts";
 import { correlationExample, laminarInitialization, decisionSpanOptions, metadataSpanOptions } from "./tracing.ts";
 import { contractRows, tableNotes, exampleRows } from "../../docs/spacetimedb-content.mjs";
 import { inspectionSpec } from "./missions.ts";
+import ts from "../../frontend/node_modules/typescript/lib/typescript.js";
+import { fileURLToPath } from "node:url";
+import { missionCode, missionViewCode, missionLogCode, missionsContractCode } from "../../docs/mission-model-content.mjs";
+import { v0FlowCode } from "../../docs/world-view-content.mjs";
 
 test("sensor facets retain independent acquisition times and complete measured geometry",()=>{
   const { input, camera, lidar, geometryRow }=example;
@@ -68,7 +72,7 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/id="missions"/);
     assert.match(page,/id="contract-missions"/);
     assert.match(page,/id="object-mission-view"/);
-    assert.match(page,/id="table-mission_credit"/);
+    assert.match(page,/id="table-mission_objective_progress"/);
     assert.match(page,/SAM3/); assert.match(page,/Typesafe/); assert.match(page,/LLMs/);
     assert.match(page,/YOLOE/); assert.match(page,/Laminar/); assert.match(page,/OpenTelemetry/);
     assert.match(page,/id="tracing"/); assert.match(page,/privacy boundary/);
@@ -159,11 +163,41 @@ test("v0 documents durable local knowledge, automatic awareness and single-agent
   assert.match(worldView,/localMaps/); assert.match(worldView,/poses:/);
   const flow=page.split('id="example"')[1].split('<section class="section" id="tracing"')[0];
   assert.match(flow,/relocalization_required/);
-  assert.match(flow,/minNewObservations/);
+  assert.match(flow,/mission-2/);
+  assert.match(flow,/satisfies MissionSpec/);
+  assert.match(flow,/recordObjectiveProgress/);
+  assert.doesNotMatch(page,/local_map_checkpoint|minNewObservations|spec\.goal|goal:|creditObjective|id="table-mission_credit"/);
   assert.doesNotMatch(flow,/fromAgentId|toAgentId|analystPrincipal|readScope:/);
   const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];
   assert.doesNotMatch(worldConfig,/<td>frameId<\/td>/);
   assert.match(worldConfig,/awarenessPolicy/);
+});
+
+test("mission planning examples use the declared description/objectives/log/progress contracts",()=>{
+  const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
+  for(const id of ["description","mission-log","objective-progress","cross-mission-coordination","object-mission-log"]) assert.ok(page.includes(`id="${id}"`),id);
+  assert.ok(page.includes("one logical agent can have several assigned missions"));
+  assert.doesNotMatch(page,/id="table-mission_log"/); // the log is a view, not duplicated storage
+  const path=fileURLToPath(new URL("./mission-plan-check.ts",import.meta.url));
+  const source=[
+    'import { Identity, Timestamp, type Infer } from "spacetimedb";',
+    'import { PackagePin as PackagePinBuilder } from "./values.ts";',
+    'type PackagePin = Infer<typeof PackagePinBuilder>;',
+    'import type { Row, WorldMasters } from "./contracts.ts";',
+    ...Object.values(missionCode), missionViewCode, missionLogCode, missionsContractCode,
+    v0FlowCode.mission, v0FlowCode.team, v0FlowCode["mission-finished"],
+  ].join("\n\n");
+  const configPath=fileURLToPath(new URL("./tsconfig.json",import.meta.url));
+  const config=ts.readConfigFile(configPath,ts.sys.readFile);
+  const {options}=ts.parseJsonConfigFileContent(config.config,ts.sys,fileURLToPath(new URL("./",import.meta.url)));
+  const host=ts.createCompilerHost(options);
+  const read=host.readFile;
+  host.readFile=file=>file===path?source:read(file);
+  const exists=host.fileExists;
+  host.fileExists=file=>file===path||exists(file);
+  const program=ts.createProgram([path],options,host);
+  const errors=ts.getPreEmitDiagnostics(program);
+  assert.equal(errors.length,0,ts.formatDiagnosticsWithColorAndContext(errors,{getCurrentDirectory:host.getCurrentDirectory,getCanonicalFileName:file=>file,getNewLine:()=>"\n"}));
 });
 
 test("the mission graph fixture specifies parallel roots and ordered milestones",()=>{
