@@ -1,6 +1,6 @@
 # Nemeia architecture and protocol
 
-Selected design, 2026-09-19. Nemeia defines perception, a shared world,
+Nemeia defines perception, a shared world,
 client subscriptions, decisions and bounded execution. Its foundations
 are world, entity, component, relationship, affordance, action, system and event.
 Mission is a first-class domain abstraction built on those foundations: durable
@@ -9,21 +9,17 @@ World Masters assign missions and authority. Agents collaborate on outcomes and
 coordinate Units: entities with installed controllable capabilities. Systems
 handle perception, classification, pathfinding and local execution.
 SpacetimeDB is the selected world-storage and synchronization implementation,
-not a foundational concept. This document does not deploy a database or control
-a robot. Module examples target SpacetimeDB 2.10.1; type checking is not a server
-integration or hardware test.
-Eve is the selected agent runtime. This planning update changes the website and
-specification only; the channel, sandbox and backend implementation remain work
-for a later phase. Integration details were reviewed against Eve 0.63.0 bundled
-documentation; Eve is in preview and must be pinned and qualified.
+not a foundational concept. Eve provides the agent runtime; a world channel
+adapter and scoped just-bash sandbox connect it to Nemeia's domain operations.
+This is an architecture specification, not a deployment-status report.
 
-## V0: durable world state for one agent
+## World memory and local maps
 
-The release gate is one logical agent accumulating and recovering a progressive
-local map through one Unit. World Master creates missions, assigns the agent,
-and grants Unit authority separately. One agent can coordinate multiple missions
-through its mission log. A perfect reconstruction, motion execution,
-another Unit, cross-Unit calibration and automatic map fusion are not required.
+Each Unit contributes observations to durable world knowledge and a progressive
+local map. World Masters create missions, assign agents and grant Unit authority
+separately. Each agent coordinates its assignments through a mission log.
+Local knowledge remains useful without a complete reconstruction, a global
+coordinate frame or automatic map fusion.
 
 WorldView is a read projection, not another database. Persist entity identities,
 source-local tracks, independently timed facets, retained observations, mission
@@ -33,10 +29,10 @@ The same source acquisition cannot be counted twice through retries or multiple
 model outputs. New evidence may refine a known entity only after validated
 association, never by matching labels alone.
 
-The selected schema plan adds `spatial_frame`, `local_map` and `map_revision`.
+`spatial_frame`, `local_map` and `map_revision` retain spatial context.
 Pose and geometry are keyed by entity plus frame, with one owning projection
-pipeline per facet/frame in v0. Remove the mandatory world-wide frame from
-`world_config`. Reset origins receive new immutable frame IDs; historical
+pipeline per facet/frame. `world_config` does not require a world-wide coordinate
+frame. Reset origins receive new immutable frame IDs; historical
 coordinates must not silently change meaning. Exact calibration/transform
 provenance belongs with observations. Image-only evidence remains useful before
 metric mapping is possible.
@@ -62,21 +58,19 @@ World persistence and restart recovery are platform responsibilities, not missio
 objectives. The walkthrough uses two missions for an already known target: acquire
 a fresh semantic observation and acquire measured local geometry. Their typed
 objectives validate domain evidence; they do not certify complete scene coverage.
-Restart recovery remains an independent release acceptance test.
+Restart recovery is a platform property, independent of mission completion.
 
-Acceptance tests to implement: ingest observations; refine an associated entity;
+Recovery validation covers: ingest observations; refine an associated entity;
 retain map chunks and evidence; interrupt before/after head commit; recover the
 last valid head; deduplicate redelivery; reset Eve without losing the world; and
 continue local observation with localization uncertainty explicit. Reject stale
-spatial actions without blocking evidence reading or reporting. These tests are
-specified here, not passed by the website checks.
+spatial actions without blocking evidence reading or reporting.
 
-Sequence: (1) single-agent local durability; (2) additional Units with separate
-views and non-spatial coordination; (3) qualified, versioned frame alignment;
-(4) collaborative mapping only where missions justify it. Frame alignment and
-cross-Unit entity association are separate decisions. Preserve original local
-evidence so reconciliation can be revised later. Do not implement a distributed
-SLAM engine inside the world database.
+Units retain independent spatial views and can share non-spatial findings without
+alignment. Cross-Unit spatial work requires qualified frame relationships or
+independent reacquisition. Frame alignment and entity association are separate
+decisions. Preserve original local evidence when reconciling maps. Collaborative
+mapping runs outside database transactions.
 
 ## Ownership
 
@@ -120,13 +114,13 @@ Multiple agents collaborate on the same mission and objective credit ledger.
 
 Keep three boundaries separate:
 
-- Visibility: the World Master's `agent.readScope` grants the world in the
-  single-agent v0 deployment. Automatically derived Unit awareness narrows
-  interest, never permission. Restricted multi-user spatial visibility is later
-  work; a preselected entity list must not hide newly discovered objects.
+- Visibility: the World Master's `agent.readScope` grants read access to a world.
+  Automatically derived Unit awareness narrows interest, never permission.
+  Radius filtering does not provide restricted multi-user access control;
+  a preselected entity list must not hide newly discovered objects.
 - Assignment: one command-owning agent per Unit in `unit_assignment`, with named
   allowed actions, a monotonically increasing revision and optional expiry.
-  Observers/advisers may coexist; split capability ownership is deferred.
+  Observers/advisers may coexist; the Unit grant has one command owner.
 - Reservation: `unit_control.activeExecutionId` records the physical attempt
   currently occupying the Unit. Assignment alone never makes a busy Unit free.
 
@@ -221,10 +215,9 @@ strict current geometry pins; admission and claim repeat their checks. A decisio
 never calls an actuator directly. Reducers independently repeat current action
 requirements; model confidence never overrides them.
 
-For the first slice, decision records belong in the worker's bounded audit
+Decision records belong in the worker's bounded audit
 store; they are not world components. Retain their exact input context or a
-durable reference when audit is required. No live provider connection or
-database deployment is included here.
+durable reference when audit is required.
 
 `contracts/spacetimedb/intelligence.ts` defines the detached JSON projection of
 SDK rows: decimal strings for u64 and UTC strings for Timestamp. These types
@@ -248,7 +241,7 @@ This is a Nemeia design, not an established universal mission protocol.
 
 A mission is one accepted, immutable specification plus a durable lifecycle.
 `MissionSpec.description` explains the intended outcome and context, like a quest
-briefing; it replaces `goal`. `objectives[]` defines the measurable conditions.
+briefing. `objectives[]` defines the measurable conditions.
 Description is useful reasoning context, not executable completion logic.
 Keep the bound specification inline in `mission`; an optional template pin is
 authoring provenance, not a mutable lookup. Resolve target identities and
@@ -257,7 +250,7 @@ World Master's identity; it does not lock the mission to one agent. World Master
 create/cancel and assign participants; active assigned agents may submit proof.
 Subscription access alone grants neither participation nor Unit authority.
 Dedicated views enforce these boundaries, with scoped controller access. Those
-views remain unimplemented.
+views authorize each read independently of client-side interest filters.
 
 Creation with the same owner, ID and specification returns the existing instance;
 a changed body conflicts. The specification never changes in place. Repeating
@@ -267,10 +260,10 @@ Run, Plan or Task record. A stopped client does not erase or cancel the mission.
 
 ### Mission log and coordination
 
-One agent can have multiple assigned missions in v0. `MissionLog` is a read
+One agent can have multiple assigned missions. `MissionLog` is a read
 projection over `mission_agent`, `mission` and `mission_objective_progress`, not
 a new table, an audit log or an Eve conversation. It contains the agent's
-authorized assignments and retained outcomes. Later teams may share progress on
+authorized assignments and retained outcomes. Teams may share progress on
 one mission; there is no duplicate mission instance per participant.
 
 The World Master defines and assigns work. The agent coordinates its log through
@@ -292,7 +285,7 @@ An objective has an ID, explanatory text, all-of dependencies, an optional flag
 and a typed criterion. Validate 1–32 nodes, unique IDs, existing references,
 acyclic dependencies and at least one required objective. Optional objectives
 cannot gate required ones. Independent objectives may progress in parallel.
-The planning contract defines two criteria; only observation is needed for v0:
+The contract defines two criteria with distinct evidence requirements:
 
 - `observed`: acquire a geometry or semantic facet for an already bound entity.
   Load the retained observation and its association. The required facet must
@@ -365,11 +358,8 @@ reject references from active/closing missions as well as active executions.
 Objective progress uses mission and evidence-backed progress tables; teamwork adds participation and
 assignment records without per-agent mission copies. Counted objectives need an
 explicit distinct-item identity and deduplication policy before addition.
-Dynamic branches, nested missions, mission pause/resume, rewards,
-reset calendars and automatic mission chains are intentionally deferred.
-The website defines the selected planning types; the checked SDK scaffold still
-uses the older names. Mission reducers, validators, authorized views and
-crash/race tests are not implemented here.
+The mission contract does not include dynamic branches, nested missions,
+mission pause/resume, rewards, reset calendars or automatic mission chains.
 
 ## Client subscriptions
 
@@ -488,9 +478,6 @@ exactly once. Eve subagents are reasoning helpers, not automatically new Nemeia
 agents with mission membership or Unit grants. Perception, focused Typesafe
 workers and deterministic control need not run through Eve.
 
-The website shows API sketches, not a deployed integration. Existing runtime
-draft declarations are not being migrated in this planning phase.
-
 References: [custom channels](https://eve.dev/docs/channels/custom),
 [sandboxes](https://eve.dev/docs/sandbox),
 [durability](https://eve.dev/docs/concepts/execution-model-and-durability),
@@ -535,23 +522,18 @@ an installed SDK or a complete privacy filter. Before enabling export, test secr
 in inputs, outputs, errors, URLs and nested spans; verify the outbound payload.
 Test exporter outage/overload without delaying local stop or reducer calls.
 
-## Verification scope
+## Verification requirements
 
-The existing twenty-table SDK scaffold, cancellation reducer, authorized execution
-view and older static flow fixtures are type-checked against 2.10.1. The selected
-website plan has twenty-two tables: three local-map/frame records replace the
-per-agent subscription table, with explicit changes to world config and spatial
-component keys. It renames the mission proof table to `mission_objective_progress`,
-uses `MissionSpec.description`, and adds derived `MissionLog` and `ObjectiveProgress`
-views without adding storage tables. The v0 WorldView, WorldMemory and awareness
-are documentation-only designs that supersede the scaffold where they differ.
-No runtime `.ts` implementation was changed for this planning update. Mission
-validators/lifecycle, World Master operations, assignment/expiry reconciliation,
-message authorization/retention, scheduling, remaining reducers and world views
-are specified, not implemented. The illustrative
-generated-client fragment requires bindings from the completed module.
-Server integration, auth revocation, crash/retry tests, model evaluation and
-hardware qualification remain implementation work.
+Validate the contracts through server integration, authorization and revocation
+tests, crash/retry recovery, evidence-age checks and controller safety tests.
+Type-checked examples do not establish deployment readiness. Generated client
+bindings must match the installed module. Pin and qualify runtime, model and
+database dependencies for the deployment.
+
+Test mission lifecycle and objective validators, assignment/expiry reconciliation,
+message authorization and retention, bounded context preparation, map recovery
+and execution receipts. Qualify model decisions and hardware behavior separately
+from storage and subscription correctness.
 
 ## Platform references
 

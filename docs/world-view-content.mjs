@@ -1,26 +1,26 @@
 // Website specification only. No worker, reducer, driver or SDK schema imports this file.
 import { missionViewCode } from "./mission-model-content.mjs";
 export const scopeCode = `interface ReadScope {
-  worldId: string; // World Master grants access to this world in the single-agent v0 deployment
+  worldId: string; // World Master grants read access to the named world
 } // Interest is derived automatically; no entity allowlist or agent-managed subscription.
 interface AwarenessPolicy {
   radiusM?: number; // optional world-managed radius in a usable metric frame; not sensor coverage or safety clearance
   minIntervalMs: number; // cap ordinary inference wakes; not a polling requirement
   maxBatchWaitMs: number; // desired batching bound, subject to compute budget
 } // Direct Unit observations, mission dependencies and pending outcomes do not depend on a radius.
-// World-level visibility is deliberately broad for v0. Restricted multi-user spatial access is later work.
+// This scope grants world-level visibility; radius filtering is interest selection, not access control.
 // Grants determine permission. Automatic Unit awareness selects relevant content within that permission.`;
 
 export const objectCode = {
   "mission-view": missionViewCode,
-  "world-view": `// Selected planning shape; SDK/JSON adapters are implementation work.
+  "world-view": `// Authorized read projection over durable world records.
 interface WorldView {
   worldId: string; // shared durable domain, not a promise of one coordinate system
   entities: ReadonlyMap<string, EntityView>; // authorized identities and current evidence-backed facets
-  localMaps: readonly LocalMapView[]; // one progressive local map in v0; separate maps remain valid later
+  localMaps: readonly LocalMapView[]; // independent progressive maps; alignment is not assumed
   units: ReadonlyMap<string, UnitView>; // controllable entities, with the same entity IDs
   missions: ReadonlyMap<string, MissionView>; // intent and verified progress survive an Eve session reset
-  agents: ReadonlyMap<string, AgentView>; // one assigned reasoning agent in the v0 example
+  agents: ReadonlyMap<string, AgentView>; // logical decision-makers and their authorized assignments
   relationships: readonly Row<"relation">[]; // configured or evidenced links; not automatic spatial alignment
   executions: readonly Row<"execution">[]; // durable intent and receipts, when an action is used
   actions: readonly Row<"actionBinding">[]; // installed capabilities; unavailable actions carry explicit reasons
@@ -76,15 +76,15 @@ export const worldMemoryCode = `interface WorldMemory {
     manifest: ResourceRef; // immutable retained manifest and complete verified reference closure
   }): Promise<void>; // identical manifest retry returns its revision; otherwise atomically advance head + audit
   readLocalMap(input: { mapId: string; revision?: bigint }): Promise<LocalMapView>; // authorized checkpoint plus current frame-qualified records
-} // Planning boundary, not a new microservice. No SLAM, blob IO or inference runs in the transaction.
+} // No SLAM, blob IO or inference runs in the transaction.
 // A trusted storage/mapper boundary verifies retained bytes before the commit. Reducers verify its receipt.
 // Observation ingestion has its own idempotent commits; map checkpoints record their exact input coverage.
 // Restore persisted state after restart; require new localization evidence before spatial action.`;
 
 export const coordinationCode = `interface AgentCoordination {
-  sendMessage(input: { id: string; missionId: string; toAgentId: string; content: string }): Promise<void>; // later multi-agent use; authenticate sender, validate participants and retain bounded messages
+  sendMessage(input: { id: string; missionId: string; toAgentId: string; content: string }): Promise<void>; // authenticate sender, validate participants and retain bounded messages
 } // No subscription-management API: Nemeia derives awareness from Unit assignments and world-managed policy.
-// The single-agent v0 walkthrough does not require agent chat or a coordinator.`;
+// Messages support coordination; they cannot grant control or declare objectives complete.`;
 
 export function objectPlanningCode(id, code) {
   if (id === "evidence") return code.replace('  producerSession: t.string()', '  localMapId: t.string(), // originating local-map context, validated against producer authority; retain even for unlocated evidence\n  producerSession: t.string()');
@@ -93,17 +93,16 @@ export function objectPlanningCode(id, code) {
 }
 
 export const v0Principles = [
-  ["V0 acceptance", "one agent with recoverable world memory", "A World Master creates missions, assigns one agent and grants one Unit. The agent can coordinate several missions through its log. Release success means observations accumulate into durable entities, evidence and a progressive local map that survives worker or Eve resets. Persistence is a platform responsibility, not a mission objective. No second Unit, global map, automatic map merge or navigation action is required. This is the implementation target, not a claim that recovery is already built.", "observe → commit → refine → restart → recover → continue"],
-  ["Progressive local map", "accumulated knowledge, not just the latest camera frame", "Keep known entities and last-seen observations when they leave view. Add geometry only when supported; retain unlocated and image-only observations without placing them at an invented origin. Refine the same locally associated entity when evidence supports continuity. Repeated delivery is idempotent; changed labels do not create new identities. Preserve removed/stale/unknown distinctions. Geometry, classification and visibility have independent acquisition times. A complete mesh or occupancy grid is not a v0 requirement.", "known but not currently seen ≠ absent · unknown position ≠ [0, 0, 0]"],
+  ["Durable world state", "shared knowledge independent of agent memory", "Observations accumulate into durable entities, evidence and progressive local maps. Mission progress, assignments and execution receipts share this world state. Agents read relevant projections; they do not own separate copies of the world. Persistence is a platform responsibility and survives worker restarts or Eve session resets.", "observe → commit → refine → recover → continue"],
+  ["Progressive local map", "accumulated knowledge, not just the latest camera frame", "Keep known entities and last-seen observations when they leave view. Add geometry only when supported; retain unlocated and image-only observations without placing them at an invented origin. Refine the same locally associated entity when evidence supports continuity. Repeated delivery is idempotent; changed labels do not create new identities. Preserve removed/stale/unknown distinctions. Geometry, classification and visibility have independent acquisition times. A map may contain semantic observations without a complete mesh or occupancy grid.", "known but not currently seen ≠ absent · unknown position ≠ [0, 0, 0]"],
   ["Durability and recovery", "world persistence is independent of Eve history", "Persist current world rows, retained supporting observations and versioned map checkpoints. Store large geometry and optional native estimator exports as immutable resources. Validate retained bytes before advancing a checkpoint head atomically; preserve its exact evidence coverage. After a crash, restore the last committed head and reconcile later retained observations by their IDs, without pretending an audit log is a full scene recorder. A mapper that cannot resume its native state starts a new frame epoch until it can relocalize. An Eve reset changes conversation history, not map, mission, entity or execution identity.", "restored map ≠ localized Unit · durable world ≠ conversation transcript"],
   ["Automatic Unit awareness", "direct observations first; radius when usable", "Nemeia derives agent context from assigned Units. It always includes their permitted observations, mission dependencies and pending outcomes. A world-managed radius adds nearby shared state only when metric positions can be compared reliably. Discovery and unlocated evidence remain outside radius filtering. No agent-managed subscriptions or preselected entity list. As context grows, keep bounded relevant projections and authorized detail reads; absence from a prompt never deletes durable world knowledge.", "Unit observations + usable local neighborhood + mission dependencies → context"],
-  ["Local frames and later reconciliation", "one logical world; independent spatial views", "Every metric estimate names its frame and acquisition time. Register fresh frame identities after coordinate resets; never reinterpret old coordinates. Local sensor transforms remain necessary when fusing measurements, but cross-Unit alignment is optional. Later, a qualified localization system can publish versioned relationships between frames. Keep original local evidence and identity provenance; aligning maps does not prove two tracks are the same object. Shared mission facts can cross views before spatial coordinates can.", "local frame A · local frame B · optional evidence-backed relationship"],
-  ["Spatial requirements belong to actions", "missing geometry blocks only dependent work", "Reading evidence and refining the world remain useful without global positioning. An approach action needs fresh local target geometry, a valid transform into the executor's frame and qualified local navigation. Sending another Unit to that target additionally needs usable alignment or independent reacquisition. A restored map, a semantic label or a successful model response cannot supply those guarantees. Map persistence and mission reporting do not wait for motion support.", "durable local world first · locally validated motion next · cross-Unit alignment later"],
-  ["Delivery sequence", "grow capability without changing the world model", "V0: one agent, one Unit, recoverable local knowledge. Next: additional Units retain separate local views and can share non-spatial mission findings. Then: opportunistic alignment projects selected evidence between compatible frames. Only later add collaborative mapping where concrete missions need it. Multi-agent coordination and automatic map fusion are extensions, not v0 acceptance gates.", "single-agent durability → separate local views → qualified alignment → optional map fusion"],
+  ["Local frames and reconciliation", "one logical world; independent spatial views", "Every metric estimate names its frame and acquisition time. Register fresh frame identities after coordinate resets; never reinterpret old coordinates. Local sensor transforms remain necessary when fusing measurements. Cross-Unit alignment is optional: a qualified localization system publishes evidence-backed relationships between frames when available. Keep original local evidence and identity provenance; aligning maps does not prove two tracks are the same object. Agents can share non-spatial mission findings without aligned coordinates.", "local frame A · local frame B · evidence-backed relationship"],
+  ["Spatial requirements belong to actions", "missing geometry blocks only dependent work", "Reading evidence and refining the world remain useful without global positioning. An approach action needs fresh local target geometry, a valid transform into the executor's frame and qualified local navigation. Sending another Unit to that target additionally needs usable alignment or independent reacquisition. A restored map, a semantic label or a successful model response cannot supply those guarantees. Only the operations that depend on alignment need to wait for it.", "local observation ≠ navigable geometry ≠ cross-Unit alignment"],
 ];
 
 export function renderWorldPlan({ section, proseRow }) {
-  return section("v0-world", "02a", "V0 · durable local world", "One agent builds a progressive local map that survives restarts. Perfect spatial alignment and multi-Unit reconciliation are not release gates.", `<div class="abstraction-list">${v0Principles.map((row, i) => proseRow(i, ...row)).join("\n")}</div>`);
+  return section("local-world", "02a", "World memory & local maps", "The world retains accumulated knowledge across observations and restarts. Units can maintain independent spatial views and reconcile them through qualified frame relationships.", `<div class="abstraction-list">${v0Principles.map((row, i) => proseRow(i, ...row)).join("\n")}</div>`);
 }
 
 // Explicit planning deltas over the existing checked SDK scaffold. Do not edit runtime .ts files.
@@ -114,13 +113,15 @@ export function plannedTables(tables) {
   tables.find(table => table.name === "world_config").columns.push(["awarenessPolicy", "AwarenessPolicy", "World-managed batching and optional metric radius; not agent-owned entity filters."]);
   for (const name of ["pose", "geometry"]) {
     const table = tables.find(item => item.name === name);
-    table.columns.unshift(["key", "string", "PK. Canonical tuple [entityId, frameId]; one owning projection pipeline per facet/frame in v0."]);
+    table.columns.unshift(["key", "string", "PK. Canonical tuple [entityId, frameId]; one owning projection pipeline per facet/frame."]);
     describe(name, "entityId", "Indexed entity identity; retain independent local-frame estimates instead of one global value.");
     if (name === "geometry") table.columns.splice(2, 0, ["frameId", "string", "Registered local/sensor frame; 2D geometry still refers to its exact image and remains in pixels."]);
     else describe(name, "frameId", "Registered local reference frame and reset epoch; no shared world frame required.");
     describe(name, "version", "Monotonic revision within this entity/frame facet; action pins identify the frame and revision.");
   }
   describe("geometry", "value", "Geometry with its native frame; image boxes do not imply metric position or navigability.");
+  describe("member", "role", "One role per identity; use separate worker credentials.");
+  describe("unit_assignment", "unitId", "PK. Controllable entity; one command-owning agent at a time.");
   tables.find(table => table.name === "observation").columns.splice(3, 0,
     ["unitId", "string", "Originating Unit derived from authenticated producer scope; preserve across credential/session changes."],
     ["localMapId", "string", "Originating map context checked at ingestion; unlocated evidence remains attached without fabricated coordinates."]);
@@ -136,13 +137,13 @@ export function plannedTables(tables) {
   const additions = [
     { name: "spatial_frame", accessor: "spatialFrame", columns: [
       ["id", "string", "PK. Immutable namespaced frame identity; use a new ID after an origin reset."],
-      ["unitId", "Option<string>", "Originating Unit; future site frames need not belong to one Unit."],
+      ["unitId", "Option<string>", "Originating Unit; site frames need not belong to one Unit."],
       ["kind", "local_map | odom | body | sensor | site", "Frame role; axes and units follow the documented adapter convention."],
       ["createdAt", "Timestamp", "Registration time, not measurement time. Dynamic transforms remain timestamped evidence."],
     ] },
     { name: "local_map", accessor: "localMap", columns: [
       ["id", "string", "PK. Durable local map identity, independent of agent or Eve session."],
-      ["unitId", "string", "Originating Unit for v0; ownership does not imply a globally aligned map."],
+      ["unitId", "string", "Originating Unit; ownership does not imply a globally aligned map."],
       ["rootFrameId", "string", "Registered immutable local-map frame. Reuse only after verified relocalization."],
       ["revision", "u64", "Committed checkpoint revision; starts at zero before any checkpoint."],
       ["headRevisionId", "Option<string>", "Current retained map_revision; atomically advanced with revision and audit."],
@@ -161,17 +162,17 @@ export function plannedTables(tables) {
 }
 
 export const v0ExampleRows = [
-  ["mission", "World Master describes two missions", "description + objectives; no hardware choice", "A prior observation has already established backpack-A. The World Master requests a fresh semantic inspection and a separate geometry measurement of that same known target. Two small missions make cross-mission coordination explicit; neither asks the agent to implement world persistence."],
+  ["mission", "World Master describes two missions", "description + objectives; no hardware choice", "A prior observation has already established backpack-A. The World Master requests a fresh semantic inspection and a separate geometry measurement of that same known target. Both missions use the same accumulated world knowledge."],
   ["team", "Assign both missions to one agent", "World Master → Navigator's mission log → separate Unit grant", "Assign both missions to Navigator, then grant Go2 capabilities separately. The log contains both assignments. Nemeia derives awareness automatically; Navigator neither selects subscription entity IDs nor creates a separate reasoning loop per mission."],
   ["inputs", "Observe in a local frame", "known target → fresh retained evidence", "A fresh camera detection can update the known backpack without metric depth. A later qualified local spatial pipeline adds geometry. Local calibration is still required; no cross-Unit calibration or global frame is assumed. Observations need validated association to the bound target."],
   ["projection", "Refine and checkpoint the local map", "same entity → newer evidence → immutable map revision", "Commit observations idempotently. Association links the second observation to the same local entity only with supporting evidence. Preserve old observations, exact source frames and retained resources. Publish immutable map bytes before atomically advancing the checkpoint head."],
   ["prepared", "Read the mission log and choose work", "one coordinated step across both assignments", "The adapter freezes a compact log summary, relevant world changes, Unit availability and pending executions before reasoning. Navigator can submit the semantic proof while waiting for geometry. Neither mission is paused by the choice of focus. Detailed evidence remains available through authorized reads."],
   ["resume", "Restart and recover", "durable world survives disposable context", "A new Eve session or restarted worker reloads the same mission, entity identities and map head. Reconcile later retained observations against the checkpoint's evidence index. If localization is lost, keep the map readable and require relocalization or a new frame before spatial action."],
-  ["mission-finished", "Record objective progress and close", "two independent outcomes; one agent", "Each evidence submission is checked against its mission's objective, readiness, acquisition age and permissions. The world records progress and closes each mission independently. No physical actions are required in this example. Restart recovery is a separate platform acceptance test, not a mission completion criterion."],
+  ["mission-finished", "Record objective progress and close", "two independent outcomes; one agent", "Each evidence submission is checked against its mission's objective, readiness, acquisition age and permissions. The world records progress and closes each mission independently. No physical actions are required in this example. Mission progress and world memory persist independently of the agent's conversation."],
 ];
 
 export const v0FlowCode = {
-  mission: `// Planning fixture using the MissionSpec defined above; no reducer runs here.
+  mission: `// Mission creation inputs; these examples perform no IO.
 const at = (iso: string) => Timestamp.fromDate(new Date(iso));
 const semanticSpec = {
   description: "Acquire a fresh semantic observation of the selected backpack",
@@ -268,7 +269,7 @@ const head = {
 // Valid proof → mission_objective_progress row + audit → active/closing → succeeded once safely closed.
 // On restart, reconcile recorded progress first. Old pending evidence may need a fresh acquisition.
 // Repeated submissions return existing progress. One mission can finish while another remains active.
-// Independently test the release: ingest → refine → restart → restore → deduplicate replay → continue.
-// Optional later motion still uses admission, local control, receipts and measured completion.
+// Recovery preserves the map and recorded progress; redelivery cannot duplicate either.
+// Motion uses admission, local control, receipts and measured completion.
 // Additional Units keep independent local frames until a qualified alignment can reconcile them.`,
 };

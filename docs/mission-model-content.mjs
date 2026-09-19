@@ -7,7 +7,7 @@ export const missionCode = {
       maxAgeMs: number; // positive u32; maximum acquisition age when progress is recorded
     } }
   | { tag: "approached"; value: {
-      targetId: string; // later motion objective; requires qualified local navigation
+      targetId: string; // motion objective; requires qualified local navigation
       standoffM: number; // finite positive target distance in meters
     } }; // Nemeia criteria, not MMO-standard types; each needs an installed validator
 interface ObjectiveSpec {
@@ -17,10 +17,10 @@ interface ObjectiveSpec {
   optional: boolean; // optional objectives cannot gate required ones
   criterion: ObjectiveCriterion; // measurable outcome, not the agent's execution plan
 } // 1–32 objectives, at least one required; validate targets and dependency references.
-// V0 uses observed milestones. Continuous freshness remains an action check.
+// Objectives record milestones. Continuous freshness remains an action check.
 // Do not add a generic count until distinct-item identity and deduplication are defined.`,
   "mission-spec": `interface MissionSpec {
-  description: string; // World Master's intended outcome and context; replaces the ambiguous goal field
+  description: string; // World Master's intended outcome and context; not proof of completion
   objectives: readonly ObjectiveSpec[]; // explicit, server-validated completion conditions
   deadlineAt?: Timestamp; // optional world-clock deadline; not a motor timeout
   template?: PackagePin; // optional immutable authoring provenance; inline spec is authoritative

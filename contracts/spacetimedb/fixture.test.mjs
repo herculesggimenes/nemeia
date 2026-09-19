@@ -41,8 +41,7 @@ test("each planned contract and table has an independent disclosure",()=>{
   assert.equal((page.match(/class="schema-item"/g)??[]).length,Object.keys(tableNotes).length);
   for(const [id] of exampleRows) assert.ok(page.includes(`id="flow-${id}"`));
   for(const name of ["rootFrameId","headRevisionId","parentRevision","manifest","awarenessPolicy"]) assert.ok(page.includes(`<td>${name}</td>`),name);
-  assert.match(page,/SpacetimeDB 2.10.1/);
-  assert.match(page,/not a deployed or integration-tested backend/);
+  assert.match(page,/This document specifies intended architecture, not deployment status/);
 });
 
 test("root and bookmark show the same model-first Nemeia architecture",()=>{
@@ -65,7 +64,7 @@ test("root and bookmark show the same model-first Nemeia architecture",()=>{
     assert.match(page,/id="decisions-feedback"/);
     assert.match(page,/WorldWake/);
     assert.match(page,/id="eve-runtime"/);
-    assert.match(page,/Eve 0\.63\.0/);
+    assert.match(page,/World channel adapter/);
     assert.match(page,/customCommands/);
     assert.match(page,/no network isolation/);
     assert.doesNotMatch(page,/interface AgentSteps|interface PreparedStep|interface AgentRuntime/);
@@ -155,9 +154,9 @@ test("published design includes roles, authority fences and separate cadences wi
   assert.match(agentSource,/until the local executor confirms safe closure/);
 });
 
-test("v0 documents durable local knowledge, automatic awareness and single-agent recovery",()=>{
+test("architecture documents durable local knowledge, automatic awareness and recovery",()=>{
   const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
-  for(const id of ["v0-world","object-local-map","object-world-view","contract-world-memory","table-spatial_frame","table-map_revision","flow-resume"]) assert.ok(page.includes(`id="${id}"`),id);
+  for(const id of ["local-world","object-local-map","object-world-view","contract-world-memory","table-spatial_frame","table-map_revision","flow-resume"]) assert.ok(page.includes(`id="${id}"`),id);
   assert.doesNotMatch(page,/putSubscription|id="table-agent_subscription"|world-frame 3D box|Shared frame, e\.g\. map/);
   const worldView=page.split('id="object-world-view"')[1].split('</details>')[0];
   assert.match(worldView,/localMaps/); assert.match(worldView,/poses:/);
@@ -171,6 +170,14 @@ test("v0 documents durable local knowledge, automatic awareness and single-agent
   const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];
   assert.doesNotMatch(worldConfig,/<td>frameId<\/td>/);
   assert.match(worldConfig,/awarenessPolicy/);
+});
+
+test("architecture reads as a reference without release callouts or change-history copy",()=>{
+  const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
+  const opening=page.split('<section class="section" id="ownership"')[0];
+  assert.ok(!opening.includes('class="architecture-rows"'),"diagram has no redundant role, log or release callouts");
+  assert.ok(!/\bv0\b|(?:first|this) slice|planning.only|release gate|supersedes the scaffold|replaces (goal|the ambiguous)|reviewed against|SpacetimeDB 2\.10\.1|Eve 0\.63\.0/i.test(page),"no editorial release/change-history language");
+  for(const label of ["World memory &amp; local maps","MissionSpec","ObjectiveProgress","MissionLog","AgentCoordination","expectedRevision","controllerEpoch"]) assert.ok(page.includes(label),label);
 });
 
 test("mission planning examples use the declared description/objectives/log/progress contracts",()=>{
