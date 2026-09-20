@@ -39,7 +39,7 @@ metric mapping is possible.
 
 A local map retains current knowledge plus immutable checkpoint manifests.
 Each manifest records its root frame, revision and parent, complete referenced
-native spatial layers, archived region versions, exact input evidence coverage
+native spatial layers, exact input evidence coverage
 and optional native mapper export.
 Large data stays in immutable resource storage. The trusted mapper/storage
 boundary verifies retained bytes before an atomic compare-and-set advances
@@ -55,42 +55,46 @@ frame; otherwise start a new local frame. Eve session reset does not erase map,
 agent, mission, entity or execution identities. Each inference gets a bounded
 authorized projection; prompt omission never deletes durable knowledge.
 
-World persistence and restart recovery are platform responsibilities, not mission
-objectives. The walkthrough assigns one agent two missions: find a blue backpack
-in the living area and inspect the kitchen passage for obstructions. It starts
-with an already-localized Unit, a partial map, a named living area, an adjoining
-region with a kitchen hypothesis and a tracked backpack candidate. Described
-mission targets can resolve against existing knowledge; they do not imply that
-mapping or object detection has yet to begin. New views improve occlusion and
-place interpretation rather than creating the world from scratch. An obstructed
-passage is a valid inspection result, not a navigation clearance.
+### Example: find my blue backpack
 
-The example includes two 30-second inference intervals. Before each step, the
-adapter freezes a synchronized authorized WorldView and its MissionLog; workers
-continue updating current world state during inference. WorldWake carries
-coalesced dirty keys and retained important event identities, not every sensor
-sample or every obsolete world snapshot. Context selects existing records and
-preserves their acquisition times. It has no backpack-specific context schema
-or authoritative next-investigation field; an agent's plan belongs to reasoning.
+The World Master creates one mission, assigns Navigator and grants Go2 control.
+The example starts with an already-localized Unit, a partial map, a sofa and a
+partly hidden backpack candidate. No room segmentation or room names are needed.
 
-Sensor acquisition, model inference, world publication and durable map
-checkpointing use separate cadences. A checkpoint increment is not one sensor
-frame. Retain evidence needed by current state, decisions and proofs even when
-wake notifications coalesce. A queued wake prepares context at the actual step
-boundary, after its delivery delay. New map revisions call for action-specific
-revalidation, not rejection merely because a slow LLM read an older revision.
-Local planning, obstacle checks and stop remain independent of reasoning.
+1. **Set the task.** Describe the backpack and the required outcome: identify it
+   and report its evidenced location. Keep routes and Unit assignment separate.
+2. **Read the existing world.** The adapter supplies the map, Unit position,
+   observed objects and supporting images. The agent sees that the candidate
+   needs a better view.
+3. **Choose a viewpoint.** Select a pose from measured space. Admission rechecks
+   current authority and localization; the local planner handles the route and
+   live obstacles independently of the LLM.
+4. **Update the world.** New calibrated camera/range observations refine the
+   same object track and progressive map. The next agent step reads current state.
+5. **Report the result.** “The blue backpack is beside the sofa,” linked to its
+   local position, image and observation time. World Master review accepts the
+   match before progress completes. The world persists for the next task.
 
-At 12:00:02 the example agent reads checkpoint 42; at 12:00:33 it submits a
-viewpoint while current mapping has reached checkpoint 48. Admission and claim
-validate that same pose against current localization and operating limits. The
-controller records arrival at 12:00:45. A fresh 12:00:46 projection feeds another
-reasoning step, which drafts findings at 12:01:16. World Master review at
-12:01:20 checks approximately 35-second-old measurements against the 60-second
-acceptance policy and checks for contradictory newer evidence. Expired or
-contradicted evidence requires reconsideration, never a refreshed timestamp.
-Times illustrate concurrency, not a device benchmark. Startup without usable
-spatial state and localization loss are explicit alternate conditions.
+The spatial map describes measured space. Objects carry identities and
+evidence-backed facets. Observations retain the images, range data and timestamps
+behind those facets. Agent interpretation is reasoning over these records, not
+another authoritative region or annotation subsystem.
+
+Before each step, the adapter freezes an authorized WorldView and MissionLog.
+Perception continues during inference. WorldWake coalesces repeated updates while
+retaining important event identities; it does not queue every sensor frame.
+Prepare context at the actual step boundary after any delivery delay. Never
+refresh acquisition timestamps merely because context was compiled again.
+
+Acquisition, inference, world publication and checkpointing have separate
+cadences. Keep evidence required by state, decisions and proofs. Revalidate
+proposals against current state, rather than rejecting every changed map revision.
+Local planning and stop do not depend on LLM timing.
+
+The example uses a 12:00:45 observation and review at 12:01:20: about 35 seconds
+within a 60-second acceptance window. Review also checks newer contradictory
+evidence. Expired or contradicted findings need reconsideration, not retimestamping.
+Times illustrate the example, not hardware performance.
 
 Recovery validation covers: ingest observations; refine an associated entity;
 retain map chunks and evidence; interrupt before/after head commit; recover the
@@ -104,7 +108,7 @@ independent reacquisition. Frame alignment and entity association are separate
 decisions. Preserve original local evidence when reconciling maps. Collaborative
 mapping runs outside database transactions.
 
-### Spatial structure, regions and names
+### Spatial map and observed objects
 
 Mapping and semantic perception run in parallel. A mapping system integrates
 range measurements with IMU/odometry and, where supported, camera measurements
@@ -128,38 +132,18 @@ ranging cannot establish full object height, and partial surfaces must not be
 silently promoted to fully measured boxes. Dynamic objects retain independent
 tracks; mapping must handle dynamic returns and occupancy aging.
 
-A region is an Entity with a `region` component: map identity, versioned extent,
-supporting observations and optional assigned name. `RegionExtent` pins a map
-checkpoint, its occupancy resource and an aligned mono8 mask. The convention
-uses the occupancy grid's dimensions/origin/resolution, with value 1 identifying
-included cells; it is Nemeia's convention over ROS messages, not a universal room
-schema. Coverage distinguishes a partial explored extent from an established
-boundary. Neither implies complete visibility or traversability.
-
-A trusted spatial worker calls `WorldMemory.projectRegion`. Semantic workers
-write room hypotheses through the existing observation boundary. A World Master
-calls `WorldMemory.nameRegion`, which records the authenticated author and time.
-Extent and name edits compare the region revision, archive the prior component,
-and audit the change. A stale request must reread before resubmission. Neither
-path can silently overwrite the other's field. A partial region can already be
-called Kitchen; its name is neither an ID nor a coordinate frame and need not be
-unique. Entity display metadata is not an additional authoritative region name.
-
-Objects use evidenced `located_in` relations; connections between regions need
-spatial evidence, not just co-occurring labels. Boundary refinement and renaming
-preserve region identity. Splits/merges need explicit identity review rather
-than reusing an ID for a different place. Retain original observations and the
-archived region revisions used by accepted mission findings. Incremental
-scene-graph systems such as [Hydra](https://github.com/MIT-SPARK/Hydra) provide a
-reference pattern without becoming a required dependency.
+Objects retain their measured local geometry and supporting views. An agent can
+use these to describe a backpack as beside a sofa without constructing rooms,
+naming spatial regions or writing an inferred place into the map. Keep model
+hypotheses distinct from measurements; uncertainty does not require a new entity
+type or a second world model.
 
 ### Exploration and pose navigation
 
-Resolve mission language through region identity and current extent before
-choosing a viewing or navigation pose. Unknown names trigger observation or
-separately authorized exploration. A local viewpoint selector proposes poses
-using mapped structure; the agent chooses intent rather than inventing positions.
-No useful permitted viewpoint means observe in place, wait or ask for help.
+Choose a viewing pose from measured map structure and object evidence. A local
+viewpoint selector can propose candidates; the agent selects a useful one rather
+than inventing coordinates from a description. No useful permitted viewpoint
+means observe in place, wait or ask for help.
 
 `navigate@1` accepts a frame-qualified pose, local map identity and basis
 checkpoint. `approach@1` accepts an observed entity and standoff. `ActionIntent`
@@ -167,7 +151,7 @@ and `ActionCompletion` distinguish their requests and measured results. Bindings
 use a composite Unit/action key; both share the same Unit reservation, admission,
 claim, cancellation and durable local receipt lifecycle. Successful navigation
 checks the final measured pose against installed position and heading tolerances.
-It cannot satisfy an inspection criterion by itself.
+Arrival alone cannot prove that the requested object was found.
 
 The pose boundary follows patterns such as
 [Nav2 NavigateToPose](https://github.com/ros-navigation/navigation2/blob/main/nav2_msgs/action/NavigateToPose.action),
@@ -350,14 +334,10 @@ A mission is one accepted, immutable specification plus a durable lifecycle.
 briefing. `objectives[]` defines the measurable conditions.
 Description is useful reasoning context, not executable completion logic.
 Keep the bound specification inline in `mission`; an optional template pin is
-authoring provenance, not a mutable lookup. `PlaceTarget` is either a known
-entity reference or a description whose referent may be unknown. Validate known
-IDs, but allow described places to remain unresolved at creation and assignment.
-Observation can reveal candidate places, their geometry and connections without
-proving their names. Completion requires evidence of the intended place and
-reported extent; ambiguity calls for further observation or clarification.
-Accepted findings retain discovered place IDs and exact archived region revisions
-without rewriting the specification.
+authoring provenance, not a mutable lookup. A search can describe an object
+whose identity and location are unknown. Validate known references, but do not
+require a target ID before discovery. A finding links the candidate to retained
+evidence of its identity and local position without rewriting the specification.
 Mission wording does not grant motion permission or define a safety boundary.
 The owner records the creating
 World Master's identity; it does not lock the mission to one agent. World Masters
@@ -410,28 +390,19 @@ The contract defines criteria with distinct evidence requirements:
   standoff, using an eligible assigned Unit selected by an agent. Verify the request's mission/objective link, admission after objective
   readiness, successful measured completion and the pinned effective policy.
   A sent command, model answer or unlinked standalone action is not credit.
-- `located`: find the described object in the requested `PlaceTarget`. The
-  finding identifies the discovered object, `searchAreaId` and `searchAreaRevision`, citing retained
-  observations of place identity, object identity and location within that place.
-  The explicit `world_master` review policy
-  requires authenticated acceptance; a detector label cannot approve its own
-  match. Not-found-yet is not success. Exhausting a search requires a separate,
-  bounded coverage criterion rather than counting negative frames.
-- `inspected`: discover and inspect the requested `PlaceTarget`. A typed finding
-  names the discovered `regionId` and `regionRevision` and reports `obstructed`, `clear` or `unknown`,
-  with observations of place identity, inspection extent and any obstruction
-  entity IDs. Under `world_master` review, an evidenced
-  obstruction can complete the objective. Clear requires evidence covering the
-  entire defined region; unknown or insufficient visibility cannot complete it.
-  Inspection findings do not certify traversability for any particular Unit.
+- `located`: find the described object and report its local position. A finding
+  identifies the object and cites retained observations of the match and location.
+  The explicit `world_master` review policy requires authenticated acceptance;
+  a detector label cannot approve its own match. Not-found-yet is not success.
+  Neither a room identity nor a predeclared search region is required.
 
 Agents draft `MissionFinding` results through Eve. Drafts are neither authoritative
 world state nor objective progress. For the reviewed criteria, only a World
 Master may submit acceptance through `recordObjectiveProgress`; reducers validate
 the criterion/finding tag, referenced evidence, acquisition age, readiness and access.
-Known-entity targets require the same ID. Described targets require reviewed
-evidence of the intended place; unresolved or ambiguous candidates cannot complete
-an objective. Review supplies the place, object-identity or coverage judgment that the
+Known-entity targets require the same ID. Described objects require reviewed
+evidence of the intended match and location; ambiguous candidates call for more
+evidence or clarification. Review supplies the object-match judgment that the
 deterministic reference checks cannot establish. No inference runs in a reducer.
 Store the accepted finding inline in the progress evidence and the authenticated
 reviewer identity in audit. A model cannot gain review authority by echoing a role
@@ -495,7 +466,7 @@ measured, with a qualified local route inside independently authorized explorati
 limits. A place description or candidate label never grants access or makes
 unknown space safe. Without that authority or local capability, observe from the
 current position or seek assistance. Arrival supports investigation but does not
-complete `located` or `inspected`. Reject a second
+complete `located`. Reject a second
 nonterminal attempt for that objective. MissionSpec has no Unit list, speed cap
 or motor duration. Pin installed execution policy in the accepted row; local
 control may tighten it. Only an explicit audited World Master intervention can

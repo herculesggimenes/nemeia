@@ -19,32 +19,7 @@ interface SpatialFrameRecord {
 interface MapRevisionRecord {
   id: string; mapId: string; revision: bigint; parentRevision?: bigint; // immutable checkpoint lineage
   manifest: ResourceRef; recordedAt: Timestamp; // retained payload and commit time, not sensor freshness
-}
-interface RegionExtent {
-  mapRevision: bigint; // exact retained checkpoint used to delimit this region
-  occupancyResourceId: string; // occupancy layer in that checkpoint; establishes grid origin/resolution/frame
-  mask: ResourceRef; // sensor_msgs/Image mono8: same grid dimensions and cell ordering; 1 = included, 0 = outside
-  coverage: "partial" | "bounded"; // partial is explored extent only; bounded means its boundary is established
-} // Image row y matches occupancy row y, with no display-axis flip; validate step/encoding and resource frame.
-// This alignment/encoding is Nemeia's convention over ROS messages, not a ROS room standard.
-// Bounding a region does not prove every cell is observed, unobstructed or traversable by a Unit.
-interface RegionName {
-  text: string; assignedBy: Identity; assignedAt: Timestamp; // World Master annotation, not a detector score
-}
-interface RegionRecord {
-  entityId: string; mapId: string; // region reuses Entity identity; neither a label nor a coordinate frame
-  revision: bigint; // compare-and-set for extent or name edits; never use map revision as this fence
-  extent: RegionExtent; // progressively refined spatial membership, independent of the name
-  observationIds: readonly string[]; // retained spatial evidence behind the extent
-  name?: RegionName; // absent while unnamed; model proposals stay in semantic.hypotheses
-}
-interface RegionView {
-  region: Readonly<RegionRecord>; // small current component; masks remain in resource storage
-  hypotheses: readonly { label: string; score: number }[]; // derived semantic component, not assigned names
-  objectIds: readonly string[]; // evidenced located_in relations; not a permanent object-ownership list
-  connectedRegionIds: readonly string[]; // evidenced topology, not a claim that a path is safe
-} // Region IDs survive renaming and boundary refinement. Split/merge requires explicit identity review.
-// Keep old extents and their evidence reachable from mission proofs; renaming never rewrites old findings.`;
+}`;
 
 export const navigationCode = `type NavigateRequest = Pick<ApproachRequest,
   "executionId" | "unitId" | "assignment" | "acceptBy" | "mission"
@@ -57,7 +32,7 @@ type ActionIntent =
   | { tag: "navigate"; value: NavigateRequest }; // navigate@1: reach a specific local pose
 interface NavigationResult {
   unitObservationId: string; localReceiptId: string; // final measured pose and durable safe-closure receipt
-} // Validate position and heading against installed tolerances; arrival does not prove an inspection result.
+} // Validate position and heading against installed tolerances; arrival does not prove the requested object was found.
 type ActionCompletion = Exclude<Completion, { tag: "succeeded" }> | {
   tag: "succeeded";
   value:

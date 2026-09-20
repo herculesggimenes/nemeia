@@ -11,7 +11,6 @@ import { renderAgents } from "../docs/agent-content.mjs";
 import { renderEve } from "../docs/eve-content.mjs";
 import { renderWorldPlan, objectCode, objectPlanningCode, worldMemoryCode, coordinationCode, plannedTables, v0FlowCode } from "../docs/world-view-content.mjs";
 import { spatialContractCode } from "../docs/spatial-model-content.mjs";
-import { exampleTimeline } from "../docs/world-example-content.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -45,7 +44,7 @@ const tableHtml = tables.map((item,i)=>{
 
 const diagram = `<section class="diagram-section" id="how-it-works" aria-label="Nemeia model"><div class="diagram-inner section-inner"><h1 class="section-label">Nemeia / architecture</h1><div class="diagram-shell"><div class="diagram-header"><span class="diagram-label">WORLD AND DECISION LOOP</span></div><div class="diagram">${[
   ["Perception","Mapping and image perception run in parallel; calibrated association joins their evidence.","map + detect + associate"],
-  ["World","Accumulated spatial maps, regions, names, objects and mission progress.","retain → refine → recover"],
+  ["World","A growing map, observed objects and their evidence, alongside mission progress.","retain → refine → recover"],
   ["Awareness","Automatic Unit observations; nearby state when a usable frame exists.","subscriptions → bounded context"],
   ["Agents","Agents use world context to coordinate missions and propose actions.","context → decision → intent"],
   ["Execution","Admission checks authority and evidence; local systems control Units.","validate → execute → measure"],
@@ -92,7 +91,6 @@ const readRows = `<div class="architecture-rows">${[
 const refs = [
   ["Spatial mapping reference","https://github.com/hku-mars/FAST-LIVO2","LiDAR–inertial–visual estimation and mapping; a reference pattern, not an assumed Go2 integration."],
   ["Native occupancy representation","https://github.com/ros2/common_interfaces/blob/rolling/nav_msgs/msg/OccupancyGrid.msg","ROS grid metadata and application-defined occupancy values. Retain the producer's documented encoding."],
-  ["Incremental scene graphs","https://github.com/MIT-SPARK/Hydra","Reference for deriving spatial and semantic scene structure over time; not a required Nemeia dependency."],
   ["Pose navigation boundary","https://github.com/ros-navigation/navigation2/blob/main/nav2_msgs/action/NavigateToPose.action","An existing pose-goal action pattern. Each Unit still needs a qualified navigation and control adapter."],
   ["Local coordinate frames","https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0105.rst","ROS reference for independent mobile-platform frames; local operation need not wait for global localization."],
   ["Collaborative mapping reference","https://arxiv.org/html/2211.01538","D²SLAM: local frames, discovery, near/far estimation and evidence-backed alignment."],
@@ -104,7 +102,7 @@ const refs = [
   ["Table storage","https://spacetimedb.com/docs/tables/","Typed, memory-resident state with durable backing."],
   ["Engine license","https://github.com/clockworklabs/SpacetimeDB/blob/master/LICENSE.txt","Verify release-specific deployment terms before fleet use."],
 ];
-const timeline = `<div class="column-table-wrap" tabindex="0" role="region" aria-label="Example timing: continuous systems and agent reasoning"><table class="column-table"><thead><tr><th scope="col">Time</th><th scope="col">World &amp; local systems</th><th scope="col">Agent &amp; review</th></tr></thead><tbody>${exampleTimeline.map(row=>`<tr>${row.map(cell=>`<td>${escape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+const walkthrough = `<div class="walkthrough">${exampleRows.map(([id,title,flow,description],i)=>`<article class="walkthrough-step"><header><span class="example-index">${String(i+1).padStart(2,"0")}</span><h3>${escape(title)}</h3></header><div class="walkthrough-content"><p class="walkthrough-flow">${escape(flow)}</p><p>${escape(description)}</p><details class="walkthrough-detail" id="flow-${id}"><summary>TypeScript detail</summary><div class="example-code"><pre><code class="language-ts">${escape(v0FlowCode[id])}</code></pre></div></details></div></article>`).join("\n")}</div>`;
 const main = `<main id="main-content">${diagram}
 ${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Masters govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & world view","WorldView projects durable entities, evidence, local maps, missions and executions. Each spatial estimate retains its coordinate frame and acquisition time.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,objectPlanningCode(id,objectCode[id] ?? region(sources[file],id)),`object-${id}`)).join("\n")}</div>`)}
@@ -117,7 +115,7 @@ ${section("platform","05","Implementation choices","Storage, inference, agent ru
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${renderClients({section,codeRow,proseRow,region},"06b")}
 ${renderEve({section,codeRow,proseRow},"06c")}
-${section("example","07","End-to-end information flow","Find a blue backpack and inspect the kitchen passage in an already-running, partially mapped world. One agent coordinates both missions while perception and local systems keep updating independently of its slower reasoning.",`${timeline}<div class="example-list">${exampleRows.map(([id,title,summary,description],i)=>codeRow("example",i,title,summary,description,v0FlowCode[id],`flow-${id}`)).join("\n")}</div>`)}
+${section("example","07","Example · find my blue backpack","One agent uses an already-running world. Perception builds the map and tracks objects; the agent chooses what to investigate; local systems handle motion.",walkthrough)}
 ${renderTracing({section,codeRow,proseRow,region},"08")}
 ${section("boundaries","09","Failure & deployment boundaries","A fast shared-state engine does not remove uncertainty, authority checks, network failures or robot-local safety responsibilities.",`<div class="abstraction-list">${failureRows.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("references","10","Implementation references","This document specifies intended architecture, not deployment status. Interfaces and examples describe the contracts; production use requires integration, security and failure testing.",`<div class="architecture-rows">${refs.map(([title,url,description])=>`<div class="architecture-row"><strong><a href="${url}">${title}</a></strong><div>${escape(description)}</div></div>`).join("")}</div>`)}

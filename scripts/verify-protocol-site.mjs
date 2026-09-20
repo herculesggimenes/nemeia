@@ -16,7 +16,7 @@ try {
       await page.goto(new URL(route, root).href);
       assert.equal(await page.locator("details[open]").count(), 0);
       assert.equal(await page.locator("button, input, form").count(), 0);
-      for (const id of ["unit", "agent", "world-master", "object-world-view", "object-local-map", "durable-world-state", "durability-and-recovery", "contract-world-memory", "flow-resume", "table-map_revision", "contract-world-masters", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment", "object-mission-log", "object-mission-spec", "objective-progress", "table-mission_objective_progress", "flow-mission"]) {
+      for (const id of ["unit", "agent", "world-master", "object-world-view", "object-local-map", "durable-world-state", "durability-and-recovery", "contract-world-memory", "flow-report", "table-map_revision", "contract-world-masters", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment", "object-mission-log", "object-mission-spec", "objective-progress", "table-mission_objective_progress", "flow-mission"]) {
         const summary = page.locator(`#${id} > summary`);
         await summary.focus();
         await page.keyboard.press("Enter");
@@ -24,12 +24,14 @@ try {
         await page.keyboard.press("Enter");
         assert.equal(await page.locator(`#${id}`).getAttribute("open"), null);
       }
-      for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-discovery", "flow-prepared", "flow-waiting", "flow-naming"]) {
+      for (const id of ["object-spatial-map", "object-navigation", "flow-world", "flow-navigation", "flow-observation"]) {
         await page.locator(`#${id} > summary`).focus();
         await page.keyboard.press("Enter");
         assert.equal(await page.locator(`#${id}`).getAttribute("open"), "");
         await page.keyboard.press("Enter");
       }
+      assert.equal(await page.locator(".walkthrough-step").count(), 5);
+      for (const paragraph of await page.locator(".walkthrough-content > p").all()) assert.ok(await paragraph.isVisible());
       await page.evaluate(() => {
         document.querySelectorAll("details").forEach(element => { element.open = true; });
       });
@@ -55,14 +57,9 @@ try {
         await page.locator("#object-mission-log").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-mission-log-${width}.png`, root)) });
         await page.locator("#example").scrollIntoViewIfNeeded();
         await page.screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-exploration-${width}.png`, root)) });
-        await page.locator("#flow-findings > summary").click();
-        await page.locator("#flow-findings").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-findings-${width}.png`, root)) });
-        await page.locator("#flow-discovery > summary").click();
-        await page.locator("#flow-discovery").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-mapping-${width}.png`, root)) });
-        await page.locator("#flow-naming > summary").click();
-        await page.locator("#flow-naming").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-naming-${width}.png`, root)) });
-        await page.locator("#flow-waiting > summary").click();
-        await page.locator("#flow-waiting").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-continuous-world-${width}.png`, root)) });
+        await page.locator("#example").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-simple-example-${width}.png`, root)) });
+        await page.locator("#flow-world > summary").click();
+        await page.locator("#flow-world").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-world-detail-${width}.png`, root)) });
       }
       console.log(`${route} ${width}px: disclosures, keyboard, syntax rendering, overflow and read-only checks passed`);
       await page.close();

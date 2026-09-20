@@ -34,7 +34,6 @@ interface EntityView {
   poses: readonly Row<"pose">[]; // frame-qualified estimates; never force one global pose
   geometries: readonly Row<"geometry">[]; // preserve image-space evidence and local metric estimates separately
   semantic?: Readonly<Row<"semantic">>; // model hypotheses do not fabricate positions or assign human names
-  region?: Readonly<RegionRecord>; // a spatial region is an Entity with an extent, not a special identity system
   control?: Readonly<Row<"unitControl">>; // measured local control projection for a Unit
 }
 interface Affordance {
@@ -47,7 +46,6 @@ interface Affordance {
   frames: readonly SpatialFrameRecord[]; // immutable frame identities, including distinct reset epochs
   checkpoint?: Readonly<MapRevisionRecord>; // absent before the first map checkpoint; observations still persist
   layers: readonly MapLayer[]; // checkpoint products: accumulated surfaces and/or occupancy, not just object detections
-  regions: readonly RegionView[]; // partial or bounded spaces; names and hypotheses can be absent
   entityIds: readonly string[]; // derived local membership, not an agent subscription or permission list
   unlocatedObservationIds: readonly string[]; // known evidence that cannot yet be positioned in this map
   localization: "localized" | "relocalization_required" | "unavailable"; // derived from current qualified evidence
@@ -55,11 +53,10 @@ interface Affordance {
 interface LocalMapManifest extends MapCheckpoint {
   evidenceIndex: ResourceRef; // retained index of exact input observations/resources and source-session boundaries
   layers: readonly MapLayer[]; // complete retained products; each native payload includes frame and spatial metadata
-  regionVersions: readonly { entityId: string; revision: bigint }[]; // exact archived region components at this checkpoint
   estimatorState?: ResourceRef; // optional versioned native export; not a guarantee of localization after restart
   producer: PackagePin; // exact mapper implementation; calibration/transform provenance stays with its inputs
 } // Layers may be empty before metric mapping. Paged native products retain their full resource closure.
-// Current region/entity components can advance independently of this checkpoint; expose their own basis revisions.
+// Current entity components can advance independently of this checkpoint; expose their own basis revisions.
 // Publish all referenced bytes first, then atomically commit map_revision + local_map head + audit.
 // Keep evidence and checkpoint ancestry reachable under retention policy; never publish a dangling head.`,
   "unit-agent-view": `interface UnitView extends EntityView {
@@ -82,15 +79,7 @@ export const worldMemoryCode = `interface WorldMemory {
     manifest: ResourceRef; // immutable retained manifest and complete verified reference closure
   }): Promise<bigint>; // identical manifest retry returns its revision; otherwise atomically advance head + audit
   readLocalMap(input: { mapId: string; revision?: bigint }): Promise<LocalMapView>; // authorized checkpoint plus current frame-qualified records
-  projectRegion(input: {
-    entityId: string; mapId: string; expectedRevision: bigint; // trusted spatial worker; zero creates a region component
-    extent: RegionExtent; observationIds: readonly string[]; // validate retained checkpoint, aligned mask and spatial evidence
-  }): Promise<void>; // compare revision; commit extent + evidence + audit, preserving any assigned name
-  nameRegion(input: {
-    entityId: string; expectedRevision: bigint; name: string | null; // World Master only; null clears the assigned name
-  }): Promise<void>; // bound nonempty text; derive author/time; bump region revision + audit without changing geometry
 } // No SLAM, blob IO or inference runs in the transaction.
-// Region edits archive the prior component and preserve proof references; name changes never rewrite evidence.
 // A trusted storage/mapper boundary verifies retained bytes before the commit. Reducers verify its receipt.
 // Observation ingestion has its own idempotent commits; map checkpoints record their exact input coverage.
 // Restore persisted state after restart; require new localization evidence before spatial action.`;
@@ -106,19 +95,19 @@ export function objectPlanningCode(id, code) {
   if (id === "action") return code
     .replace('mission and ready approached objective this attempt advances', 'mission and ready objective this attempt serves; investigation actions do not themselves complete it')
     .replace('  expectedGeometryVersion: t.u64()', '  expectedGeometryFrameId: t.string(), // identify the exact frame-qualified target facet; require a usable transform to the executor\n  expectedGeometryVersion: t.u64()')
-    .concat('\n// For approached, require the specified target/standoff. For located or inspected, investigation may\n// precede place resolution. Require measured local targets within separately authorized exploration limits.\n// This action can support an investigation, but only the objective criterion determines progress.');
+    .concat('\n// For approached, require the specified target/standoff. For located, an investigation needs no known destination. Require measured local targets within separately authorized exploration limits.\n// This action can support an investigation, but only the objective criterion determines progress.');
   return code;
 }
 
 export const v0Principles = [
   ["Durable world state", "shared knowledge independent of agent memory", "Observations accumulate into durable entities, evidence and progressive local maps. Mission progress, assignments and execution receipts share this world state. Agents read relevant projections; they do not own separate copies of the world. Persistence is a platform responsibility and survives worker restarts or Eve session resets.", "observe → commit → refine → recover → continue"],
-  ["Progressive local map", "spatial structure grows before rooms have names", "A mapping system combines ranging with IMU/odometry and, where supported, visual measurements. It estimates Unit motion and accumulates surfaces or an occupancy representation with free, occupied and unknown space. Store these native products as retained resources, not one Entity per point or cell. Image detections add object knowledge without replacing the spatial map. Unknown depth stays unknown. A partial point cloud does not prove free space, full object dimensions or search coverage.", "range + motion estimates → accumulated spatial map · images → semantic evidence"],
-  ["Regions, labels and objects", "map geometry → stable regions → revisable meaning", "Spatial processing delimits regions and observed connections from accumulated geometry. A region is an Entity with a versioned extent; it can remain partial and unnamed. Semantic workers propose room hypotheses. A World Master can assign a name such as Kitchen before the map is complete. Names are not unique IDs and do not change coordinate frames. Objects have independent tracks and evidence-backed located_in relations. Refining a boundary or renaming a region preserves identity and historical evidence; splitting or merging regions requires explicit identity review.", "space-2 + measured extent + Kitchen · backpack-A located_in space-1"],
+  ["Progressive local map", "measured space, not a room hierarchy", "A mapping system combines ranging with IMU/odometry and, where supported, visual measurements. It estimates Unit motion and accumulates surfaces or an occupancy representation with free, occupied and unknown space. Store these native products as retained resources, not one Entity per point or cell. Image detections add object knowledge without replacing the spatial map. Unknown depth stays unknown. A partial point cloud does not prove free space, full object dimensions or search coverage.", "range + motion estimates → accumulated spatial map · images → semantic evidence"],
+  ["Observed objects", "identity, measurements and supporting evidence", "Perception associates repeated observations into object tracks. Each object can have image evidence, semantic hypotheses and a measured local position or shape when available. Missing depth stays missing. The agent can explain a location as beside the sofa using those observations; that interpretation does not require a room entity, a region boundary or a new annotation record.", "map + observed objects + evidence → agent interpretation"],
   ["Calibrated perception fusion", "parallel geometry and vision, then qualified association", "Match camera detections or masks to compatible range measurements using acquisition times, camera intrinsics, distortion, sensor extrinsics and pose history. Compensate motion where needed and reject occluded or inconsistent matches. Preserve image-only observations when association is unsupported. A planar LiDAR cannot measure full object height; a partial surface cannot silently become a complete measured box. Associate repeated views into the same object only with evidence of continuity. Geometry, semantics and visibility keep independent times.", "mapping + image evidence → calibrated association → persistent object tracks"],
   ["Durability and recovery", "world persistence is independent of Eve history", "Persist current world rows, retained supporting observations and versioned map checkpoints. Store large geometry and optional native estimator exports as immutable resources. Validate retained bytes before advancing a checkpoint head atomically; preserve its exact evidence coverage. After a crash, restore the last committed head and reconcile later retained observations by their IDs, without pretending an audit log is a full scene recorder. A mapper that cannot resume its native state starts a new frame epoch until it can relocalize. An Eve reset changes conversation history, not map, mission, entity or execution identity.", "restored map ≠ localized Unit · durable world ≠ conversation transcript"],
   ["Automatic Unit awareness", "direct observations first; radius when usable", "Nemeia derives agent context from assigned Units. It always includes their permitted observations, mission dependencies and pending outcomes. A world-managed radius adds nearby shared state only when metric positions can be compared reliably. Discovery and unlocated evidence remain outside radius filtering. No agent-managed subscriptions or preselected entity list. As context grows, keep bounded relevant projections and authorized detail reads; absence from a prompt never deletes durable world knowledge.", "Unit observations + usable local neighborhood + mission dependencies → context"],
   ["Local frames and reconciliation", "one logical world; independent spatial views", "Every metric estimate names its frame and acquisition time. Register fresh frame identities after coordinate resets; never reinterpret old coordinates. Local sensor transforms remain necessary when fusing measurements. Cross-Unit alignment is optional: a qualified localization system publishes evidence-backed relationships between frames when available. Keep original local evidence and identity provenance; aligning maps does not prove two tracks are the same object. Agents can share non-spatial mission findings without aligned coordinates.", "local frame A · local frame B · evidence-backed relationship"],
-  ["Spatial requirements belong to actions", "semantic destinations resolve to measured local goals", "A room description resolves to an evidenced region, then its current extent and a useful viewing or navigation pose. An unresolved description triggers observation or authorized exploration, not fabricated coordinates. navigate@1 targets a pose; approach@1 targets an observed entity at a standoff. Both require current localization and qualified local planning. The controller derives a Unit-specific cost/traversability view and checks live obstacles independently of mapping and LLM rates. Another Unit needs qualified alignment or independent reacquisition.", "kitchen → region identity → current extent → local pose → planner + control"],
+  ["Spatial requirements belong to actions", "choose a local goal; let local systems handle motion", "The agent chooses a useful viewing pose from the measured map and object evidence. navigate@1 targets that pose; approach@1 targets an observed entity at a standoff. Both require current localization, authority and qualified local planning. The controller checks live obstacles independently of mapping and LLM rates. A description alone supplies neither coordinates nor motion permission.", "observed object → useful viewpoint → local planner + control"],
 ];
 
 export function renderWorldPlan({ section, proseRow }) {
@@ -158,7 +147,7 @@ export function plannedTables(tables) {
   tables.find(table => table.name === "observation").columns.splice(3, 0,
     ["unitId", "string", "Originating Unit derived from authenticated producer scope; preserve across credential/session changes."],
     ["localMapId", "string", "Originating map context checked at ingestion; unlocated evidence remains attached without fabricated coordinates."]);
-  describe("world_event", "kind", "Installed domain events, including observation.recorded, map.revision_committed, region.projected/named, mission and execution transitions; not every sensor callback.");
+  describe("world_event", "kind", "Installed domain events, including observation.recorded, map.revision_committed, mission and execution transitions; not every sensor callback.");
   describe("mission", "spec", "MissionSpec: immutable description, objectives and optional deadline/template; no hardware assignment.");
   const progress = tables.find(table => table.name === "mission_credit");
   progress.name = "mission_objective_progress";
@@ -168,14 +157,6 @@ export function plannedTables(tables) {
   describe("mission_objective_progress", "recordedAt", "Completion commit time; pending objectives are derived from the specification and need no row.");
   describe("mission_agent", "agentId", "Indexed agent identity. One agent can hold many assignments; the mission log derives from these rows.");
   const additions = [
-    { name: "region", accessor: "region", columns: [
-      ["entityId", "string", "PK. Existing Entity identity; region is a component, not a parallel identity system."],
-      ["mapId", "string", "Indexed local map containing the extent; no assumed cross-map alignment."],
-      ["revision", "u64", "Compare-and-set revision for extent/name edits. Archive prior component versions before replacement."],
-      ["extent", "RegionExtent", "Retained checkpoint, occupancy layer and aligned region mask; explicitly partial or bounded."],
-      ["observationIds", "string[]", "Retained spatial evidence used to establish this extent; labels cannot create geometry."],
-      ["name", "Option<RegionName>", "World Master-assigned text, authenticated author and time; model hypotheses remain in semantic."],
-    ] },
     { name: "spatial_frame", accessor: "spatialFrame", columns: [
       ["id", "string", "PK. Immutable namespaced frame identity; use a new ID after an origin reset."],
       ["unitId", "Option<string>", "Originating Unit; site frames need not belong to one Unit."],
@@ -195,7 +176,7 @@ export function plannedTables(tables) {
       ["mapId", "string", "Indexed local_map identity; validate root frame and expected head."],
       ["revision", "u64", "Monotonic local checkpoint version; not a global subscription cursor."],
       ["parentRevision", "Option<u64>", "Predecessor checkpoint; preserve reachable history under retention policy."],
-      ["manifest", "ResourceRef", "Retained LocalMapManifest: native spatial layers, region versions, exact evidence coverage and optional mapper state."],
+      ["manifest", "ResourceRef", "Retained LocalMapManifest: native spatial layers, exact evidence coverage and optional mapper state."],
       ["recordedAt", "Timestamp", "Commit time. Does not make old observations or localization fresh."],
     ] },
   ];

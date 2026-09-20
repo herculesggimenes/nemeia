@@ -12,7 +12,6 @@ import { missionCode, missionViewCode, missionLogCode, missionsContractCode } fr
 import { v0FlowCode, objectPlanningCode, objectCode, worldMemoryCode } from "../../docs/world-view-content.mjs";
 import { spatialTypesCode, navigationCode } from "../../docs/spatial-model-content.mjs";
 import { wakeCode } from "../../docs/eve-content.mjs";
-import { exampleTimeline } from "../../docs/world-example-content.mjs";
 
 test("sensor facets retain independent acquisition times and complete measured geometry",()=>{
   const { input, camera, lidar, geometryRow }=example;
@@ -157,49 +156,27 @@ test("published design includes roles, authority fences and separate cadences wi
   assert.match(agentSource,/until the local executor confirms safe closure/);
 });
 
-test("architecture documents durable local knowledge, automatic awareness and recovery",()=>{
+test("architecture keeps map, objects and evidence without a room subsystem",()=>{
   const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
-  for(const id of ["local-world","object-local-map","object-world-view","contract-world-memory","table-spatial_frame","table-map_revision","flow-resume"]) assert.ok(page.includes(`id="${id}"`),id);
+  for(const id of ["local-world","object-local-map","object-world-view","contract-world-memory","table-spatial_frame","table-map_revision","object-navigation","object-mission-finding"]) assert.ok(page.includes(`id="${id}"`),id);
   assert.doesNotMatch(page,/putSubscription|id="table-agent_subscription"|world-frame 3D box|Shared frame, e\.g\. map/);
+  assert.doesNotMatch(page,/RegionExtent|RegionRecord|RegionView|RegionName|regionVersions|projectRegion|nameRegion|PlaceTarget|id="table-region"|tag: &quot;inspected&quot;/);
+  assert.doesNotMatch(page,/local_map_checkpoint|minNewObservations|spec\.goal|goal:|creditObjective|id="table-mission_credit"/);
   const worldView=page.split('id="object-world-view"')[1].split('</details>')[0];
   assert.match(worldView,/localMaps/); assert.match(worldView,/poses:/);
   const flow=page.split('id="example"')[1].split('<section class="section" id="tracing"')[0];
-  assert.match(flow,/relocalization_required/);
-  assert.match(flow,/mission-2/);
-  assert.match(flow,/satisfies MissionSpec/);
-  assert.match(flow,/recordObjectiveProgress/);
-  for (const text of ["Find the blue backpack", "Inspect the passage", "satisfies MissionFinding", "satisfies NavigateRequest", "World Master reviews", "obstructed", "obs-2"]) assert.ok(flow.includes(text), text);
-  assert.doesNotMatch(flow,/Acquire a fresh semantic observation|Acquire a fresh local geometry measurement/);
-  assert.ok(page.includes('id="object-mission-finding"'));
-  assert.ok(page.includes('id="object-mission-place"'));
-  assert.ok(page.includes('id="flow-discovery"'));
-  assert.match(v0FlowCode.mission, /searchArea: \{ tag: "description", value: \{ text: "the living area" \} \}/);
-  assert.match(v0FlowCode.mission, /region: \{ tag: "description", value: \{ text: "the passage to the kitchen" \} \}/);
-  assert.doesNotMatch(v0FlowCode.mission, /searchAreaId:|regionId:|entityId:/);
-  assert.match(v0FlowCode.navigation, /targetPose:/);
-  assert.match(v0FlowCode.discovery, /kind: "occupancy"/);
-  assert.doesNotMatch(flow, /opening-1|firstSurvey|sizeM: \[0.4, 0.3, 0.7\]/);
-  assert.match(v0FlowCode.inputs, /tag: "pointCloud"/);
-  assert.match(v0FlowCode.projection, /satisfies LocalMapManifest/);
-  assert.match(v0FlowCode.findings, /regionRevision: 6n/);
-  assert.doesNotMatch(flow, /relevantKnowledge|placeCandidateIds|backpackCandidateIds|nextInvestigation|initialContext/);
-  assert.equal(exampleRows[0][0], "discovery", "populated world precedes mission and reasoning");
-  assert.ok(exampleRows.findIndex(row => row[0] === "waiting") < exampleRows.findIndex(row => row[0] === "navigation"));
-  assert.match(v0FlowCode.discovery, /revision: 41n/);
-  assert.match(v0FlowCode.waiting, /revision: 48n/);
-  assert.match(v0FlowCode.prepared, /Readonly<WorldView>/);
-  assert.match(v0FlowCode.prepared, /MissionLog/);
-  assert.match(v0FlowCode.navigation, /basisMapRevision: 42n/);
-  assert.match(v0FlowCode.findings, /Readonly<WorldView>/);
-  assert.equal(exampleTimeline.length, 5);
-  for (const id of ["object-spatial-map", "object-navigation", "table-region", "flow-naming"]) assert.ok(page.includes(`id="${id}"`), id);
-  assert.match(v0FlowCode.findings, /searchAreaId: "space-1"/);
-  assert.match(v0FlowCode.findings, /regionId: "passage-1"/);
-  assert.doesNotMatch(flow, /regions are already named|resolve them before accepting|targetId: &quot;kitchen-doorway&quot;/);
-  assert.doesNotMatch(page,/local_map_checkpoint|minNewObservations|spec\.goal|goal:|creditObjective|id="table-mission_credit"/);
-  assert.doesNotMatch(flow,/fromAgentId|toAgentId|analystPrincipal|readScope:/);
+  assert.deepEqual(exampleRows.map(row=>row[0]), ["mission","world","navigation","observation","report"]);
+  assert.equal((flow.match(/class="walkthrough-step"/g)||[]).length, 5);
+  for(const text of ["Find my blue backpack", "satisfies MissionSpec", "satisfies MissionFinding", "satisfies NavigateRequest", "recordObjectiveProgress", "World Master reviews", "relocalization_required"]) assert.ok(flow.includes(text),text);
+  assert.doesNotMatch(flow,/mission-2|kitchen|space-1|regionId|searchAreaId|relevantKnowledge|placeCandidateIds|nextInvestigation|fromAgentId|toAgentId/);
+  assert.match(v0FlowCode.world,/kind: "occupancy"/);
+  assert.match(v0FlowCode.world,/Readonly<WorldView>/);
+  assert.match(v0FlowCode.world,/live world advances/);
+  assert.match(v0FlowCode.navigation,/basisMapRevision: 42n/);
+  assert.match(v0FlowCode.observation,/tag: "pointCloud"/);
+  assert.match(v0FlowCode.report,/Readonly<WorldView>/);
   const worldConfig=page.split('id="table-world_config"')[1].split('</details>')[0];
-  assert.doesNotMatch(worldConfig,/<td>frameId<\/td>/);
+  assert.ok(!worldConfig.includes('<td>frameId</td>'));
   assert.match(worldConfig,/awarenessPolicy/);
 });
 
