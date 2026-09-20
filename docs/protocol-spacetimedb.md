@@ -5,7 +5,7 @@ client subscriptions, decisions and bounded execution. Its foundations
 are world, entity, component, relationship, affordance, action, system and event.
 Mission is a first-class domain abstraction built on those foundations: durable
 intent, typed objectives, constraints and evidence-backed progress.
-World Masters assign missions and authority. Agents collaborate on outcomes and
+World Operators assign missions and authority. Agents collaborate on outcomes and
 coordinate Units: entities with installed controllable capabilities. Systems
 handle perception, classification, pathfinding and local execution.
 SpacetimeDB is the selected world-storage and synchronization implementation,
@@ -16,7 +16,7 @@ This is an architecture specification, not a deployment-status report.
 ## World memory and local maps
 
 Each Unit contributes observations to durable world knowledge and a progressive
-local map. World Masters create missions, assign agents and grant Unit authority
+local map. World Operators create missions, assign agents and grant Unit authority
 separately. Each agent coordinates its assignments through a mission log.
 Local knowledge remains useful without a complete reconstruction, a global
 coordinate frame or automatic map fusion.
@@ -57,7 +57,7 @@ authorized projection; prompt omission never deletes durable knowledge.
 
 ### Example: find my blue backpack
 
-The World Master creates one mission, assigns Navigator and grants Go2 control.
+The World Operator creates one mission, assigns Navigator and grants Go2 control.
 The example starts with an already-localized Unit, a partial map, a sofa and a
 partly hidden backpack candidate. No room segmentation or room names are needed.
 
@@ -72,7 +72,7 @@ partly hidden backpack candidate. No room segmentation or room names are needed.
 4. **Update the world.** New calibrated camera/range observations refine the
    same object track and progressive map. The next agent step reads current state.
 5. **Report the result.** “The blue backpack is beside the sofa,” linked to its
-   local position, image and observation time. World Master review accepts the
+   local position, image and observation time. World Operator review accepts the
    match before progress completes. The world persists for the next task.
 
 The spatial map describes measured space. Objects carry identities and
@@ -181,7 +181,7 @@ database. The robot-local controller owns motion, command bounds, monotonic
 watchdogs, stop and durable admission receipts. A database outage must not
 prevent local stop. No database transaction spans robot IO.
 
-## World Masters, agents and Units
+## World Operators, agents and Units
 
 Entity is the common identity for a chair, room, Go2 or vacuum. Unit is the role
 of an entity with controllable capabilities, not a new identity or a hardware
@@ -189,12 +189,12 @@ class hierarchy. An offline Unit remains a Unit but is unavailable. The optional
 motion contracts specify `approach@1` and `navigate@1`; other devices need their own typed
 bindings and validators, not an unvalidated universal command payload.
 
-A World Master is a privileged client role, human-operated or automated, not a
+A World Operator is a privileged client role, human-operated or automated, not a
 mandatory singleton service. It sees the whole recorded world, establishes or
 cancels missions, assigns teams and Unit grants, and can pause/reassign agents.
 It cannot invent observations, bypass admission or override robot-local safety.
 Platform administrators provision credentials/bindings separately; the World
-Master role governs domain work rather than inheriting unrestricted sensor writes.
+Operator role governs domain work rather than inheriting unrestricted sensor writes.
 
 An agent is a durable logical decision-maker, not a robot, model, worker process
 or connection. It may use LLMs, Typesafe or rules, work on multiple missions,
@@ -204,7 +204,7 @@ Multiple agents collaborate on the same mission and objective credit ledger.
 
 Keep three boundaries separate:
 
-- Visibility: the World Master's `agent.readScope` grants read access to a world.
+- Visibility: the World Operator's `agent.readScope` grants read access to a world.
   Automatically derived Unit awareness narrows interest, never permission.
   Radius filtering does not provide restricted multi-user access control;
   a preselected entity list must not hide newly discovered objects.
@@ -214,7 +214,7 @@ Keep three boundaries separate:
 - Reservation: `unit_control.activeExecutionId` records the physical attempt
   currently occupying the Unit. Assignment alone never makes a busy Unit free.
 
-World Masters compare expected revisions when editing grants/rosters. Roster
+World Operators compare expected revisions when editing grants/rosters. Roster
 changes bump mission revision; Unit grants have a separate authority revision.
 Pause, revocation and expiry invalidate affected proposals and block admission
 and claim, request cancellation, and retain reservations until confirmed local
@@ -225,8 +225,8 @@ fence executors independently from agent assignment revisions.
 Shared objectives, assignments, reservations and measured outcomes coordinate
 facts. `agent_message` carries bounded addressed requests/explanations between
 active mission participants. Derive sender from authenticated identity; authorize
-read access for sender, recipient and World Masters only. Message text is data,
-not a control grant or proof. A handoff needs an explicit World Master assignment
+read access for sender, recipient and World Operators only. Message text is data,
+not a control grant or proof. A handoff needs an explicit World Operator assignment
 operation. Retain must-handle messages until durable recipient acknowledgement;
 enforce byte/rate limits and explicit backpressure, not silent loss. A coordinator
 agent is optional, not an extra mandatory abstraction.
@@ -340,7 +340,7 @@ require a target ID before discovery. A finding links the candidate to retained
 evidence of its identity and local position without rewriting the specification.
 Mission wording does not grant motion permission or define a safety boundary.
 The owner records the creating
-World Master's identity; it does not lock the mission to one agent. World Masters
+World Operator's identity; it does not lock the mission to one agent. World Operators
 create/cancel and assign participants; active assigned agents may submit proof.
 Subscription access alone grants neither participation nor Unit authority.
 Dedicated views enforce these boundaries, with scoped controller access. Those
@@ -360,7 +360,7 @@ a new table, an audit log or an Eve conversation. It contains the agent's
 authorized assignments and retained outcomes. Teams may share progress on
 one mission; there is no duplicate mission instance per participant.
 
-The World Master defines and assigns work. The agent coordinates its log through
+The World Operator defines and assigns work. The agent coordinates its log through
 one reasoning loop, selecting work across missions according to deadlines,
 readiness, available evidence and Unit availability. Focus is not a mission
 lifecycle state: other missions stay active, their deadlines continue and
@@ -392,13 +392,13 @@ The contract defines criteria with distinct evidence requirements:
   A sent command, model answer or unlinked standalone action is not credit.
 - `located`: find the described object and report its local position. A finding
   identifies the object and cites retained observations of the match and location.
-  The explicit `world_master` review policy requires authenticated acceptance;
+  The explicit `world_operator` review policy requires authenticated acceptance;
   a detector label cannot approve its own match. Not-found-yet is not success.
   Neither a room identity nor a predeclared search region is required.
 
 Agents draft `MissionFinding` results through Eve. Drafts are neither authoritative
 world state nor objective progress. For the reviewed criteria, only a World
-Master may submit acceptance through `recordObjectiveProgress`; reducers validate
+Operator may submit acceptance through `recordObjectiveProgress`; reducers validate
 the criterion/finding tag, referenced evidence, acquisition age, readiness and access.
 Known-entity targets require the same ID. Described objects require reviewed
 evidence of the intended match and location; ambiguous candidates call for more
@@ -417,7 +417,7 @@ Live physical freshness is still rechecked for every action.
 `[missionId, objectiveId]`. Pending entries in `ObjectiveProgress` derive from the
 specification and do not need persisted rows. There is no caller-writable status
 flag, percentage or second progress counter.
-Check World Master or active participant authority and evidence access; load authoritative domain records instead
+Check World Operator or active participant authority and evidence access; load authoritative domain records instead
 of accepting caller-provided progress. The first valid proof wins. Redelivery
 returns the existing credit without replacing evidence. Validate and record the
 credit, audit event and any transition to closing in one transaction. Retain
@@ -432,7 +432,7 @@ acknowledgement and objective progress are different operations.
 `Missions.readMissionLog` exposes the authorized projection;
 `Missions.recordObjectiveProgress` accepts evidence references or explicitly
 reviewed findings, not asserted progress. Creation and assignment remain separate
-World Master operations.
+World Operator operations.
 
 ### Lifecycle and execution
 
@@ -469,7 +469,7 @@ current position or seek assistance. Arrival supports investigation but does not
 complete `located`. Reject a second
 nonterminal attempt for that objective. MissionSpec has no Unit list, speed cap
 or motor duration. Pin installed execution policy in the accepted row; local
-control may tighten it. Only an explicit audited World Master intervention can
+control may tighten it. Only an explicit audited World Operator intervention can
 omit agent assignment and, for standalone actions, mission linkage. Agents cannot
 strip either pin to bypass cancellation or revocation. Entity removal must
 reject references from active/closing missions as well as active executions.

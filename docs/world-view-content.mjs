@@ -2,7 +2,7 @@
 import { missionViewCode } from "./mission-model-content.mjs";
 import { spatialTypesCode, navigationCode } from "./spatial-model-content.mjs";
 export const scopeCode = `interface ReadScope {
-  worldId: string; // World Master grants read access to the named world
+  worldId: string; // World Operator grants read access to the named world
 } // Interest is derived automatically; no entity allowlist or agent-managed subscription.
 interface AwarenessPolicy {
   radiusM?: number; // optional world-managed radius in a usable metric frame; not sensor coverage or safety clearance

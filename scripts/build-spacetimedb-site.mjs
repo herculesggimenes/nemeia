@@ -25,7 +25,11 @@ const summary = (kind,index,title,description) => `<summary><span class="${kind}
 const codeRow = (kind,index,title,description,prose,code,id) => `<details class="${kind}-item" id="${id}">${summary(kind,index,title,description)}<div class="${kind}-body"><div class="${kind}-description"><p>${escape(prose)}</p></div><div class="${kind}-code"><pre><code class="language-ts">${escape(code)}</code></pre></div></div></details>`;
 const proseRow = (index,title,description,prose,example="") => `<details class="abstraction" id="${slug(title)}"><summary><span class="abstraction-index">${String(index+1).padStart(2,"0")}</span><span><span class="abstraction-title">${escape(title)}</span><span class="abstraction-summary">${escape(description)}</span></span><span class="toggle" aria-hidden="true"></span></summary><div class="abstraction-body"><p>${escape(prose)}</p><code>${escape(example)}</code></div></details>`;
 const section = (id,number,title,description,body) => `<section class="section" id="${id}" aria-labelledby="${id}-title"><div class="section-inner"><div class="section-intro"><div><div class="section-label">${number} / ${escape(title)}</div><h2 id="${id}-title">${escape(title)}</h2></div><p>${escape(description)}</p></div>${body}</div></section>`;
-const sources = Object.fromEntries(["values","contracts","schema","example"].map(name=>[name,read(`contracts/spacetimedb/${name}.ts`)]));
+// Render the selected role terminology without modifying the implementation scaffold.
+const roleTerminology = source => source.replaceAll("World Master", "World Operator")
+  .replaceAll("WorldMaster", "WorldOperator").replaceAll("world_master", "world_operator")
+  .replaceAll("world-master", "world-operator").replaceAll("worldMaster", "worldOperator");
+const sources = Object.fromEntries(["values","contracts","schema","example"].map(name=>[name,roleTerminology(read(`contracts/spacetimedb/${name}.ts`))]));
 
 // Reuse unchanged SDK columns; explicit documentation-only planning deltas are not implemented schema.
 const tables = plannedTables([...sources.schema.matchAll(/export const (\w+) = table\(\{ name: "([^"]+)", public: false \}, \{\n([\s\S]*?)\n\}\);/g)].map(([,accessor,name,body]) => ({accessor,name,columns:body.split("\n").map(line=>{
@@ -104,7 +108,7 @@ const refs = [
 ];
 const walkthrough = `<div class="walkthrough">${exampleRows.map(([id,title,flow,description],i)=>`<article class="walkthrough-step"><header><span class="example-index">${String(i+1).padStart(2,"0")}</span><h3>${escape(title)}</h3></header><div class="walkthrough-content"><p class="walkthrough-flow">${escape(flow)}</p><p>${escape(description)}</p><details class="walkthrough-detail" id="flow-${id}"><summary>TypeScript detail</summary><div class="example-code"><pre><code class="language-ts">${escape(v0FlowCode[id])}</code></pre></div></details></div></article>`).join("\n")}</div>`;
 const main = `<main id="main-content">${diagram}
-${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Masters govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
+${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Operators govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
 ${section("objects","02","Objects & world view","WorldView projects durable entities, evidence, local maps, missions and executions. Each spatial estimate retains its coordinate frame and acquisition time.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,objectPlanningCode(id,objectCode[id] ?? region(sources[file],id)),`object-${id}`)).join("\n")}</div>`)}
 ${renderWorldPlan({section,proseRow})}
 ${renderMissions({section,codeRow,proseRow,region})}

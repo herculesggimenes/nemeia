@@ -13,7 +13,7 @@ export const missionCode = {
   | { tag: "located"; value: {
       description: string; // what to find; no target entity or destination must already exist
       maxAgeMs: number; // positive maximum acquisition age when the finding is accepted
-      review: "world_master"; // explicit acceptance policy; a detector label cannot approve its own match
+      review: "world_operator"; // explicit acceptance policy; a detector label cannot approve its own match
     } }; // Nemeia criteria, not MMO-standard types; each needs an installed validator
 interface ObjectiveSpec {
   id: string; // unique within this mission
@@ -25,7 +25,7 @@ interface ObjectiveSpec {
 // Objectives record milestones. Continuous freshness remains an action check.
 // Do not add a generic count until distinct-item identity and deduplication are defined.`,
   "mission-spec": `interface MissionSpec {
-  description: string; // World Master's intended outcome and context; not proof of completion
+  description: string; // World Operator's intended outcome and context; not proof of completion
   objectives: readonly ObjectiveSpec[]; // explicit, server-validated completion conditions
   deadlineAt?: Timestamp; // optional world-clock deadline; not a motor timeout
   template?: PackagePin; // optional immutable authoring provenance; inline spec is authoritative
@@ -34,7 +34,7 @@ type MissionState = "active" | "closing" | "succeeded" | "failed" | "cancelled";
 type MissionOutcome = "succeeded" | "failed" | "cancelled";
 interface Mission {
   id: string; // one accepted instance; a repeat or changed specification uses a new ID
-  owner: Identity; // creating World Master, derived from authenticated identity
+  owner: Identity; // creating World Operator, derived from authenticated identity
   spec: MissionSpec; // immutable description, objectives and constraints
   state: { tag: MissionState }; // domain lifecycle, independent of agent focus
   revision: bigint; // lifecycle/assignment fence, not a progress counter
@@ -49,7 +49,7 @@ interface Mission {
       description: string; // human-readable location; coordinates/time come from cited evidence
     } };
 // Agents draft findings in Eve; drafts are not authoritative world facts or objective progress.
-// For these reviewed criteria, only an authenticated World Master can accept a finding.
+// For these reviewed criteria, only an authenticated World Operator can accept a finding.
 // The reducer checks criterion/tag, references, authority, freshness and readiness; review supplies judgment.
 // Located requires an evidenced object match and local position; not-found is not success.
 // Review checks newer contradictory evidence too; it never invents sensor measurements.
@@ -57,7 +57,7 @@ interface Mission {
   "mission-evidence": `type MissionEvidence =
   | { tag: "observation"; value: { observationId: string } } // load retained acquisition, association and requested facet
   | { tag: "execution"; value: { executionId: string } } // load matching measured outcome and safe-closure receipt
-  | { tag: "finding"; value: MissionFinding }; // reviewed criteria only; World Master acceptance and retained references required
+  | { tag: "finding"; value: MissionFinding }; // reviewed criteria only; World Operator acceptance and retained references required
 type ObjectiveProgress =
   | { objectiveId: string; status: "pending" } // no accepted proof; readiness is derived separately
   | { objectiveId: string; status: "completed";
@@ -74,7 +74,7 @@ export const missionViewCode = `interface MissionView {
   mission: Readonly<Mission>; // accepted specification and authoritative lifecycle
   objectiveProgress: readonly ObjectiveProgress[]; // one derived entry for every objective, including pending ones
   readyObjectiveIds: readonly string[]; // pending objectives whose dependencies are complete, while active and before deadline
-  participants: readonly Row<"missionAgent">[]; // World Master assignments; separate from Unit authority
+  participants: readonly Row<"missionAgent">[]; // World Operator assignments; separate from Unit authority
 } // Join mission + mission_objective_progress + mission_agent; do not persist this view.
 // Ready means eligible for work, not that a Unit is available or an action is safe.`;
 
@@ -82,19 +82,19 @@ export const missionLogCode = `interface MissionLog {
   agentId: string; // one logical agent can have several assigned missions at once
   entries: readonly MissionView[]; // authorized assignments and retained outcomes, ordered by stable mission ID
 } // Derived quest-log-style view, also called the mission board; not an audit log or new table.
-// World Master assigns missions. The agent chooses its next work across this log.
+// World Operator assigns missions. The agent chooses its next work across this log.
 // A compact summary covers every assignment; authorized reads supply deeper details.
 // Choosing a focus neither pauses other missions nor changes their objectives or deadlines.
 // Independent outcomes can progress while the agent is reasoning about another mission.
 // The shared Unit reservation prevents conflicting physical work across the entire log.`;
 
 export const missionsContractCode = `interface Missions {
-  createMission(input: { id: string; spec: MissionSpec }): Promise<void>; // World Master only; validate objectives, known references, nonempty descriptions and deadline; activate + audit
-  readMissionLog(input: { agentId: string }): Promise<MissionLog>; // own agent or authorized World Master; projected from assignments, missions and progress
+  createMission(input: { id: string; spec: MissionSpec }): Promise<void>; // World Operator only; validate objectives, known references, nonempty descriptions and deadline; activate + audit
+  readMissionLog(input: { agentId: string }): Promise<MissionLog>; // own agent or authorized World Operator; projected from assignments, missions and progress
   recordObjectiveProgress(input: { missionId: string; objectiveId: string; evidence: MissionEvidence }): Promise<void>; // validate proof/readiness and criterion-specific authority; atomically record progress + audit and request closure if required objectives complete
   cancelMission(input: { missionId: string; expectedRevision: bigint }): Promise<void>; // record cancellation, block new work and reconcile linked executions
   reconcileMission(input: { missionId: string }): Promise<void>; // enforce deadline/completion; terminal result requires confirmed safe physical closure
 } // Descriptive service boundary, not a separate microservice or handwritten transport.
-// Read views/subscriptions maintain the mission log; assignment is a WorldMasters operation.
-// Agents submit observation/execution references. Reviewed findings require a World Master's authenticated acceptance.
+// Read views/subscriptions maintain the mission log; assignment is a WorldOperators operation.
+// Agents submit observation/execution references. Reviewed findings require a World Operator's authenticated acceptance.
 // No caller can submit status flags, percentages or mutable success counters.`;

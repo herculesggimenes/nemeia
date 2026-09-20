@@ -16,7 +16,7 @@ try {
       await page.goto(new URL(route, root).href);
       assert.equal(await page.locator("details[open]").count(), 0);
       assert.equal(await page.locator("button, input, form").count(), 0);
-      for (const id of ["unit", "agent", "world-master", "object-world-view", "object-local-map", "durable-world-state", "durability-and-recovery", "contract-world-memory", "flow-report", "table-map_revision", "contract-world-masters", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment", "object-mission-log", "object-mission-spec", "objective-progress", "table-mission_objective_progress", "flow-mission"]) {
+      for (const id of ["unit", "agent", "world-operator", "object-world-view", "object-local-map", "durable-world-state", "durability-and-recovery", "contract-world-memory", "flow-report", "table-map_revision", "contract-world-operators", "object-agent-runtime", "eve-channel", "eve-sandbox", "eve-workspace", "table-unit_assignment", "object-mission-log", "object-mission-spec", "objective-progress", "table-mission_objective_progress", "flow-mission"]) {
         const summary = page.locator(`#${id} > summary`);
         await summary.focus();
         await page.keyboard.press("Enter");
@@ -45,8 +45,8 @@ try {
       if (route === "dist/index.html" && [390, 1440].includes(width)) {
         await page.evaluate(() => { document.querySelectorAll("details").forEach(element => { element.open = false; }); window.scrollTo(0, 0); });
         await page.screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-agents-${width}.png`, root)) });
-        await page.locator("#contract-world-masters > summary").click();
-        await page.locator("#contract-world-masters").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-agent-contract-${width}.png`, root)) });
+        await page.locator("#contract-world-operators > summary").click();
+        await page.locator("#contract-world-operators").screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-agent-contract-${width}.png`, root)) });
         await page.locator("#eve-runtime").scrollIntoViewIfNeeded();
         await page.screenshot({ path: fileURLToPath(new URL(`.artifacts/nemeia-eve-${width}.png`, root)) });
         await page.locator("#local-world").scrollIntoViewIfNeeded();

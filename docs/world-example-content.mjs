@@ -1,10 +1,10 @@
 // Read-only example. Each excerpt uses the contracts displayed on this page.
 export const exampleRows = [
-  ["mission", "Set the task", "World Master → one mission, one agent", "“Find my blue backpack.” The World Master records the objective, assigns Navigator and grants it control of Go2. The task does not specify a route or a known backpack ID. Mapping and perception are already running."],
+  ["mission", "Set the task", "World Operator → one mission, one agent", "“Find my blue backpack.” The World Operator records the objective, assigns Navigator and grants it control of Go2. The task does not specify a route or a known backpack ID. Mapping and perception are already running."],
   ["world", "Look at the world that already exists", "Agent sees → map, robot position, objects, images", "Navigator receives a partial local map and Go2’s current position. A sofa and a possible blue backpack are already tracked. The backpack is partly hidden in the camera view, with a measured visible surface beside the sofa. The agent needs a better view to confirm the match."],
   ["navigation", "Choose a better view", "Agent decides → viewpoint; local systems → route", "Navigator chooses a viewing pose from the measured map. Admission checks the proposal against current state; Go2’s local navigation handles the route and live obstacles. Mapping and object tracking keep updating throughout the slower reasoning step and the movement."],
   ["observation", "Update the same world", "Perception changes → clearer image, refined object location", "From the new viewpoint, the camera sees more of the backpack. Calibrated association connects the image and LiDAR evidence to the existing object track. The world retains the new evidence and refines the local map. Navigator’s next step reads this current state, not a queue of every sensor frame."],
-  ["report", "Report what was found", "Agent reports → backpack, location, supporting image", "“The blue backpack is beside the sofa.” The report links to its measured local position and latest image, with the observation time. The World Master reviews the match before the objective is completed. The map and object history remain available for the next task, even if the agent goes idle."],
+  ["report", "Report what was found", "Agent reports → backpack, location, supporting image", "“The blue backpack is beside the sofa.” The report links to its measured local position and latest image, with the observation time. The World Operator reviews the match before the objective is completed. The map and object history remain available for the next task, even if the agent goes idle."],
 ];
 
 export const exampleCode = {
@@ -15,7 +15,7 @@ const backpackSpec = {
     id: "locate", description: "Identify the backpack and report its evidenced location.",
     dependsOn: [], optional: false,
     criterion: { tag: "located", value: {
-      description: "Blue backpack", maxAgeMs: 60_000, review: "world_master",
+      description: "Blue backpack", maxAgeMs: 60_000, review: "world_operator",
     } },
   }],
   deadlineAt: at("2026-09-19T12:06:00Z"), // task deadline, not a motor timeout
@@ -23,12 +23,12 @@ const backpackSpec = {
 const createMission = { id: "mission-1", spec: backpackSpec } satisfies Parameters<Missions["createMission"]>[0];
 const assignment = {
   missionId: "mission-1", agentId: "navigator", active: true, expectedRevision: 1n,
-} satisfies Parameters<WorldMasters["assignMission"]>[0];
+} satisfies Parameters<WorldOperators["assignMission"]>[0];
 const unitGrant = {
   unitId: "go2-01", agentId: "navigator", actionNames: ["navigate@1"],
   expectedRevision: 0n, expiresAt: backpackSpec.deadlineAt,
-} satisfies Parameters<WorldMasters["assignUnit"]>[0];
-// Separate World Master operations: create → assign → grant Unit authority.
+} satisfies Parameters<WorldOperators["assignUnit"]>[0];
+// Separate World Operator operations: create → assign → grant Unit authority.
 // These values describe inputs, not calls. The mission reaches revision 2 after assignment.
 // The installed local navigation adapter and operating limits authorize nearby investigation.`,
   world: `declare const retainedMap: ResourceRef; // existing native map product, not recreated by the mission
@@ -99,7 +99,7 @@ const finding = {
 const progress = {
   missionId: "mission-1", objectiveId: "locate", evidence: { tag: "finding", value: finding },
 } satisfies Parameters<Missions["recordObjectiveProgress"]>[0];
-// World Master reviews the match, acquisition age and any newer contradictory evidence.
+// World Operator reviews the match, acquisition age and any newer contradictory evidence.
 // At 12:01:20 the measurements are about 35 seconds old, within this mission's 60-second review window.
 // Acceptance records proof + progress + audit. Mission closure also requires safe physical closure.
 // New work reads the retained world. An Eve reset does not erase the map or object identities.

@@ -147,10 +147,13 @@ test("shared mission, Unit grant, addressed advice and independent subscription 
 
 test("published design includes roles, authority fences and separate cadences without old Actor vocabulary",()=>{
   const page=readFileSync(new URL("../../docs/index.html",import.meta.url),"utf8");
-  for(const id of ["unit","agent","world-master","teams","contract-world-masters","contract-coordination","object-unit-agent-view","object-agent-scope","object-agent-runtime","table-agent","table-mission_agent","table-unit_assignment","table-local_map","table-agent_message"]){
+  for(const id of ["unit","agent","world-operator","teams","contract-world-operators","contract-coordination","object-unit-agent-view","object-agent-scope","object-agent-runtime","table-agent","table-mission_agent","table-unit_assignment","table-local_map","table-agent_message"]){
     assert.ok(page.includes(`id="${id}"`),id);
   }
   assert.doesNotMatch(page,/actorId|ActorView|robot_control|ClientSteps|owner\/admin|Owner\/admin|mission speed/);
+  assert.doesNotMatch(page,/World Master|WorldMaster|world_master|world-master|worldMaster/);
+  assert.match(page,/interface WorldOperators/);
+  assert.match(page,/review: &quot;world_operator&quot;/);
   const agentSource=readFileSync(new URL("../../docs/agent-content.mjs",import.meta.url),"utf8");
   assert.match(agentSource,/read scope ≠ Unit control grant ≠ execution reservation/);
   assert.match(agentSource,/until the local executor confirms safe closure/);
@@ -167,7 +170,7 @@ test("architecture keeps map, objects and evidence without a room subsystem",()=
   const flow=page.split('id="example"')[1].split('<section class="section" id="tracing"')[0];
   assert.deepEqual(exampleRows.map(row=>row[0]), ["mission","world","navigation","observation","report"]);
   assert.equal((flow.match(/class="walkthrough-step"/g)||[]).length, 5);
-  for(const text of ["Find my blue backpack", "satisfies MissionSpec", "satisfies MissionFinding", "satisfies NavigateRequest", "recordObjectiveProgress", "World Master reviews", "relocalization_required"]) assert.ok(flow.includes(text),text);
+  for(const text of ["Find my blue backpack", "satisfies MissionSpec", "satisfies MissionFinding", "satisfies NavigateRequest", "recordObjectiveProgress", "World Operator reviews", "relocalization_required"]) assert.ok(flow.includes(text),text);
   assert.doesNotMatch(flow,/mission-2|kitchen|space-1|regionId|searchAreaId|relevantKnowledge|placeCandidateIds|nextInvestigation|fromAgentId|toAgentId/);
   assert.match(v0FlowCode.world,/kind: "occupancy"/);
   assert.match(v0FlowCode.world,/Readonly<WorldView>/);
@@ -196,7 +199,7 @@ test("mission planning examples use the declared description/objectives/log/prog
   const path=fileURLToPath(new URL("./mission-plan-check.ts",import.meta.url));
   const source=[
     'import { Identity, Timestamp, t, type Infer } from "spacetimedb";',
-    'import type { Row, WorldMasters } from "./contracts.ts";',
+    'import type { Row, WorldMasters as WorldOperators } from "./contracts.ts";',
     ...["geometry", "evidence"].map(id => objectPlanningCode(id, readFileSync(new URL("./values.ts", import.meta.url), "utf8").split(`// region ${id}\n`)[1].split("// endregion")[0])),
     objectPlanningCode("action", readFileSync(new URL("./values.ts", import.meta.url), "utf8").split("// region action\n")[1].split("// endregion")[0]),
     spatialTypesCode, navigationCode, objectCode["local-map"], worldMemoryCode,
