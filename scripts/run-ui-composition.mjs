@@ -1,4 +1,4 @@
-import { chmod, mkdir, open, readFile, writeFile } from "node:fs/promises";
+import { appendFile, chmod, mkdir, open, readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import net from "node:net";
 import { resolve, join } from "node:path";
@@ -32,6 +32,8 @@ let stopping = false;
 let finishHold;
 const hold = new Promise((resolveHold) => { finishHold = resolveHold; });
 const sharedHandoffPath = join(root, ".artifacts/qualification/current-handoff.json");
+const phaseEventsPath = process.env.NEMEIA_PHASE_EVENTS_FILE ? resolve(process.env.NEMEIA_PHASE_EVENTS_FILE) : undefined;
+const e2eResultPath = process.env.NEMEIA_E2E_RESULT_FILE ? resolve(process.env.NEMEIA_E2E_RESULT_FILE) : undefined;
 
 function assertRunning() {
   if (stopping) throw new Error("owned UI composition is stopping");
@@ -44,6 +46,16 @@ for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) process.once(signal, () =>
 async function privateJson(pathname, value) {
   await writeFile(pathname, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
   await chmod(pathname, 0o600);
+}
+
+async function emitPhase(phase, reportPaths = [], artifactPaths = []) {
+  if (!phaseEventsPath) return;
+  const ownedRoot = resolve(compositionRoot);
+  for (const pathname of [...reportPaths, ...artifactPaths]) {
+    if (!resolve(pathname).startsWith(`${ownedRoot}/`)) throw new Error(`phase artifact escaped owned composition: ${phase}`);
+  }
+  await appendFile(phaseEventsPath, `${JSON.stringify({ schemaVersion: 1, phase, result: "pass", reportPaths, artifactPaths })}\n`, { mode: 0o600 });
+  await chmod(phaseEventsPath, 0o600);
 }
 
 function spawnOwned(command, args, env, stdio = "inherit") {
@@ -191,6 +203,7 @@ async function main() {
   if (simulation.exitCode !== null) throw new Error("held local simulation exited before UI handoff");
   const g1Path = join(reportDirectory, "g1-loopback.json");
   reports.G1 = (await readPassedReport(g1Path, { gate: "G1", runDirectory })).path;
+  await emitPhase("retain-map-and-evidence-across-restart", [reports.G1]);
   const qualificationRunId = `g2-${process.pid}-${Date.now()}`;
   const qualificationEnv = {
     ...environment,
@@ -249,6 +262,7 @@ async function main() {
   const automaticPath = join(reportDirectory, "automatic-wake.json");
   const release = await qualifiedG2Release({ runDirectory, qualificationRunId, standardPath: g2Path, automaticPath });
   reports.automaticWake = automaticPath;
+  await emitPhase("pin-agent-and-verify-fresh-wake", [reports.G2, reports.automaticWake]);
   // This marker is written only after both independent reports pass. The G3
   // consumer reopens and hashes those same reports before any mutation.
   await privateJson(join(runDirectory, "g2-complete.json"), release);
@@ -258,6 +272,7 @@ async function main() {
   if (current.runDirectory !== runDirectory || !current.g3ReportPath) throw new Error("G3 did not release this fixture to the UI");
   reports.G3 = (await readPassedReport(current.g3ReportPath, { gate: "G3", runDirectory })).path;
   await privateJson(handoffPath, { ...handoff, phase: "g3-complete-ui-ready" });
+  await emitPhase("execute-once-and-cancel-safely", [reports.G3]);
   if (verify) {
     const browser = await runPhase("native-e7", "frontend/scripts/verify-native-ui.mjs", ["--mutate"],
       { ...qualificationEnv, NEMEIA_UI_URL: frontendUrl }, 180_000);
@@ -270,6 +285,9 @@ async function main() {
       gate: "E7", result: "pass", claimable: true, checks: browserEvidence.checks,
       details: { runDirectory, ...browserEvidence },
     });
+    await emitPhase("create-assign-grant-and-review-mission", [reports.E7], [
+      ...["readonly-1440.png", "readonly-evidence-1440.png", "readonly-390.png", "readonly-evidence-390.png", "review-390.png", "review-1440.png"].map((name) => join(compositionRoot, "native-e7", name)),
+    ]);
     return;
   }
   console.error(`[ui-composition] G1/G2/automatic wake/G3 passed; UI writes may now begin: ${handoff.missionUrl}`);
@@ -305,5 +323,16 @@ try {
     });
     if (!passed) process.exitCode = 1;
     console.error(`[ui-composition] verification report: ${join(compositionRoot, "verification.json")}`);
+  }
+  if (e2eResultPath) {
+    await privateJson(e2eResultPath, {
+      schemaVersion: 1,
+      result: !failure && !process.exitCode ? "pass" : "fail",
+      ownerPid: process.pid,
+      compositionRoot,
+      verificationPath: join(compositionRoot, "verification.json"),
+      evidenceDirectory: join(compositionRoot, "native-e7"),
+      cleanupVerified: cleanupEvidence?.verifiedStopped === true,
+    });
   }
 }

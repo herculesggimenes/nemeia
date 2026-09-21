@@ -43,28 +43,52 @@ packaging pass did not cover configured compiler imports. Reports use unique
 `eve-packaging/run-*/report.json` paths and a path-only `latest.json` pointer,
 leaving the earlier evidence intact.
 
-## Fast static and fake checks
+## Testing
 
-From the repository root:
+The default task is the root Playwright E2E flow:
 
 ```bash
-npm run check:authority
-npm run check:contract-manifest
-npm run check:conformance:mock
-npm run check:software
+npm test
 ```
 
-The fake suite is intentionally separate from loopback evidence. A passing fake
-suite does not establish G1, G2, or G3.
+`npm run check` is the same E2E alias. It uses the installed Playwright
+`1.61.0` runner and `playwright.config.ts`; it does not add the lower-level
+software checks. The E2E fixture starts the existing
+`scripts/run-ui-composition.mjs --verify` as one isolated child with the native
+no-motion world and fake model. Do not start another composition concurrently.
 
-The default `npm run check` now combines `check:software`, `check:eve:packaging`
-and `check:frontend:native-guard`; `npm run dev` selects `dev:ui:loopback`.
-Actual DB qualification is separate. The former prototype aggregate and old
-MissionServer drill are retained only under explicit `check:legacy` commands,
-not selected startup or acceptance evidence. The authorized clean installation
-passed at 22:15 UTC with the frontend's canonical dependencies and exact root
-pins. No retired workspace or `nemeiactl` bin remains installed. Retained data
-was preserved, and the old owned services were stopped before installation.
+For Playwright's browser-based UI and report server:
+
+```bash
+npm run test:ui
+npm run test:report
+```
+
+No Playwright plugin is part of this workflow. If interactive inspection is
+needed, use Playwright's built-in UI mode.
+
+The UI binds to `127.0.0.1:9324`; the report binds to `127.0.0.1:9323`.
+Specifying the UI host and port makes Playwright open a browser tab instead of
+requiring a desktop UI launch. UI mode can force tracing even when the checked-in
+config disables it. The UI exposes safe phase/step labels, allowlisted JSON
+summaries, and approved post-auth PNGs—not the full authenticated DOM or a
+network trace. Only allowlisted summaries and approved screenshots are attached;
+raw authenticated traces/logs are excluded.
+
+The lower-level aggregate remains explicit:
+
+```bash
+npm run check:internal
+```
+
+`check:internal` retains the prior software, configured packaging, and native
+safety-guard checks. A passing lower-level suite does not establish G1, G2, or
+G3. The existing frontend credential-free smoke remains available as a separate
+internal check, outside the default E2E gate.
+
+`npm run dev` still selects `dev:ui:loopback`. The former prototype aggregate
+and old MissionServer drill remain under explicit `check:legacy` commands, not
+the default E2E or internal gate.
 
 ## Loopback qualification
 
@@ -88,15 +112,15 @@ the fixture image/PCD plus retained map references, same-body replay with no
 new observation/map rows, changed-body immutable-identity rejection, and
 missing/corrupt reference rejection.
 
-The complete bounded software qualification is:
+The complete bounded software qualification is driven by the root E2E test:
 
 ```bash
 node scripts/provision-spacetimedb.mjs
 npm exec --workspace=frontend --no -- playwright install chromium
-npm run qualify:software
+npm test
 ```
 
-Provision tools separately from qualification. `qualify:software` invokes
+Provision tools separately from qualification. The E2E fixture invokes
 `node scripts/run-ui-composition.mjs --verify`: actual G1 retained restart,
 native no-motion safety startup, standard G2, action-free automatic wake, G3,
 then guarded native browser E7
@@ -382,11 +406,12 @@ If the loopback command fails:
 
 The software-only CI definition is `.github/workflows/software.yml`: manual
 dispatch, read-only contents permission, Node 24.19.0 and separate dependency,
-pinned CLI and Chromium provisioning. It calls `npm run check` and builds the
-frontend without secrets or artifact-directory uploads. Remote execution has
-not been run. The full loopback/native browser CI job remains gated on a
-validated bounded fresh-composition command; the current workflow does not
-claim those gates or run legacy smoke tests. Pages deployment is unchanged.
+pinned CLI and Chromium provisioning. It calls `npm run check` once; that
+command owns the bounded full-system Playwright E2E lane, and the workflow then
+builds the frontend separately. The workflow has no secret inputs or artifact
+upload step; private raw logs and evidence remain in local run directories. It
+does not run legacy smoke tests. Remote execution requires manual dispatch.
+Pages deployment is unchanged.
 
 Normal configuration cannot enable an unqualified physical adapter. A physical
 qualification requires separate supervised evidence for G3 and Q5. Resource

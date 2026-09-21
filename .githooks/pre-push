@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 set -eu
 
-cd "$(git rev-parse --show-toplevel)/frontend"
+cd "$(git rev-parse --show-toplevel)"
 npm run check

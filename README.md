@@ -13,13 +13,9 @@ The [protocol](./docs/protocol-spacetimedb.md),
 [module schema](./contracts/spacetimedb/src/schema.ts), and
 [generated client](./world-client/src/generated/index.ts) define the current
 implementation. See [execution status](./docs/implementation-plan/EXECUTION.md)
-for the fresh passing software chain: G1 retention, actual G2 agent access,
-separate action-free automatic wake, G3's no-motion loop and E7 browser
-write/review. Browser evidence is archived outside Playwright cleanup. Final
-root checks already passed: software 19/19, configured Eve packaging, and
-native guards 3/3. On 2026-09-20, the frontend production build passed and a
-fresh safe smoke passed 4 cutover checks plus 5 Chromium checks. Native route
-retirement and clean installation are complete; remote CI has not run.
+for retained qualification evidence. The default test command is the root
+Playwright E2E flow. Lower-level software, packaging, and safety checks remain
+available under explicit `internal` commands. Remote CI is separate.
 
 ## Software-only setup
 
@@ -28,7 +24,7 @@ composition is running:
 
 ```bash
 npm run setup:software
-npm run check
+npm test
 ```
 
 Setup uses the checked root lockfile and standard hoisted npm workspaces.
@@ -37,12 +33,35 @@ AI SDK `7.0.105`, and Zod `4.1.12`. The repository is the Eve project root;
 `agent/` contains the authored application. Do not run Eve from `agent/` as
 though it were a separate application.
 
-`npm run check` runs `check:software`, the zero-inference Eve packaging regression,
-and offline native safety-guard tests. `check:software` runs strict TypeScript
-and deterministic tests for the selected
-module, clients, resources, perception, agent, controller, UI, and conformance
-helpers. It does not contact a robot or paid model. Packaging can be checked
-without inference:
+`npm test` and `npm run check` run the installed Playwright `1.61.0` runner with
+the root `playwright.config.ts`. The E2E fixture starts the existing
+`run-ui-composition.mjs --verify` as an isolated child with the native no-motion
+world and fake model. It owns its services and cleans them up.
+
+For interactive Playwright UI mode and the saved HTML report:
+
+```bash
+npm run test:ui
+npm run test:report
+```
+
+UI mode serves only on `127.0.0.1:9324`; the report serves only on
+`127.0.0.1:9323`. UI mode may force tracing even though the checked-in config
+disables tracing. The UI shows safe phase/step labels, allowlisted JSON
+summaries, and approved post-auth PNGs. Only allowlisted summaries and approved
+screenshots are attached; raw authenticated traces/logs are excluded.
+
+The lower-level aggregate stays separate:
+
+```bash
+npm run check:internal
+```
+
+It runs the existing software, configured Eve packaging, and native safety
+guards. `check:software` still runs the selected strict TypeScript and
+deterministic checks for the module, clients, resources, perception, agent,
+controller, UI, and conformance helpers. It does not contact a robot or paid
+model. Packaging can be checked without inference:
 
 ```bash
 npm run check:eve:packaging
@@ -50,6 +69,8 @@ npm run check:eve:packaging
 
 The old aggregate is retained only as `check:legacy`, outside software gate
 evidence. Do not use its old browser/hardware-oriented checks for the native demo.
+The existing frontend credential-free smoke remains a separate lower-level
+check.
 
 ## Local simulation and mission UI
 
@@ -78,18 +99,20 @@ Stop with Ctrl-C. The launcher stops only its owned children, marks its
 handoffs unavailable, and retains evidence and database files. It never kills
 an existing service to free a port.
 
-For bounded, one-shot qualification including native browser writes and cleanup:
+The root E2E test is the bounded, one-shot qualification path. It starts the
+same isolated composition, waits for each safe phase, checks the allowlisted
+reports, attaches the approved post-auth PNGs, and verifies cleanup:
 
 ```bash
-npm run qualify:software
+npm test
 ```
 
-This is `node scripts/run-ui-composition.mjs --verify`. It runs the same sequence,
-then the guarded native E7 mutation flow, archives browser evidence outside
-Playwright's output directory, and stops its owned services on success or failure.
-Reports must say `result: pass` and `claimable: true`; a diagnostic or failed
-check is not a completed gate. See the [runbook](./docs/implementation-plan/RUNBOOK.md)
-for held-run sequencing, cancellation cleanup, report locations, and recovery.
+The underlying `node scripts/run-ui-composition.mjs --verify` launcher remains
+an implementation detail for the E2E fixture. Do not start it as a concurrent
+second run. Reports must say `result: pass` and `claimable: true`; a diagnostic
+or failed check is not a completed gate. See the
+[runbook](./docs/implementation-plan/RUNBOOK.md) for cancellation cleanup,
+report locations, and recovery.
 Native robot recordings, live sensing, physical navigation, remote deployment,
 and paid inference each require separate qualification and authorization.
 

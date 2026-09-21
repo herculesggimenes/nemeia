@@ -45,19 +45,16 @@ jobs:
         timeout-minutes: 5
         run: npm exec --workspace=frontend --no -- playwright install --with-deps chromium
 
-      - name: Strict software, runtime, configured packaging and native guard
-        timeout-minutes: 15
+      - name: Full-system Playwright E2E flow
+        timeout-minutes: 35
         run: npm run check
 
       - name: Build the native frontend
         timeout-minutes: 5
         run: npm --prefix frontend run build
 
-      - name: Actual loopback, automatic wake and native browser qualification
-        timeout-minutes: 25
-        run: npm run qualify:software
-
-      # Never substitute skipped adapter tests, a held dev process or legacy
-      # browser smoke for the explicit bounded native qualification above.
+      # The root check owns the one real full-system Playwright E2E lane. Never
+      # substitute skipped adapter tests, a held dev process or legacy browser
+      # smoke for that bounded native qualification.
       # Do not upload .artifacts, .eve, .output, token files, databases,
       # browser auth state or retained evidence/resource directories.

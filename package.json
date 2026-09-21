@@ -14,6 +14,7 @@
     "zod": "4.1.12"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.0",
     "@types/node": "26.0.0",
     "typescript": "5.9.3",
     "jiti": "2.7.0"
@@ -30,7 +31,13 @@
     "check:eve:packaging": "node scripts/check-eve-packaging.mjs",
     "check:spacetimedb-protocol": "npm --prefix contracts/spacetimedb run check && node --test contracts/spacetimedb/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
     "check:protocol": "tsc -p contracts/protocol/tsconfig.json && node --test contracts/protocol/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
-    "check": "npm run check:software && npm run check:eve:packaging && npm run check:frontend:native-guard",
+    "test": "npm run test:e2e",
+    "test:e2e": "playwright test --config=playwright.config.ts",
+    "test:ui": "playwright test --config=playwright.config.ts --ui --ui-host=127.0.0.1 --ui-port=9324",
+    "test:report": "playwright show-report playwright-report --host=127.0.0.1 --port=9323",
+    "test:unit": "npm --prefix frontend run test:unit",
+    "check:internal": "npm run check:software && npm run check:eve:packaging && npm run check:frontend:native-guard",
+    "check": "npm run test:e2e",
     "check:anomaly": "npm --prefix anomaly run check",
     "check:attention": "npm --prefix attention run check",
     "check:capability-host": "npm --prefix capability-host run check",

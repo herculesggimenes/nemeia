@@ -17,13 +17,16 @@ From `frontend/`, using the retained owned service:
 
 ```sh
 npx next typegen
-NEMEIA_ISOLATED_BUILD=1 NEMEIA_UI_URL=http://127.0.0.1:5183 npm run check
+NEMEIA_ISOLATED_BUILD=1 NEMEIA_UI_URL=http://127.0.0.1:5183 npm run check:internal
 ```
 
 The isolated build flag prevents Next from cleaning the retained `.next/e7`
 development cache. Normal production build/start may omit it when no owned
 development service is being retained. After switching route inventories, use
 `next typegen` to replace stale generated validators.
+
+This is an optional frontend internal check, separate from the root Playwright
+E2E default.
 
 The replacement smoke suite is credential-free and cannot write World state.
 Before HTTP probes, it audits every app source and transitive local import for
@@ -50,7 +53,7 @@ node scripts/start-native-fixture.mjs
 Default frontend URL is `http://127.0.0.1:5183`; `NEMEIA_UI_PORT` overrides the
 port. Do not stop Integration services or compete for a development lock.
 
-Read-only cutover verification, with the currently held accepted E7 mission:
+Read-only cutover verification, with a retained accepted E7 mission:
 
 ```sh
 NEMEIA_UI_URL=http://127.0.0.1:5183 \
@@ -92,7 +95,7 @@ nearby feedback and explicitly reports skipped history. Revision-conflict errors
 may still arrive from World as an opaque SDK error; the UI does not invent a
 domain-specific explanation.
 
-Production build currently emits a ResourceGateway dynamic-filesystem tracing
+Production builds emit a ResourceGateway dynamic-filesystem tracing
 warning. Qualification traced-file checks found no credential or fixture paths.
 Root Integration owns dependency-lock reconciliation; frontend metadata declares
 canonical world-client/world-resources and no world-runtime dependency.

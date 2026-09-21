@@ -15,7 +15,10 @@ test("local software CI is read-only, separately provisioned, and uses real npm 
   assert.ok(commands.every((step) => step["timeout-minutes"] > 0));
   assert.ok(commands.some((step) => step.run === "npm run setup:software"));
   assert.ok(commands.some((step) => step.run === "npm run check"));
-  assert.ok(commands.some((step) => step.run === "npm run qualify:software" && step["timeout-minutes"] === 25));
-  assert.ok(commands.findIndex((step) => step.run === "npm run qualify:software") > commands.findIndex((step) => step.run === "npm run check"));
+  assert.equal(commands.filter((step) => step.run === "npm run check").length, 1);
+  assert.equal(commands.some((step) => step.run === "npm run qualify:software"), false);
+  const e2eStep = commands.find((step) => step.run === "npm run check");
+  assert.equal(e2eStep?.name, "Full-system Playwright E2E flow");
+  assert.equal(e2eStep?.["timeout-minutes"], 35);
   assert.doesNotMatch(text, /secrets\.|upload-artifact|npm check|check:legacy/);
 });
