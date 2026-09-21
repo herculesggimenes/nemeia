@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import "dockview/dist/styles/dockview.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Nemeia",
-  description: "Nemeia robot operator console"
+  description: "Nemeia native World mission board"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

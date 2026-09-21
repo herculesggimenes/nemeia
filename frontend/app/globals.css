@@ -6,31 +6,31 @@
 @source "../types/**/*.{ts,tsx,js,jsx}";
 
 @theme {
-  --color-background: #1e1e2e;
-  --color-foreground: #cdd6f4;
-  --color-sidebar: #181825;
-  --color-sidebar-foreground: #cdd6f4;
-  --color-sidebar-accent: #313244;
-  --color-sidebar-accent-foreground: #cdd6f4;
-  --color-sidebar-border: #313244;
-  --color-sidebar-ring: #89b4fa;
-  --color-surface-0: #11111b;
-  --color-surface-1: #181825;
-  --color-surface-2: #1e1e2e;
-  --color-surface-3: #313244;
-  --color-surface-4: #45475a;
-  --color-surface-5: #585b70;
-  --color-muted: #a6adc8;
-  --color-primary: #89b4fa;
-  --color-secondary: #cba6f7;
-  --color-green: #a6e3a1;
-  --color-danger: #f38ba8;
+  --color-background: #f6f2e9;
+  --color-foreground: #20352a;
+  --color-sidebar: #f6f2e9;
+  --color-sidebar-foreground: #20352a;
+  --color-sidebar-accent: #e9eee3;
+  --color-sidebar-accent-foreground: #20352a;
+  --color-sidebar-border: #d9ded3;
+  --color-sidebar-ring: #245a40;
+  --color-surface-0: #fffdf8;
+  --color-surface-1: #fffdf8;
+  --color-surface-2: #f6f2e9;
+  --color-surface-3: #d9ded3;
+  --color-surface-4: #b7c9b7;
+  --color-surface-5: #8fa88e;
+  --color-muted: #596b60;
+  --color-primary: #245a40;
+  --color-secondary: #6e8583;
+  --color-green: #245a40;
+  --color-danger: #8d3d32;
 }
 
 @layer base {
   * {
     box-sizing: border-box;
-    scrollbar-color: #585b70 transparent;
+    scrollbar-color: #8fa88e transparent;
     scrollbar-width: thin;
   }
 
@@ -45,11 +45,11 @@
 
   *::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: #45475a;
+    background: #b7c9b7;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #585b70;
+    background: #8fa88e;
   }
 
   html,
@@ -57,8 +57,8 @@
     min-width: 320px;
     min-height: 100vh;
     margin: 0;
-    background: #11111b;
-    color: #cdd6f4;
+    background: #f6f2e9;
+    color: #20352a;
     font-family:
       ui-sans-serif,
       -apple-system,
@@ -85,14 +85,8 @@
   }
 }
 
-@utility nemeia-grid-bg {
-  background:
-    linear-gradient(90deg, rgb(137 180 250 / 0.035) 1px, transparent 1px) 0 0 / 34px 34px,
-    #1e1e2e;
-}
-
 @utility thin-scrollbar-x {
-  scrollbar-color: #585b70 transparent;
+  scrollbar-color: #8fa88e transparent;
   scrollbar-width: thin;
 
   &::-webkit-scrollbar {
@@ -105,10 +99,10 @@
 
   &::-webkit-scrollbar-thumb {
     border-radius: 999px;
-    background: #45475a;
+    background: #b7c9b7;
   }
 
   &::-webkit-scrollbar-thumb:hover {
-    background: #585b70;
+    background: #8fa88e;
   }
 }

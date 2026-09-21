@@ -1,5 +1,5 @@
-import { ConversationPage } from "../../components/thread/conversation-page";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ConversationPage />;
+  redirect("/missions");
 }

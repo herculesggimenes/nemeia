@@ -19,3 +19,16 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 .artifacts/
+
+# Eve-generated builds and retained local runtime/session state, including
+# isolated eval apps. Authored agent/eve-eval-fixture sources stay tracked.
+.eve/
+.output/
+
+# Default controller receipt ledgers (and SQLite sidecars), not test fixtures.
+/controller-*.sqlite
+/controller-*.sqlite-wal
+/controller-*.sqlite-shm
+/local-controller/controller-*.sqlite
+/local-controller/controller-*.sqlite-wal
+/local-controller/controller-*.sqlite-shm

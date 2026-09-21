@@ -14,7 +14,12 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@nemeia/world-client": ["../world-client/src/index.ts"],
+      "@nemeia/world-client/src/*": ["../world-client/src/*"],
+      "@nemeia/world-client/*": ["../world-client/*"],
+      "@nemeia/world-resources": ["../world-resources/src/index.ts"],
+      "@nemeia/world-resources/*": ["../world-resources/*"]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

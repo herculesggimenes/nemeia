@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "spacetimedb": ["../contracts/spacetimedb/node_modules/spacetimedb"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"]
+}

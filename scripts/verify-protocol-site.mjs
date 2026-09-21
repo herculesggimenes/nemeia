@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { chromium } from "../frontend/node_modules/playwright/index.mjs";
+import { chromium } from "playwright";
 
 // Local-only documentation QA: never connects to a database, model or robot.
 const root = new URL("../", import.meta.url);

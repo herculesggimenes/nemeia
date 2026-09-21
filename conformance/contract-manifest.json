@@ -1,0 +1,65 @@
+{
+  "manifestVersion": 1,
+  "authority": "docs/protocol-spacetimedb.md",
+  "status": "target-not-qualified",
+  "world": {
+    "tables": [
+      "world_config",
+      "member",
+      "entity",
+      "pose",
+      "geometry",
+      "semantic",
+      "relation",
+      "observation",
+      "track",
+      "action_binding",
+      "unit_control",
+      "mission",
+      "mission_objective_progress",
+      "agent",
+      "mission_agent",
+      "unit_assignment",
+      "agent_message",
+      "execution",
+      "world_event",
+      "spatial_frame",
+      "local_map",
+      "map_revision"
+    ],
+    "contractBoundaries": [
+      "WorldMemory",
+      "Missions",
+      "WorldOperators",
+      "AgentCoordination",
+      "PerceptionIngress",
+      "ActionRequests",
+      "ExecutionClaims",
+      "Cancellation",
+      "ControlFeedback",
+      "ExecutionCompletion",
+      "WorldAdministration",
+      "LocalController",
+      "EvidenceStorage"
+    ],
+    "forbiddenHierarchy": ["room", "region", "annotation"],
+    "forbiddenTables": ["agent_subscription"]
+  },
+  "sharedShapes": {
+    "ResourceRef": ["id", "schema", "sha256", "byteLength"]
+  },
+  "qualification": {
+    "G1": {
+      "mode": "loopback-spacetimedb",
+      "requires": ["actualModule", "generatedDbConnection", "adminAuthorizedGeneratedViews", "scopedWorkerRead", "processRestart", "retainedDataAfterRestart", "sameScopedIdentityAfterRestart", "fixtureBackedRetention", "sourceAcquisitionTimesPreserved", "resourceGatewayReopenedAfterRestart", "resourceBytesVerifiedAfterRestart", "sameBodyReplayNoNewRows", "changedBodyReplayRejected", "missingResourceRejected", "corruptResourceRejected"]
+    },
+    "G2": {
+      "mode": "eve-loopback",
+      "requires": ["actualEveLifecycle", "injectedModel", "worldChangedDuringThinking", "actualGeneratedWorldSubscription", "usefulWorldContext", "authenticatedJustBashRead", "nextStepFresh", "sameStepPinned", "revokedAccessDenied"]
+    },
+    "G3": {
+      "mode": "loopback-spacetimedb",
+      "requires": ["actualModule", "actualEve", "processRestart", "retainedDataAfterRestart", "sameScopedIdentityAfterRestart", "missionAssignment", "unitGrant", "trustedAgentCommand", "admissionClaim", "retainedControllerReceipt", "measuredFeedback", "reviewedObjectiveProgress", "safeCancellation", "noDuplicateRetry"]
+    }
+  }
+}

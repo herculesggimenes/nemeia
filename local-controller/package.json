@@ -1,0 +1,13 @@
+{
+  "name": "@nemeia/local-controller",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "dependencies": {
+    "spacetimedb": "2.10.1"
+  },
+  "scripts": {
+    "check": "tsc -p tsconfig.json --typeRoots ../node_modules/@types && node --import=jiti/register --test test/*.test.ts",
+    "run:simulated": "node --import=jiti/register src/simulated-controller.ts"
+  }
+}

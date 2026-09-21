@@ -4,6 +4,9 @@
   "version": "0.2.1",
   "type": "module",
   "scripts": {
-    "check": "node --test test/*.test.ts"
+    "check": "node --experimental-loader ../scripts/resolve-ts-specifiers.mjs --test test/backpack-fake.test.ts test/qualification-safety.test.ts test/g3-flow.test.ts",
+    "check:mock": "node --test test/backpack-fake.test.ts test/qualification-safety.test.ts",
+    "check:loopback": "node --test test/loopback-contract.test.ts test/loopback-boundaries.test.ts",
+    "check:legacy": "node --test test/gate1-sim-drill.test.ts"
   }
 }

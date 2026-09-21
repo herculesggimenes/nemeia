@@ -1,0 +1,11 @@
+{
+  "name": "nemeia-eve-runtime-fixture",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "dependencies": {
+    "eve": "0.63.0",
+    "just-bash": "3.1.0",
+    "zod": "4.1.12"
+  }
+}

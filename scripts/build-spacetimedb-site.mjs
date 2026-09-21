@@ -9,8 +9,9 @@ import { renderMissions } from "../docs/mission-content.mjs";
 import { missionsContractCode } from "../docs/mission-model-content.mjs";
 import { renderAgents } from "../docs/agent-content.mjs";
 import { renderEve } from "../docs/eve-content.mjs";
-import { renderWorldPlan, objectCode, objectPlanningCode, worldMemoryCode, coordinationCode, plannedTables, v0FlowCode } from "../docs/world-view-content.mjs";
+import { renderWorldPlan, objectCode, objectPlanningCode, worldMemoryCode, coordinationCode, v0FlowCode } from "../docs/world-view-content.mjs";
 import { spatialContractCode } from "../docs/spatial-model-content.mjs";
+import { canonicalDeclarations, canonicalSchemaTables } from "./canonical-schema.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFileSync(resolve(root,path),"utf8");
@@ -29,17 +30,19 @@ const section = (id,number,title,description,body) => `<section class="section" 
 const roleTerminology = source => source.replaceAll("World Master", "World Operator")
   .replaceAll("WorldMaster", "WorldOperator").replaceAll("world_master", "world_operator")
   .replaceAll("world-master", "world-operator").replaceAll("worldMaster", "worldOperator");
-const sources = Object.fromEntries(["values","contracts","schema","example"].map(name=>[name,roleTerminology(read(`contracts/spacetimedb/${name}.ts`))]));
+// Abstract service interfaces remain design examples, not SDK/module authority.
+const sources = { contracts: roleTerminology(read("contracts/spacetimedb/contracts.ts")) };
+const canonicalObjects = {
+  geometry: canonicalDeclarations("contracts/spacetimedb/src/values.ts", ["ResourceRef", "Vec3", "Quaternion", "Pose3", "Geometry"]),
+  evidence: canonicalDeclarations("contracts/spacetimedb/src/values.ts", ["PackagePin", "PoseSample", "GeometrySample", "SemanticSample", "TransformSample", "ObservationInput"]),
+  action: canonicalDeclarations("contracts/spacetimedb/src/values.ts", ["ActionBindingPolicy", "ExecutionState", "ExecutionCompletion", "ExecutionResult", "ExecutionSafetyProof"]),
+  navigation: canonicalDeclarations("contracts/spacetimedb/src/values.ts", ["NavigateIntent", "ApproachIntent", "ActionIntent", "NavigateCompletion", "ApproachCompletion"]),
+  "spatial-map": canonicalDeclarations("contracts/spacetimedb/src/schema.ts", ["spatialFrame", "localMap", "mapRevision"]),
+};
 
-// Reuse unchanged SDK columns; explicit documentation-only planning deltas are not implemented schema.
-const tables = plannedTables([...sources.schema.matchAll(/export const (\w+) = table\(\{ name: "([^"]+)", public: false \}, \{\n([\s\S]*?)\n\}\);/g)].map(([,accessor,name,body]) => ({accessor,name,columns:body.split("\n").map(line=>{
-  const match = line.match(/^\s+(\w+): (.+), \/\/ (.+)$/);
-  if (!match) throw new Error(`Undocumented column in ${name}: ${line}`);
-  const [,column,builder,description] = match;
-  const constraints = [...builder.matchAll(/\.(primaryKey|unique|autoInc|index)\([^)]*\)/g)].map(m=>({primaryKey:"PK",unique:"unique",autoInc:"auto",index:"indexed"}[m[1]]));
-  const type = builder.replace(/\.(primaryKey|unique|autoInc|index)\([^)]*\)/g,"").replace(/t\.option\((.*)\)/,"Option<$1>").replace(/t\.(\w+)\(\)/g,"$1").replace("identity","Identity").replace("timestamp","Timestamp").replace("actionBinding.rowType","ActionBinding");
-  return [column,type,`${constraints.length ? constraints.join(", ")+". " : ""}${description}`];
-})})));
+// Only the exported db schema defines the inventory. Never apply planning
+// overlays or fall back to the historical 20-table SDK example.
+const tables = canonicalSchemaTables();
 if (tables.length !== Object.keys(tableNotes).length) throw new Error("Table descriptions differ from schema");
 const tableHtml = tables.map((item,i)=>{
   const [description,notes]=tableNotes[item.name];
@@ -55,9 +58,9 @@ const diagram = `<section class="diagram-section" id="how-it-works" aria-label="
 ].map(([title,description,code],i)=>`${i?'<div class="diagram-arrow" aria-hidden="true"></div>':""}<div class="diagram-node"><span class="node-meta">0${i+1}</span><strong>${title}</strong><p>${description}</p><code>${escape(code)}</code></div>`).join("")}</div><div class="diagram-foot"><div><strong>Feedback → world</strong><p>Measurements update the world. Intent, predictions and sent commands never stand in for observed outcomes.</p></div><div><strong>Trace the whole step</strong><p>Inspect compiled context, selected evidence, model inputs, outputs and action results under a controlled capture policy.</p></div></div></div></div></section>`;
 
 const platform = [
-  ["reducer","Native reducer · cancel_execution","atomic lifecycle change and audit","Cancellation intent and its audit event commit in one transaction. The controller confirms safe closure separately; recording cancellation does not prove that hardware has stopped."],
-  ["view","Native view · visible_executions","authorization on the server","Private base tables stay inaccessible to ordinary clients. This public view returns only rows permitted by the authenticated member role. Apply the same membership boundary to world read views and dedicated worker projections; a client-side WHERE filter is not access control."],
-].map(([id,title,summary,description],i)=>codeRow("object",i,title,summary,description,region(sources.schema,id),`sdk-${id}`)).join("\n");
+  ["reducer","Native reducer · request_execution_cancel","atomic lifecycle change and audit","Cancellation intent and its audit event commit in one transaction. The controller confirms safe closure separately; recording cancellation does not prove that hardware has stopped.", canonicalDeclarations("contracts/spacetimedb/src/execution-reducers.ts", ["requestExecutionCancel"])],
+  ["view","Native view · relevant_executions","authorization on the server","Private base tables stay inaccessible to ordinary clients. This view returns only rows permitted by the authenticated member role. A client-side WHERE filter is not access control.", canonicalDeclarations("contracts/spacetimedb/src/world-views.ts", ["relevantExecutions"])],
+].map(([id,title,summary,description,code],i)=>codeRow("object",i,title,summary,description,code,`sdk-${id}`)).join("\n");
 const implementationChoices = `<div class="abstraction-list">${[
   ["World storage · SpacetimeDB", "typed state, atomic changes and subscriptions", "Typed tables retain current world state and checkpoint metadata. Immutable map chunks and evidence stay in retained blob storage. Reducers validate atomic changes; authorized subscriptions maintain read caches. World records and retained resources recover together after restart.", "world rows + retained map resources → recoverable local knowledge"],
   ["Perception & decisions · specialized workers", "choose tools by task and cadence", "YOLOE handles frequent detection, with SAM3 available for selective refinement. Spatial/audio workers produce structured evidence. Typesafe, LLMs and rules consume prepared context; none owns a separate world or bypasses admission.", "one observation boundary · one action boundary"],
@@ -76,7 +79,7 @@ const connection = DbConnection.builder()
   .onConnect(conn => {
     conn.subscriptionBuilder()
       .onApplied(() => { /* mark this scope ready; reconcile current state */ })
-      .subscribe(["SELECT * FROM visible_executions"]);
+      .subscribe(["SELECT * FROM relevant_executions"]);
   })
   .build();
 
@@ -109,12 +112,12 @@ const refs = [
 const walkthrough = `<div class="walkthrough">${exampleRows.map(([id,title,flow,description],i)=>`<article class="walkthrough-step"><header><span class="example-index">${String(i+1).padStart(2,"0")}</span><h3>${escape(title)}</h3></header><div class="walkthrough-content"><p class="walkthrough-flow">${escape(flow)}</p><p>${escape(description)}</p><details class="walkthrough-detail" id="flow-${id}"><summary>TypeScript detail</summary><div class="example-code"><pre><code class="language-ts">${escape(v0FlowCode[id])}</code></pre></div></details></div></article>`).join("\n")}</div>`;
 const main = `<main id="main-content">${diagram}
 ${section("ownership","01","Foundations & ownership","The world foundations, mission intent and operating roles. Units are controllable entities; agents decide; World Operators govern; systems implement the work.",`<div class="abstraction-list">${ownership.map((row,i)=>proseRow(i,...row)).join("\n")}</div>`)}
-${section("objects","02","Objects & world view","WorldView projects durable entities, evidence, local maps, missions and executions. Each spatial estimate retains its coordinate frame and acquisition time.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,objectPlanningCode(id,objectCode[id] ?? region(sources[file],id)),`object-${id}`)).join("\n")}</div>`)}
+${section("objects","02","Objects & world view","WorldView projects durable entities, evidence, local maps, missions and executions. Canonical SDK definitions below are generated from the module; read-projection interfaces are design examples.",`<div class="object-list">${objectRows.map(([file,id,title,summary,description],i)=>codeRow("object",i,title,summary,description,canonicalObjects[id] ?? objectPlanningCode(id,objectCode[id] ?? region(sources[file],id)),`object-${id}`)).join("\n")}</div>`)}
 ${renderWorldPlan({section,proseRow})}
 ${renderMissions({section,codeRow,proseRow,region})}
 ${renderAgents({section,proseRow})}
-${section("contracts","03","Service contracts","Typed boundaries for world storage, perception, missions, coordination and execution. Each contract defines authority, validation and retry behavior; it need not be a separate microservice.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,spatialContractCode(id,id === "world-memory" ? worldMemoryCode : id === "missions" ? missionsContractCode : id === "coordination" ? coordinationCode : region(sources.contracts,id)),`contract-${id}`)).join("\n")}</div>`)}
-${section("tables","04","Database tables",`${tables.length} private tables hold world records, local maps, assignments, progress and execution receipts. Authorized views expose the relevant state to each client. Eve owns conversation and runtime persistence.`,`<div class="schema-list">${tableHtml}</div>`)}
+${section("contracts","03","Service contracts","Conceptual service boundaries, not deployable microservices or generated SDK APIs. Implemented operations come from contracts/spacetimedb/src/index.ts and world-client/src/generated.",`<div class="contract-list">${contractRows.map(([id,title,summary,description],i)=>codeRow("contract",i,title,summary,description,spatialContractCode(id,id === "world-memory" ? worldMemoryCode : id === "missions" ? missionsContractCode : id === "coordination" ? coordinationCode : region(sources.contracts,id)),`contract-${id}`)).join("\n")}</div>`)}
+${section("tables","04","Database tables",`${tables.length} private tables generated from contracts/spacetimedb/src/schema.ts hold world records, local maps, assignments, progress and execution receipts. No planning overlays are applied. Authorized views expose relevant state; Eve owns conversation and runtime persistence.`,`<div class="schema-list">${tableHtml}</div>`)}
 ${section("platform","05","Implementation choices","Storage, inference, agent runtime and tracing support the domain model through explicit boundaries.",`${implementationChoices}<div class="object-list">${platform}</div>${readRows}${codeRow("example",0,"Subscribe and reconcile","generated client pattern","Generated bindings expose authorized views. Subscription initialization and committed changes update the local cache; clients reconcile current state before acting.",subscription,"sdk-subscribe")}`)}
 ${renderIntelligence({section,codeRow,proseRow,region},"06")}
 ${renderClients({section,codeRow,proseRow,region},"06b")}

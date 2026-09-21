@@ -1,0 +1,16 @@
+{
+  "name": "@nemeia/world-client",
+  "private": true,
+  "version": "0.2.1",
+  "type": "module",
+  "scripts": {
+    "check": "tsc -p tsconfig.json",
+    "test": "node --import=jiti/register --test test/*.test.ts"
+  },
+  "dependencies": {
+    "spacetimedb": "2.10.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}

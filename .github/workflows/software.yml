@@ -1,0 +1,63 @@
+name: Software-only validation
+
+# Software-only manual validation. Local qualification passed; remote execution
+# is a separate action. Adding this file does not execute or publish anything.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: software-only-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  software:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "true"
+      EVE_TELEMETRY_DISABLED: "1"
+      EVE_TRACES: "off"
+      OTEL_SDK_DISABLED: "true"
+      NEMEIA_ACTUAL_WORLD_QUALIFICATION: "0"
+    steps:
+      - name: Checkout without retained Git credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Select Node with node:sqlite support
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.19.0"
+
+      - name: Install checked project dependencies
+        timeout-minutes: 10
+        run: npm run setup:software
+
+      - name: Provision official pinned SpacetimeDB tools
+        timeout-minutes: 5
+        run: node scripts/provision-spacetimedb.mjs
+
+      - name: Provision lockfile-selected Chromium and host dependencies
+        timeout-minutes: 5
+        run: npm exec --workspace=frontend --no -- playwright install --with-deps chromium
+
+      - name: Strict software, runtime, configured packaging and native guard
+        timeout-minutes: 15
+        run: npm run check
+
+      - name: Build the native frontend
+        timeout-minutes: 5
+        run: npm --prefix frontend run build
+
+      - name: Actual loopback, automatic wake and native browser qualification
+        timeout-minutes: 25
+        run: npm run qualify:software
+
+      # Never substitute skipped adapter tests, a held dev process or legacy
+      # browser smoke for the explicit bounded native qualification above.
+      # Do not upload .artifacts, .eve, .output, token files, databases,
+      # browser auth state or retained evidence/resource directories.

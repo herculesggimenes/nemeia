@@ -1,0 +1,857 @@
+diff --git a/package.json b/package.json
+--- a/package.json
++++ b/package.json
+@@ -1,83 +1,74 @@
+-{
+-  "name": "nemeia",
+-  "private": true,
+-  "version": "0.2.1",
+-  "type": "module",
+-  "engines": {
+-    "node": ">=24.19.0"
+-  },
+-  "dependencies": {
+-    "ai": "7.0.105",
+-    "eve": "0.63.0",
+-    "just-bash": "3.1.0",
+-    "spacetimedb": "2.10.1",
+-    "zod": "4.1.12"
+-  },
+-  "devDependencies": {
+-    "@types/node": "26.0.0",
+-    "typescript": "5.9.3",
+-    "jiti": "2.7.0"
+-  },
+-  "scripts": {
+-    "setup:software": "node scripts/install-software.mjs",
+-    "build:protocol-site": "node scripts/build-spacetimedb-site.mjs",
+-    "dev:frontend:loopback": "node scripts/run-frontend-loopback.mjs",
+-    "dev:ui:loopback": "node scripts/run-ui-composition.mjs",
+-    "check:authority": "node scripts/check-authority.mjs",
+-    "check:contract-manifest": "node scripts/check-contract-manifest.mjs",
+-    "check:contract-manifest:strict": "node scripts/check-contract-manifest.mjs --strict",
+-    "check:software": "node scripts/check-software.mjs",
+-    "check:eve:packaging": "node scripts/check-eve-packaging.mjs",
+-    "check:spacetimedb-protocol": "npm --prefix contracts/spacetimedb run check && node --test contracts/spacetimedb/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
+-    "check:protocol": "tsc -p contracts/protocol/tsconfig.json && node --test contracts/protocol/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
+-    "check": "npm run check:authority && npm run check:contract-manifest && npm run check:world-runtime && npm run check:contracts && npm run check:mission-server && npm run check:mission-api && npm run check:supervisor && npm run check:driver-go2 && npm run check:capability-host && npm run check:scene && npm run check:world-twin && npm run check:attention && npm run check:anomaly && npm run check:policy && npm run check:replay && npm run check:cli && npm run check:conformance && npm run check:frontend",
+-    "check:anomaly": "npm --prefix anomaly run check",
+-    "check:attention": "npm --prefix attention run check",
+-    "check:capability-host": "npm --prefix capability-host run check",
+-    "check:cli": "npm --prefix cli run check",
+-    "check:conformance": "npm run check:authority && npm run check:contract-manifest && npm --prefix conformance run check",
+-    "check:conformance:mock": "npm --prefix conformance run check:mock",
+-    "check:conformance:loopback": "npm --prefix conformance run check:loopback",
+-    "check:conformance:g3": "tsc -p conformance/tsconfig.g3.json",
+-    "qualify:loopback": "node scripts/run-conformance-loopback.mjs",
+-    "qualify:local-simulation": "node scripts/run-local-simulation.mjs",
+-    "qualify:eve": "node scripts/run-eve-qualification.mjs",
+-    "qualify:g3:held": "node scripts/run-held-g3.mjs",
+-    "check:contracts": "npm --prefix contracts run check",
+-    "check:driver-go2": "npm --prefix driver-go2 run check",
+-    "check:frontend": "npm --prefix frontend run check",
+-    "check:mission-api": "npm --prefix mission-api run check",
+-    "check:mission-server": "npm --prefix mission-server run check",
+-    "check:policy": "npm --prefix policy run check",
+-    "check:replay": "npm --prefix replay run check",
+-    "check:scene": "npm --prefix scene run check",
+-    "check:supervisor": "npm --prefix supervisor run check",
+-    "check:world-runtime": "npm --prefix world-runtime run check",
+-    "check:world-twin": "npm --prefix world-twin run check"
+-  },
+-  "workspaces": [
+-    "contracts/spacetimedb",
+-    "world-client",
+-    "world-resources",
+-    "perception",
+-    "agent",
+-    "agent/eve-eval-fixture",
+-    "local-controller",
+-    "contracts",
+-    "cli",
+-    "anomaly",
+-    "attention",
+-    "capability-host",
+-    "conformance",
+-    "driver-go2",
+-    "mission-api",
+-    "mission-server",
+-    "policy",
+-    "replay",
+-    "scene",
+-    "supervisor",
+-    "world-twin",
+-    "world-runtime",
+-    "frontend"
+-  ]
+-}
++{
++  "name": "nemeia",
++  "private": true,
++  "version": "0.2.1",
++  "type": "module",
++  "engines": {
++    "node": ">=24.19.0"
++  },
++  "dependencies": {
++    "ai": "7.0.105",
++    "eve": "0.63.0",
++    "just-bash": "3.1.0",
++    "spacetimedb": "2.10.1",
++    "zod": "4.1.12"
++  },
++  "devDependencies": {
++    "@types/node": "26.0.0",
++    "typescript": "5.9.3",
++    "jiti": "2.7.0"
++  },
++  "scripts": {
++    "setup:software": "node scripts/install-software.mjs",
++    "build:protocol-site": "node scripts/build-spacetimedb-site.mjs",
++    "dev:frontend:loopback": "node scripts/run-frontend-loopback.mjs",
++    "dev:ui:loopback": "node scripts/run-ui-composition.mjs",
++    "check:authority": "node scripts/check-authority.mjs",
++    "check:contract-manifest": "node scripts/check-contract-manifest.mjs",
++    "check:contract-manifest:strict": "node scripts/check-contract-manifest.mjs --strict",
++    "check:software": "node scripts/check-software.mjs",
++    "check:eve:packaging": "node scripts/check-eve-packaging.mjs",
++    "check:spacetimedb-protocol": "npm --prefix contracts/spacetimedb run check && node --test contracts/spacetimedb/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
++    "check:protocol": "tsc -p contracts/protocol/tsconfig.json && node --test contracts/protocol/*.test.mjs && node scripts/build-spacetimedb-site.mjs --check",
++    "check": "npm run check:software && npm run check:eve:packaging && npm run check:frontend:native-guard",
++    "check:anomaly": "npm --prefix anomaly run check",
++    "check:attention": "npm --prefix attention run check",
++    "check:capability-host": "npm --prefix capability-host run check",
++    "check:cli": "npm --prefix cli run check",
++    "check:conformance": "npm run check:conformance:g3 && npm run check:conformance:mock",
++    "check:conformance:mock": "npm --prefix conformance run check:mock",
++    "check:conformance:loopback": "npm --prefix conformance run check:loopback",
++    "check:conformance:g3": "tsc -p conformance/tsconfig.g3.json",
++    "qualify:loopback": "npm run qualify:local-simulation",
++    "qualify:local-simulation": "node scripts/run-local-simulation.mjs",
++    "qualify:eve": "node scripts/run-eve-qualification.mjs",
++    "qualify:g3:held": "node scripts/run-held-g3.mjs",
++    "check:contracts": "npm --prefix contracts run check",
++    "check:driver-go2": "npm --prefix driver-go2 run check",
++    "check:frontend": "npm --prefix frontend run check",
++    "check:mission-api": "npm --prefix mission-api run check",
++    "check:mission-server": "npm --prefix mission-server run check",
++    "check:policy": "npm --prefix policy run check",
++    "check:replay": "npm --prefix replay run check",
++    "check:scene": "npm --prefix scene run check",
++    "check:supervisor": "npm --prefix supervisor run check",
++    "check:world-runtime": "npm --prefix world-runtime run check",
++    "check:world-twin": "npm --prefix world-twin run check",
++    "check:legacy": "npm run check:authority && npm run check:contract-manifest && npm run check:world-runtime && npm run check:contracts && npm run check:mission-server && npm run check:mission-api && npm run check:supervisor && npm run check:driver-go2 && npm run check:capability-host && npm run check:scene && npm run check:world-twin && npm run check:attention && npm run check:anomaly && npm run check:policy && npm run check:replay && npm run check:cli && npm run check:conformance:legacy && npm run check:frontend",
++    "dev": "npm run dev:ui:loopback",
++    "check:conformance:legacy": "npm --prefix conformance run check:legacy",
++    "qualify:loopback:adapter": "node scripts/run-conformance-loopback.mjs",
++    "check:frontend:native-guard": "node --test frontend/tests/unit/native-ui-safety.test.ts"
++  },
++  "workspaces": [
++    "contracts/spacetimedb",
++    "world-client",
++    "world-resources",
++    "perception",
++    "agent",
++    "agent/eve-eval-fixture",
++    "local-controller",
++    "conformance",
++    "frontend"
++  ]
++}
+diff --git a/conformance/package.json b/conformance/package.json
+--- a/conformance/package.json
++++ b/conformance/package.json
+@@ -1,11 +1,12 @@
+-{
+-  "name": "@nemeia/conformance",
+-  "private": true,
+-  "version": "0.2.1",
+-  "type": "module",
+-  "scripts": {
+-    "check": "node --test test/*.test.ts",
+-    "check:mock": "node --test test/gate1-sim-drill.test.ts test/backpack-fake.test.ts test/qualification-safety.test.ts",
+-    "check:loopback": "node --test test/loopback-contract.test.ts test/loopback-boundaries.test.ts"
+-  }
+-}
++{
++  "name": "@nemeia/conformance",
++  "private": true,
++  "version": "0.2.1",
++  "type": "module",
++  "scripts": {
++    "check": "node --experimental-loader ../scripts/resolve-ts-specifiers.mjs --test test/backpack-fake.test.ts test/qualification-safety.test.ts test/g3-flow.test.ts",
++    "check:mock": "node --test test/backpack-fake.test.ts test/qualification-safety.test.ts",
++    "check:loopback": "node --test test/loopback-contract.test.ts test/loopback-boundaries.test.ts",
++    "check:legacy": "node --test test/gate1-sim-drill.test.ts"
++  }
++}
+diff --git a/docs/protocol.md b/docs/protocol.md
+--- a/docs/protocol.md
++++ b/docs/protocol.md
+@@ -1,520 +1,12 @@
+-# Nemeia protocol
+-
+-Status: earlier design reference, superseded by [the SpacetimeDB design](./protocol-spacetimedb.md)
+-as the selected implementation target on 2026-09-19. Nemeia is a pre-production
+-prototype. This specification replaces the previous protocol designs outright.
+-There is no backward-compatibility requirement, old-format adapter, dual-write
+-period, or data migration. Existing experiments are evidence to learn from,
+-not APIs to preserve. This document does not claim the target is implemented.
+-
+-Nemeia owns one world of entities, components, and relationships. Systems feed
+-evidence into that world. Actions declare requirements; the runtime derives
+-affordances and manages one execution for each requested action. Simulation and
+-hardware share this model. Hardware additionally requires a local control gate.
+-
+-The checked TypeScript declarations are in
+-[`contracts/protocol/protocol.ts`](../contracts/protocol/protocol.ts). The
+-[example](../contracts/protocol/example.ts) uses those declarations directly.
+-The [review](./protocol-review.md) records the evidence behind these decisions.
+-
+-## 1. Keep the foundations; reduce the deployment
+-
+-| Foundation | Responsibility |
+-| --- | --- |
+-| World | Own one committed state and its journal cursor. |
+-| Entity | Give one thing an identity independent of its name or classification. |
+-| Component | Hold validated domain values, revision, and evidence when observed. |
+-| Relationship | Record a directed fact between existing entities. |
+-| Affordance | Explain whether an action's requirements hold at a particular time. |
+-| Action | Define intent, input/output schemas, and requirements; the executor binding selects the mode. |
+-| System | Ingest observations or propose validated changes as a trusted writer. |
+-| Event | Record the exact committed change, evidence, or execution transition. |
+-
+-Start with one host process, one database when persistence is needed, and one
+-adapter per robot or simulator. Interfaces in the type file are ownership
+-boundaries, not required network services. Keep the control gate near the driver
+-with independent timers. It may be a separate process for hardware deployments.
+-
+-The required public surface is `WorldService`. `ObservationSink` and
+-`WorldWriter` are trusted ingestion boundaries. Executors and drivers are local
+-plugins. `Journal` is a storage port. `ResourceStore` is needed only when bytes
+-are retained. Mission grouping, approvals, registry lifecycle, attention,
+-reports, replay rendering, and prediction are optional modules.
+-An agent is a client: it reads the world, selects an action and follows its
+-execution. Its conversation, planning and tool-call loop can use an existing
+-agent runtime. Those concerns do not need another Nemeia service contract or
+-permission to call the driver. A service interface does not imply an RPC hop.
+-
+-### Perception and decision systems
+-
+-Compose specialized tools around the shared world, rather than giving one model
+-every responsibility. SAM3 supplies image/video segmentation and tracking.
+-Calibrated depth/LiDAR and localization supply measured spatial values; ASR
+-supplies transcripts; semantic models supply attributed hypotheses. Association
+-and validated ingestion turn these into entities, components and relationships.
+-A segmentation mask is not a measured 3D box. A transcript alone is not an
+-authenticated command.
+-
+-Typesafe, LLMs and rules read a task-scoped projection of the same world. LLMs
+-interpret unfamiliar goals, propose plans using installed actions and help
+-author tested, versioned questions. Typesafe evaluates bounded choices, rubrics
+-or yes/no judgments over structured state. Exact arithmetic, requirements and
+-permissions remain code. No provider owns a separate authoritative world.
+-
+-The current decision types are in `contracts/spacetimedb/intelligence.ts`.
+-Decision workers retain goal/context/question/model versions, preserve evidence
+-times and uncertainty, and discard expired or superseded answers. Candidate
+-membership and relevant dependencies must be rechecked during admission.
+-Use a stable decision-to-request identity to prevent repeated answers from
+-creating new attempts. All providers submit ordinary action requests; local
+-control remains independent of model or database availability.
+-
+-Primary capability references: [SAM3](https://github.com/facebookresearch/sam3),
+-[Typesafe primitives](https://docs.typesafe.ai/primitives),
+-[confidence](https://docs.typesafe.ai/confidence), and
+-[model configuration](https://docs.typesafe.ai/models). These integrations are
+-implementation targets, not deployed capabilities or measured latency claims.
+-
+-## 2. Naming, values, schemas, and identity
+-
+-Use camelCase for TypeScript and JSON, snake_case for SQL columns. This is a
+-local convention, not a claim that casing is a robotics standard. All core object shapes are closed;
+-reject unknown fields at write boundaries. Extension payloads must name an
+-installed schema and exact version. Unknown read-event versions return an
+-explicit unsupported-version error; they are never silently discarded by a reducer.
+-CloudEvents envelope extensions remain permitted by that standard; the closed
+-shape rule applies to Nemeia's authority-bearing inputs and domain payloads.
+-
+-Use opaque globally unique IDs for entities, events, observations, requests,
+-and executions. Event IDs survive replication; cursors describe position in one
+-world's log. Never turn an event cursor into an entity identity. Label changes
+-do not rename entities. Relationship identity is the tuple
+-`(subjectId, predicate, objectId)`, represented structurally or with a composite
+-database key. IDs may contain punctuation without causing tuple collisions.
+-
+-An action has one `{name, version}` reference. An executor has one immutable
+-package reference including its content hash. Input, output, component, and
+-extension schemas use `{name, version}`. Installing a different schema under
+-the same reference is an error. Registered component names are namespaced;
+-`ComponentValues` can be extended by packages with a corresponding schema.
+-
+-JSON permits finite numbers, strings, booleans, null, arrays, and plain objects.
+-Reject NaN, infinity, undefined, functions, class instances, invalid Unicode,
+-duplicate object keys, and numbers outside their schema's range at ingress.
+-Integer counters must be safe integers. Zero is a value, null is known absence
+-or unknown where explicitly declared, and omission follows the exact union.
+-
+-Use a maintained JSON Schema 2020-12 implementation at external boundaries.
+-Generate wire schemas and client types from one schema source during implementation;
+-replace the handwritten validator. The TypeScript files
+-are checked design artifacts, not runtime validation or a claim of wire conformance.
+-
+-## 3. Geometry and evidence
+-
+-`boundingBox3D`, `boundingBox2D`, `pointCloud`, and `mesh` are Nemeia union tags. Their semantics
+-are explicitly mapped to external conventions; no external standard defines
+-this exact union. A pose is a reusable value, not a shape or collision volume.
+-
+-| Value | Required meaning |
+-| --- | --- |
+-| `Pose3` | Position in meters; unit quaternion `[x,y,z,w]`. |
+-| `boundingBox3D` | Coordinate frame, center pose, full positive dimensions in meters. |
+-| `boundingBox2D` | Exact image frame, center and full dimensions in pixels, rotation in radians. |
+-| `pointCloud` | Coordinate frame and a stored resource with an explicit payload schema. |
+-| `mesh` | Coordinate frame, pose, and a stored resource defining vertices and topology. |
+-
+-The default axes follow ROS REP-103: right handed, body x forward/y left/z up;
+-camera optical frames use x right/y down/z forward. Angles use radians. World
+-frame names follow REP-105 where applicable: `odom` is locally continuous;
+-`map` can jump after localization corrections. Frame names are scoped within a
+-world. A multi-robot adapter must namespace colliding device frame names.
+-
+-`sizeM` and `sizePx` have strictly positive entries. The quaternion norm must be
+-within 1e-6 of one. Never fill absent geometry with a default obstacle box.
+-Missing pose, frame conversion, or size produces unknown geometry. A prediction
+-may use an explicitly labeled prior, with its own provenance, but must not
+-report that prior as a sensor measurement.
+-
+-Coordinate conversion must use the transform sample for the acquisition time.
+-Retain those samples on the observation, including the exact parent/child IDs.
+-A source version alone cannot reproduce a moving transform. A `boundingBox2D` cannot
+-become `boundingBox3D` without calibrated depth or another documented inference.
+-
+-`FrameRef` identifies transient input by stream, session, sequence, and capture
+-time. It does not promise replayable bytes. `ResourceRef` identifies retained
+-bytes and their format schema. Store images/clouds before acknowledging a
+-durable resource reference; keep storage paths and signed download URLs behind
+-the store. Missing or expired bytes are explicit errors. Retaining an
+-observation does not automatically require retaining every source frame.
+-
+-## 4. Time, association, and one world
+-
+-`observedAt` is acquisition time mapped into the world's clock domain by the
+-trusted adapter. `recordedAt` is journal receipt time. A poll or replay never
+-refreshes acquisition time. In live systems, reject or quarantine evidence
+-whose clock error exceeds the configured bound; never make a future timestamp
+-fresh by clamping its age to zero. Local deadlines use monotonic elapsed time.
+-Simulation uses an explicit simulation clock; it is never mixed with live time.
+-
+-Semantic and geometric samples retain independent times. Freshness is
+-`evaluationTime - observedAt`, checked independently against each requirement.
+-A slow label update must not refresh a stale location. Stored snapshots contain
+-timestamps, not changing `freshnessMs` values. Replaying the same committed
+-events produces the same state; availability also needs an explicit evaluation
+-time and the installed action versions.
+-
+-Association belongs to a trusted perception system. A track is scoped by the
+-producer's `instanceId`; restarting tracking uses a new instance. Without a
+-track or accepted spatial association, create a new candidate identity. Never
+-merge all detections with the same label. Record association decisions and
+-the resulting `Change[]` so replay does not rerun today's tracking model.
+-`world.changed` includes explicit observation-to-entity `Association[]` alongside
+-the changes. Rebuild track bindings from these decisions plus recorded
+-observation source/track IDs; do not ask the perception model to associate again.
+-Ordinary non-perception changes use an empty association list.
+-
+-Partial observations update only their supplied facets. Geometric observations
+-can create an unclassified entity. Explicit `supersedes` observation IDs carry
+-fusion provenance; do not infer fusion from a source-name prefix. Replacement
+-updates recompute the affected belief once and retain the old evidence in the
+-journal. Invalid or unknown superseded IDs cannot silently discard evidence.
+-
+-`Scene` is a read view over world entities and their observed components.
+-`RobotWorldView` is a presentation mapping of the same snapshot. Display strings,
+-colors, panel names, and browser `MediaStream` handles never become component
+-values used by action checks. World Runtime lifetime follows the world session,
+-not a React render.
+-
+-## 5. Atomic changes, events, and recovery
+-
+-Use CloudEvents 1.0 JSON envelopes, not a second custom event header. `id`,
+-`source`, `type`, and `specversion` follow the standard; this profile also requires
+-`time` and JSON `data`. `source` is a URI bound to the authenticated producer.
+-Nemeia's versioned event types define only `data`: world, producer package,
+-causal event IDs, and a typed payload. The journal wraps the unchanged event
+-with its local `cursor` and `recordedAt`. CloudEvents does not supply ordering,
+-durability, deduplication, or exactly-once delivery; the journal supplies the first
+-three with the rules below. Require globally unique IDs in this profile, stricter
+-than CloudEvents' source-plus-ID identity rule.
+-
+-A writer submits a complete change batch with its expected cursor. Validate
+-all entities, component schemas, component ownership, versions, and relationship
+-endpoints against the prospective final state before committing anything.
+-Reject a stale cursor with `conflict`; the writer must reread and recompute.
+-There is no implicit deep merge. `entity.put` replaces an entity;
+-`component.set` replaces one component; removal has its own operation.
+-
+-The journal transaction persists the command receipt and all decision events
+-atomically. Apply committed changes to memory only after that transaction
+-succeeds. A failed batch produces no partial world changes. Entity removal also
+-removes incident relationships; replay implements the same cascade. Component
+-versions advance on changes and never reset while that entity identity exists.
+-Removed entity IDs are not reused.
+-Installed packages declare component write ownership; installation rejects
+-conflicting owners. A projector writes only its registered components. An
+-entity replacement cannot bypass another owner's components. Use individual
+-component changes for ordinary updates.
+-
+-For v1, serialize commits per world. All events in one decision are visible
+-together. Snapshot reads return a committed state and its cursor atomically;
+-`changes(after)` resumes after that cursor and includes removals. Paginated
+-events use exclusive cursors, limits from 1 to 1,000, and an explicit `hasMore`.
+-`next` advances to the last scanned position, including when no event matched
+-the filter. Invalid, wrong-world, or expired cursors are errors, not cursor zero.
+-Authorization filtering cannot expose another principal's payloads or counts.
+-Each commit has a position; its events have ordinals. Public cursors point only
+-to complete commit boundaries. Event pages never split a commit: enforce at most
+-1,000 events per commit and treat the requested page limit as a target, extending
+-it to finish the last included commit. All events of that commit carry the same
+-resume cursor. A change batch too large for the configured response bound returns
+-an explicit snapshot-required problem, never an incomplete delta presented as current.
+-
+-Keep each original event ID and timestamp when bridging local control events;
+-assign only a new receiving cursor/recorded time. Source attribution is checked
+-by the authenticated adapter. Record high-level decisions and state changes
+-durably. High-rate media and control diagnostics may have a separate bounded
+-recorder with declared loss counts; do not fsync every camera frame in the
+-control loop.
+-
+-Read-only replay applies recorded changes and execution states. It never
+-dispatches hardware commands. Resimulation is a separate operation with pinned
+-inputs, transforms, algorithm, and engine. Only claim bit-identical replay for
+-deterministic reductions and retained output bytes. Do not claim that every
+-physics engine or model inference is bit-identical across machines.
+-
+-## 6. Action execution and retries
+-
+-Discovery matches actor and target requirements and returns structured reasons.
+-It is a hint, not permission or a promise of future availability. Dispatch
+-validates actual input, explicitly checks target cardinality, resolves the
+-installed executor, repeats requirements and policy, and pins the relevant
+-component versions. Clients name target identities; trusted code creates pins.
+-Policy owns confidence/freshness thresholds. A caller cannot lower them.
+-
+-Use one execution record and one execution ID. `requestId` deduplicates the
+-initial dispatch; the server allocates the execution ID once and stores it in
+-the receipt. The states are:
+-
+-```text
+-awaitingApproval → accepted → running → succeeded
+-       │              │          ├──→ failed
+-       ├──→ rejected  ├──→ failed
+-       └──→ cancelled └──→ cancelling → cancelled
+-                                 running → cancelling → cancelled | failed
+-```
+-
+-`awaitingApproval` occurs only when an approval module requires it. Malformed
+-or unauthorized requests return a `Problem` before allocating an execution.
+-Valid requests denied by domain policy may create a `rejected` execution for
+-audit. Terminal states are immutable. A cancellation race returns the terminal
+-state if completion already committed; otherwise completion cannot overwrite
+-`cancelling`. Timeouts are failures with a typed reason, never success.
+-
+-The authenticated principal, operation, world, canonical body, and request ID
+-define the idempotency receipt. Enforce a unique `(worldId, requestId)` key and
+-check authorization before returning any cached result. Same key/body/principal
+-returns the original response; changed input returns `conflict`. Concurrent
+-duplicates share the transaction. Retain receipts for the world's retention
+-lifetime. Expired identities cannot be reused. All command endpoints have this
+-rule; cancel and stop are naturally idempotent state requests.
+-After authentication, look up an existing receipt before checking the expected
+-cursor or current action requirements. An exact retry still returns its original
+-response even if the world has advanced; current execution state is a separate query.
+-
+-Persist `accepted` before starting an executor. For v1, allow one physical
+-execution per robot; a second request gets `unavailable`/busy, never an invisible
+-queue. State-mode executions use optimistic commits. Physical-mode executions
+-hold no world transaction across IO; their measurements update the world
+-through ingestion. Hardware failures cannot roll back physical effects.
+-
+-An executor returns one Promise result and emits bounded progress or observation
+-updates through a host callback. The host owns state transitions and aborts.
+-`state` results may propose changes. `physical` results carry output only;
+-they cannot optimistically move an entity to its requested position. The host
+-checks result schema and completion evidence before committing success.
+-The result kind must match the installed executor mode. The example's approach
+-distance is ground-plane distance to the tracked target center, not clearance
+-from its box surface. Obstacle/path clearance remains a separate admission and
+-continuous control check; a semantic label alone never makes a path safe.
+-
+-On restart, reconstruct state from the journal/checkpoint. Accepted-but-unstarted
+-state actions can be retried under their original identity. Never automatically
+-redispatch uncertain physical actions: query the local gate's durable execution
+-receipt, enter safe state if needed, and resolve as failed/unknown if evidence
+-cannot establish the outcome. This protocol promises deduplicated decisions,
+-not exactly-once physical actuation across a crash.
+-
+-## 7. Local physical control
+-
+-The local gate is required for physical actuation even when governance is off.
+-It owns actor exclusivity, bounds, watchdog, cancellation, and stop. Human input,
+-agent actions, and autonomous executors share this boundary. Opening a UI panel
+-is a UI interaction, not a world action or evidence that a robot moved.
+-
+-The initial control profile is planar velocity (`vxMps`, `vyMps`, `yawRadps`).
+-This describes three planar channels, not free 3D translation.
+-Limit linear speed by vector norm, and yaw by absolute magnitude, using the
+-intersection of host policy, local caps, and device caps. These are commanded
+-velocity bounds; claims about measured physical speed need measured feedback.
+-
+-Sequence numbers start at one per control session. An identical duplicate of the latest command
+-returns its recorded ack without extending the watchdog; a changed duplicate,
+-older sequence, unknown field, or non-finite value is rejected. Only a new valid
+-command renews liveness. There is no unbounded queue: a superseded pending
+-command gets an explicit cancellation result. A successful submit returns after
+-the driver sends the clamped command, with requested and sent values. Device ack
+-is separately labeled; it never proves that the action goal was achieved.
+-
+-The gate starts its first-chunk watchdog when it opens the session. It uses
+-monotonic deadlines for watchdog and maximum duration, checks the stop latch
+-each tick, and drives safe state on loss of liveness, expired duration, stale
+-device telemetry, fault, cancellation, or host connection loss. The last command
+-must not survive a local supervisor restart. Driver transport polling must not
+-manufacture fresh heartbeats from a cached device sample.
+-
+-Stop sets the latch before awaiting driver IO. It remains available when the
+-world journal, perception, approval service, or agent is unavailable. Report
+-`latched` separately from safe-state confirmation; failure to confirm remains
+-visible. Startup defaults to latched/unknown until reconciliation. Clearing the
+-latch requires an authenticated operator and fresh device status; it never
+-restarts the old action. Normal completion enters safe state and releases the
+-session without setting the emergency latch.
+-
+-Native actions remain an explicit driver extension with their own schema,
+-interruptibility, completion signal, and deadline. Do not treat a long native
+-action as an instantaneous one-chunk stream. Only enable a native action in the
+-public catalog once its execution and stop semantics have a conformance fixture.
+-The v1 example and control-session interface cover planar velocity only.
+-
+-## 8. Optional governance and remote execution
+-
+-Admission policy is a hook around the same action request. Approval adds a
+-pending state to that execution; it does not introduce another Run state machine.
+-Mission is optional execution grouping. Package installation is configuration
+-until independent users and deployments require a registry API. Action and
+-component schemas remain pinned regardless of deployment size.
+-
+-For remote control, a signed grant must bind execution, robot, executor digest,
+-audience, controller epoch, expiry, limits, and signing key ID. Journal issuance
+-before dispatch; durably record grant consumption before starting actuation.
+-An exact transport retry returns the same admission receipt without restarting
+-motion. Reject a different grant for a consumed execution. Restart changes the
+-controller epoch; old grants cannot open new sessions. Keep consumption records
+-at least until expiry plus the configured skew bound and recovery window.
+-
+-Use a maintained JOSE implementation: compact JWS JWT with EdDSA/Ed25519,
+-protected `kid` and `typ: nemeia-control+jwt`, and verified issuer, audience,
+-expiry, and private claims. Configure the allowed algorithm and trusted key
+-set locally; never trust a token's key URL or choose algorithms from its input.
+-JWT times use NumericDate seconds, unlike domain timestamps. This avoids
+-inventing a signed-envelope format. Reject unknown authority claims in this
+-profile and use a distinct validation path from login/access tokens. JWS signs
+-the encoded bytes and does not require canonical JSON. Use a tested RFC 8785
+-library only for request/content fingerprints that actually need canonicalization.
+-The optional remote adapter verifies the grant and converts it to local
+-`ControlAdmission`; raw grants are not a new action meaning. Sensitive sensor
+-access and network/sandbox permissions belong to the executor host's pinned
+-launch configuration and authenticated channel, not to a caller-editable request.
+-
+-## 9. Attention, prediction, and projections
+-
+-Start attention with `events(after)` plus deterministic formatting. The client
+-persists its cursor only after consuming a page. If durable delivery is needed,
+-store exact bytes and cursor movement in one transaction with a delivery ID;
+-retry returns the same delivery. A log cursor alone cannot reconstruct an LLM
+-summary. Avoid a custom expression language for a few filters: types, execution
+-scope, severity, and timeout cover the initial need. Do not call a small custom
+-parser CEL-compatible without a CEL conformance suite.
+-
+-Replay, reports, and anomalies use the same execution IDs and event identities.
+-Count unique terminal executions, not both `run.completed` and an authorization
+-completion. Projection caches have an applied cursor and algorithm/schema pin.
+-They consume all pages, resume incrementally, and never stop silently after a
+-fixed 10,000-event prefix.
+-
+-Prediction is a pure query over an explicit world snapshot, with algorithm and
+-engine pins. Its result names geometry coverage and uncertainty. The current
+-AABB checker is an approximation, not a Box3D engine integration. Keep predictions
+-advisory until the specific adapter and geometry class are validated.
+-
+-## 10. Storage and transport
+-
+-The durable core needs two tables: `events` and `command_receipts`. World state
+-and executions reduce from events; add `world_checkpoints` and `execution_index`
+-only for startup/query cost. Add `resources` only for retained bytes and
+-`deliveries` only for durable attention. Physical hosts additionally need local
+-`control_state` and `control_receipts`. The page lists every column and constraint.
+-
+-The event cursor is a per-world ordered commit position, serialized as an opaque
+-token. The SQL implementation locks a world writer and allocates committed order
+-inside the transaction. Do not assume auto-increment allocation is commit order
+-under concurrent writers. `command_receipts` has the unique retry key, principal,
+-request fingerprint, original response, and committed cursor in the same
+-transaction. Checkpoints are disposable acceleration; events and receipts are
+-authoritative in the durable profile. Memory-only simulations advertise that
+-their identities and cursors expire with the world session.
+-
+-HTTP is one adapter: `GET /world`, `GET /world/changes?after=`,
+-`GET /affordances?actorId=&targetId=`, `POST /executions`,
+-`GET /executions/{id}`, `POST /executions/{id}/cancel`, `GET /events?after=`.
+-Trusted ingestion uses `POST /observations`; world writes are host-internal.
+-The physical profile adds `POST /robots/{id}/stop` and `/clear-stop`.
+-Approval optionally adds `POST /executions/{id}/decision`.
+-Document this adapter with OpenAPI 3.1.1 and the same JSON Schema definitions;
+-generate clients rather than maintaining handwritten duplicate DTOs. These
+-host-side interfaces receive `RequestContext` from authentication middleware,
+-not caller-controlled JSON. The service instance fixes the world scope.
+-
+-Use 400 invalid, 403 forbidden, 404 notFound, 409 conflict, 503 unavailable,
+-504 timeout, and 500 internal; authentication adds 401. Expected failures use
+-RFC 9457 `application/problem+json` on HTTP and
+-`Result` in the SDK. An accepted asynchronous execution returns 202 and its ID;
+-already terminal responses use 200. Transport loss leaves the caller uncertain:
+-retry the same request ID. CLI is a formatter over the same adapter and adds no
+-business policy. An SSE/WS convenience stream must preserve the journal cursor
+-and reconnect semantics; polling is sufficient for v1.
+-
+-## 11. Reuse standards and operating-system mechanisms
+-
+-The default stack is a modular host, existing robot adapters, a maintained
+-schema validator, and a transactional database. Do not build another scheduler,
+-message broker, signature format, schema engine, or sandbox. Add a separate
+-process only for isolation or a measured deployment constraint; an interface
+-is not a reason to create a microservice.
+-
+-| Concern | Basis | What Nemeia adds |
+-| --- | --- | --- |
+-| Units and axes | [ROS REP-103](https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0103.rst) | Explicit field units and validation. |
+-| Mobile coordinate frames | [ROS REP-105](https://raw.githubusercontent.com/ros-infrastructure/rep/master/rep-0105.rst) | World scoping and retained transform samples. |
+-| Oriented boxes | [ROS BoundingBox3D](https://raw.githubusercontent.com/ros-perception/vision_msgs/ros2/vision_msgs/msg/BoundingBox3D.msg), [BoundingBox2D](https://raw.githubusercontent.com/ros-perception/vision_msgs/ros2/vision_msgs/msg/BoundingBox2D.msg) | JSON union tags and evidence references. |
+-| Pose | [ROS Pose](https://raw.githubusercontent.com/ros2/common_interfaces/rolling/geometry_msgs/msg/Pose.msg) | Explicit containing frame and units. |
+-| Schema validation | [JSON Schema 2020-12](https://json-schema.org/draft/2020-12) | Closed registered core and package schemas. |
+-| HTTP description | [OpenAPI 3.1.1](https://spec.openapis.org/oas/v3.1.1.html) | World and execution resource routes; generated client bindings. |
+-| Event envelopes | [CloudEvents 1.0.2](https://raw.githubusercontent.com/cloudevents/spec/v1.0.2/cloudevents/spec.md) | Versioned domain payloads, causal links, and a separate journal cursor. |
+-| API failures | [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html) | Stable problem-type URIs; no parallel error envelope on HTTP. |
+-| Long-running actions | [ROS 2 actions](https://design.ros2.org/articles/actions.html) | One execution identity, feedback, cancel, and terminal result. Approval is a pre-admission extension. |
+-| Sensor delivery | [ROS 2 QoS](https://raw.githubusercontent.com/ros2/ros2_documentation/jazzy/source/Concepts/Intermediate/About-Quality-of-Service-Settings.rst) | Explicit depth, loss, freshness, and liveness requirements per stream. |
+-| Durable decisions | [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html), [ON CONFLICT](https://www.postgresql.org/docs/current/sql-insert.html) | Transactions and unique retry keys; no homegrown consensus protocol. |
+-| Remote event publishing | [Transactional outbox pattern](https://microservices.io/patterns/data/transactional-outbox.html) | Publish committed events at least once; consumers deduplicate by event ID. No broker required locally. |
+-| Signed remote grants | [JWT](https://www.rfc-editor.org/rfc/rfc7519.html), [EdDSA in JOSE](https://www.rfc-editor.org/rfc/rfc8037.html), [JWT security guidance](https://www.rfc-editor.org/rfc/rfc8725.html) | Execution/robot/executor/epoch/limits claims and durable admission receipt. |
+-| Request fingerprint | [RFC 8785 JCS](https://www.rfc-editor.org/rfc/rfc8785) | Hash the canonical operation/body/principal/world; not a custom signing scheme. |
+-| Worker RPC, if needed | [JSON-RPC 2.0](https://www.jsonrpc.org/specification) | Methods for executor start, progress, cancellation and result; local calls need no envelope. |
+-| Linux isolation | [bubblewrap](https://github.com/containers/bubblewrap), [Landlock](https://docs.kernel.org/userspace-api/landlock.html) | Least-privilege launch profile; use OS enforcement, not a JavaScript sandbox simulation. |
+-| Distributed tracing | [W3C Trace Context](https://www.w3.org/TR/trace-context/) | Propagate standard tracing metadata; domain causation remains explicit event IDs. |
+-
+-ROS action states map as follows: accepted → `accepted`, executing → `running`,
+-canceling → `cancelling`, succeeded → `succeeded`, canceled → `cancelled`,
+-aborted → `failed`. These are semantic mappings, not ROS wire compatibility.
+-The local action adapter can delegate navigation to a qualified ROS action
+-server instead of rebuilding its planner/controller. Do not impose ROS on the
+-existing Go2 WebRTC path; adapt its device transport at the same boundary.
+-
+-Choose bounded latest-sample delivery for live perception, with loss counters;
+-choose durable ordered delivery for decisions and results. ROS/DDS QoS is a
+-transport option, not a replacement for the decision journal. No distributed
+-transaction spans robot IO. Use an outbox only when crossing a remote boundary,
+-and do not claim exactly-once physical effects from broker delivery settings.
+-
+-The host is a supervisor, not a new operating system: it owns process lifetime,
+-resource cleanup, permission configuration, deadlines and crash reconciliation.
+-Use systemd or the existing deployment supervisor for restarts and resource
+-limits; use OS sandboxing for untrusted executors. The repository already has a
+-bubblewrap path: make the required isolation profile explicit and fail closed
+-if it is unavailable, rather than adding a new sandbox framework. Terminate
+-process trees on timeout. Trigger the local stop path before waiting for
+-untrusted cleanup. A Node event loop is not a hard-real-time safety guarantee;
+-device watchdogs and robot qualification remain necessary.
+-
+-These are mappings and selected conventions. Nemeia JSON is not a ROS message,
+-and a resource reference is not the `PointCloud2` binary layout. Each adapter
+-must state its conversion and resource encoding. No claim of full ROS, CEL,
+-physics-engine, or wire-schema conformance is implied by these declarations.
+-
+-## 12. Implementation and acceptance
+-
+-1. Replace the old contracts. Generate schemas, fixtures, and client bindings
+-   for these types; ensure the page renders the same declarations. Do not add
+-   compatibility adapters or preserve prototype databases.
+-2. Give the World Runtime one session lifetime, typed components, atomic batches,
+-   stable event IDs, and durable request receipts. Adapt the UI projection.
+-3. Implement observation timestamps, association, facet merging, transforms,
+-   and an incremental world projector. Remove the separate Scene authority.
+-4. Bind the same action catalog to simulation and the local physical gate.
+-   Migrate direct/manual motion through it before autonomous motion adoption.
+-5. Add mission grouping or approval only where a consumer requires it. Implement
+-   attention/report/replay over the common journal. Delete replaced prototype
+-   modules as each vertical slice lands; do not carry their wire formats forward.
+-
+-Acceptance cases: two same-label objects remain distinct; geometry-only and
+-semantic-only updates compose; replay does not refresh evidence; stale/future
+-evidence blocks the relevant action; an invalid effect rolls back the complete
+-batch; duplicate dispatch across concurrent calls/restart does not start twice;
+-changed-body retries conflict; a snapshot resumes without gaps; projections pass
+-the old 10,000-event boundary; cancellation wins its race once committed;
+-watchdog/deadline are failures; stop works with storage unavailable; unknown
+-physical outcomes are never automatically repeated; and JCS official vectors pass.
+-
+-The remaining implementation work is deliberate: runtime wire validation,
+-durable transactions, robot-host isolation, actual perception association, and
+-hardware qualification. This revision specifies those obligations and removes
+-unnecessary services; it does not claim the existing code already satisfies them.
++# Retired protocol draft
++
++This earlier protocol is superseded by [the selected SpacetimeDB protocol](./protocol-spacetimedb.md).
++The executable authority is the [module source](../contracts/spacetimedb/src/index.ts)
++and its [generated client](../world-client/src/generated/index.ts).
++
++The prototype WorldService/journal and custom transport are not a supported
++runtime or compatibility path. Their historical tests and source remain on disk
++pending separately reviewed package retirement; Git history is preserved.
++
++Use the [runbook](./implementation-plan/RUNBOOK.md) for selected commands and
++[execution status](./implementation-plan/EXECUTION.md) for qualification evidence.
+diff --git a/docs/protocol-review.md b/docs/protocol-review.md
+--- a/docs/protocol-review.md
++++ b/docs/protocol-review.md
+@@ -1,117 +1,12 @@
+-# Historical protocol review and simplification decisions
+-
+-Reviewed 2026-09-15 against repository commit
+-`df78b1c2d779f4cfd2fc5dfa5428c76bc358eea4`. This is a design review, not a
+-hardware certification or a claim that the proposed API is implemented.
+-The resulting [earlier protocol](./protocol.md) is historical. The selected
+-implementation authority is [the SpacetimeDB protocol](./protocol-spacetimedb.md).
+-The project is pre-production: replace the old contracts outright, with no
+-backward-compatibility, dual-write, historical decoder, or data-migration requirement.
+-
+-## Conclusion
+-
+-Keep World, Entity, Component, Relationship, Affordance, Action, System, and
+-Event. The main simplification is not fewer fields at any cost: it is fewer
+-competing authorities. One world owns domain state; one execution owns action
+-lifecycle; one local gate owns physical control; one journal owns committed
+-decisions. Scene, UI, attention, and replay are readers or projections of those
+-same objects. Missions and approval remain optional, not prerequisites for
+-moving a simulated entity.
+-
+-Use established mechanisms at the edges: CloudEvents, JSON Schema/OpenAPI,
+-Problem Details, ROS units/frames/action semantics, JOSE, SQL transactions,
+-OS process supervision and sandboxing. Do not introduce Kafka, a workflow
+-engine, Kubernetes, or ROS as mandatory infrastructure for the small deployment.
+-The [standards matrix](./protocol.md#11-reuse-standards-and-operating-system-mechanisms)
+-distinguishes exact formats from semantic mappings and design patterns.
+-
+-## Highest-priority findings
+-
+-Priorities indicate implementation order. P0 means resolve before relying on this
+-path for unsupervised physical operation, not that a live robot was tested.
+-
+-| Priority | Current evidence | Consequence | Revised contract and acceptance check |
+-| --- | --- | --- | --- |
+-| P0 | [Supervisor](../supervisor/src/supervisor-kernel.ts) relies on `tick()` for watchdog/deadline work; its HTTP server exposes `/tick`, while its interval forwards events. Duration expiry calls the completion path. | A deployment without an independent tick runner has no demonstrated deadline enforcement; timeout can be described as completion. | Local monotonic watchdog owned by gate, independent of agent/journal. Kill client, stop ticking remote API, and verify local safe-state attempt plus failed execution. |
+-| P0 | [Async capability host](../capability-host/src/process-isolated-capability.ts) awaits capability abort/stop before calling kernel stop. | Untrusted cleanup can delay the control stop path. | Revoke/latch locally before waiting for worker cleanup; test a worker that never resolves. |
+-| P0 | [Go2 driver](../driver-go2/src/go2-driver.ts) refreshes `lastStatusAt` when `status()` returns non-null transport state. | Polling a cached status can appear to refresh device liveness. | Timestamp actual device reception. Frozen transport plus repeated reads must become stale. Distinguish sent, acknowledged, and measured effects. |
+-| P0 | [Mission API](../mission-api/src/mission-api.ts), [mission server](../mission-server/src/mission-server.ts), and supervisor keep retry/consumption state in Maps. API caches only after awaiting dispatch. | Concurrent requests and process restarts have no durable common deduplication boundary. | Unique request receipt plus event transaction; durable local execution admission. Same request starts once; changed body conflicts; uncertain physical work is not auto-repeated. |
+-| P1 | [World Runtime](../world-runtime/src/world-runtime.ts) applies effects one by one and exposes the mutable runtime to action `perform`. | A later invalid effect leaves earlier changes committed; an executor can bypass staged effects. | Validate the prospective batch, then commit atomically. Executor returns changes instead of mutating the world. |
+-| P1 | [Scene projector](../scene/src/scene-projector.ts) falls back to `type:label` identity, requires a known first label, and replaces projected facets with each observation. | Two backpacks merge; geometry-only evidence is dropped; semantic-only updates can erase geometry. | Source-scoped tracks and explicit association; independent semantic/geometric facets and times. Test all three cases. |
+-| P1 | [Event log](../mission-server/src/event-log.ts) replaces the supplied timestamp with its clock; Scene derives observation time from that timestamp. | Delayed evidence can become artificially fresh; bridging changes original time. | Separate acquisition, event, and recording times. Replaying or polling must never refresh evidence. |
+-| P1 | [Geometry schema](../contracts/schemas/nem-suite.schema.json) requires only type/frame; [world twin](../world-twin/src/world-twin.ts) can invent a center and 0.2 m dimensions. | A missing measurement becomes a concrete collision object. | Discriminated required shapes with ROS semantics; unknown remains unknown. Reject incomplete boxes. |
+-| P1 | World Runtime journals changed component keys rather than full values; UI [world panel](../frontend/components/world/world-panel.tsx) creates a runtime during render. | Exact state reconstruction is unavailable; local identity/cursors are not session-stable. | Full committed `Change[]`, one session owner, snapshot and resume cursor read atomically. |
+-| P1 | [Canonical JSON](../contracts/src/canonical-json.ts) sorts keys with `localeCompare`; [contract checker](../contracts/scripts/check-contracts.ts) is a handwritten JSON Schema subset. | Standard names do not imply standard conformance; signing and validation can diverge across implementations. | Replace with maintained JOSE, JCS and JSON Schema libraries with official vectors; no old verifier or compatibility path. |
+-| P1 | World Runtime calls `available` through affordance discovery with an empty input object, then passes actual input only to execution. Target requirement is inferred from component-list length. | Input-dependent checks are not reliably enforced before side effects; target cardinality is implicit. | Recheck actual input at dispatch; explicit `none`/`required` target. Pin relevant component versions. |
+-| P2 | [Robot world projection](../frontend/lib/world/robot-world-runtime.ts) carries display labels/details/state in components and UI navigation as actions. | Domain logic depends on presentation conventions; opening a panel can look like physical completion. | Typed domain components; derive labels/colors in the view; route real manual motion through the same physical gate. |
+-| P2 | Scene reads a fixed first 10,000 events; [replay builder](../replay/src/replay-builder.ts) has a fixed large limit and counts both run and authorization completion. | Larger histories truncate silently; one attempt can be counted twice. | Incremental cursors, all pages, unique execution terminal states; cross the old limit in a fixture. |
+-| P2 | [Attention drain](../attention/src/attention-inbox.ts) updates an in-memory digest/cursor before journal append. | Restart or append failure can lose exact delivery bytes and progress. | Default to event cursor + formatter; if durable delivery is required, persist bytes and cursor in one transaction. |
+-| P2 | Scene derives affordances through ontology while policy/registry and World Runtime also decide applicability. | Multiple catalogs can disagree about the same action or revoked package. | One action catalog and one dispatch admission path; ontology supplies semantic hypotheses, not physical capability. |
+-| P2 | [World twin](../world-twin/src/world-twin.ts) labels a built-in AABB adapter `box3d-0.1.0`. | A descriptor can imply an engine integration or fidelity absent from this adapter. | Name the actual algorithm and coverage; keep prediction advisory and distinguish replay from resimulation. |
+-
+-## Reproductions performed during review
+-
+-Read-only local probes confirmed these four results; no robot commands or
+-network writes were involved:
+-
+-```text
+-Two untracked backpack observations → one projected entity.
+-Action: set power to 10%, then reference a missing entity → failure, power remains 10%.
+-Append timestamp 00:00:01 with journal clock 00:00:10 → stored timestamp 00:00:10.
+-canonicalize({a:1,A:2}) → {"a":1,"A":2}; JCS ordering requires {"A":2,"a":1}.
+-```
+-
+-These demonstrate present behavior. The other findings above come from static
+-source review and should receive regression tests during implementation.
+-
+-## Replacement boundaries
+-
+-| Existing protocol | Keep | Simplify or move |
+-| --- | --- | --- |
+-| Common | Identity, versions, strict boundaries | Standard errors and schema tools; one casing; delete old shapes and parsers. |
+-| NEM-1 · Event log | Append-only decisions, projections, replay | CloudEvents envelope + journal cursor; transaction receipts; no special log per service. |
+-| NEM-2 · Authorization | Enforceable bounded authority near hardware | Local admission by default; JOSE grant only for a remote trust boundary; no second run lifecycle. |
+-| NEM-3 · Missions/runs | Optional grouping and human approval | WorldService executions are primary; mission is grouping, approval is an admission state. |
+-| NEM-4 · Supervisor | Local watchdog, exclusivity, stop, bounds | ControlGate/Session; no agent-driven tick dependency or synthetic successful timeout. |
+-| NEM-5 · Driver | Vendor transport and normalized device evidence | RobotDriver; typed streams and sent/ack distinction; local profile owns configuration. |
+-| NEM-6 · Capability | Pinned implementation and restricted access | ActionExecutor Promise + AbortSignal + progress; OS process boundary when untrusted. |
+-| NEM-7 · Policy/registry | Admission and installed package pins | Local policy/config first; remote organization registry only when needed. |
+-| NEM-8 · Scene/twin | Evidence association, spatial views, prediction | Scene is a World view; ROS geometry mappings; pure optional predictor with honest coverage. |
+-| NEM-9 · Attention | Event selection and understandable delivery | Cursor + deterministic formatter first; durable delivery optional; no custom CEL subset. |
+-| NEM-10 · Conformance | Repeatable contracts, fixtures, qualified adapters | Generate schema tests; retain hardware tests separately; avoid a registry bureaucracy for local types. |
+-
+-Cross-cutting modules: anomaly records are optional domain extensions; replay
+-and CLI are read adapters; conformance is verification tooling; the frontend
+-renders snapshots and dispatches through the same service. The current runtime
+-prototype packages are not rewritten by this specification change. They are
+-not compatibility obligations and should be deleted when their replacement lands.
+-
+-## Deliberately not collapsed
+-
+-- Observation is not an entity: uncertain evidence and associated belief have
+-  different identity and lifetime.
+-- Frame is not a retained resource: a live camera frame can expire without
+-  changing the historical fact that a detector used it.
+-- Action is not executor: meaning must survive moving from simulation to Go2
+-  or to a ROS action server.
+-- Event ID is not cursor: identity survives transport while order is local.
+-- World commit is not motor command: database rollback cannot undo motion.
+-- Stop latch is not safe-state confirmation: a software request is not proof
+-  of a physical result.
+-
+-## Smallest implementation sequence
+-
+-1. Generate one schema/API source and implement world commit + request receipts.
+-   Prove rollback, restart recovery, concurrent retries, and cursor resumption.
+-2. Replace the second Scene model with an incremental world projector. Prove
+-   identity, independent times/facets, transforms and removal semantics.
+-3. Bind one action to simulation and a qualified local physical executor. Prove
+-   cancellation, device staleness, watchdog, restart and stop failure behavior.
+-4. Adapt UI and CLI; then add approval, remote grants or durable attention only
+-   when a consumer requires them.
+-
+-Open deployment choices are not extra protocol types: database deployment,
+-concrete schema generator/validator and JOSE package, resource retention,
+-trusted clock-error bounds, and per-robot qualified safe-state behavior. Select
+-and pin those in implementation after integration tests. The specification does not
+-pretend a TypeScript declaration resolves hardware or distributed failure modes.
++# Historical protocol review
++
++The 2026-09-15 review concerned prototype commit
++`df78b1c2d779f4cfd2fc5dfa5428c76bc358eea4`. It is historical risk evidence,
++not current API authority or a hardware qualification.
++
++The selected authority is [the SpacetimeDB protocol](./protocol-spacetimedb.md),
++the [module source](../contracts/spacetimedb/src/index.ts), and generated native
++clients. Read [execution status](./implementation-plan/EXECUTION.md) for actual
++gate evidence and [the runbook](./implementation-plan/RUNBOOK.md) for startup.
++The original review remains recoverable in Git history. No source packages,
++recordings, credentials or user data were removed by this documentation retirement.

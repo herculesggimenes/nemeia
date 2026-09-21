@@ -1,0 +1,197 @@
+import { Identity, Timestamp } from "spacetimedb";
+import type { CurrentWorldSnapshot } from "../../world-client/src/index.ts";
+
+const observedAt = Timestamp.fromDate(new Date("2026-09-20T00:00:02.000Z"));
+const createdAt = Timestamp.fromDate(new Date("2026-09-20T00:00:00.000Z"));
+const owner = new Identity(1n);
+const captured = {
+  streamId: "camera/color",
+  sessionId: "session-1",
+  sequence: 1n,
+  capturedAt: observedAt,
+};
+const pose = {
+  positionM: { x: 1, y: 2, z: 0 },
+  orientation: { x: 0, y: 0, z: 0, w: 1 },
+};
+
+export function generatedWorldSnapshot(): CurrentWorldSnapshot {
+  return {
+    readiness: [{
+      key: "world",
+      worldId: "world-1",
+      mode: "simulation",
+      authorized: true,
+      role: "agent",
+      unitId: "unit-1",
+      synchronized: true,
+    }],
+    addressedMessages: [],
+    assignedMissions: [{
+      id: "mission-1",
+      owner,
+      spec: {
+        description: "inspect the blue backpack",
+        template: undefined,
+        objectives: [
+          {
+            id: "objective-1",
+            description: "observe the backpack semantically",
+            dependsOn: [],
+            optional: false,
+            criterion: {
+              tag: "Observed",
+              value: { entityId: "entity-1", facet: { tag: "Semantic" }, maxAgeMs: 1000 },
+            },
+          },
+          {
+            id: "objective-2",
+            description: "report the backpack location",
+            dependsOn: ["objective-1"],
+            optional: false,
+            criterion: { tag: "Located", value: { description: "report measured location" } },
+          },
+        ],
+        deadlineAt: Timestamp.fromDate(new Date("2026-09-20T01:00:00.000Z")),
+      },
+      state: { tag: "Active" },
+      revision: 1n,
+      feedbackSequence: undefined,
+      closingOutcome: undefined,
+      createdAt,
+      updatedAt: observedAt,
+    }],
+    relevantActionBindings: [{
+      key: "unit-1:navigate",
+      unitId: "unit-1",
+      actionName: "navigate",
+      version: 2n,
+      policy: {
+        executor: { name: "nemeia-controller", version: "1.0.0", sha256: "a".repeat(64) },
+        mode: { tag: "Simulation" },
+        maxEvidenceAgeMs: 2000,
+        maxLinearMps: 1,
+        maxRunMs: 1000,
+        toleranceM: 0.1,
+      },
+    }],
+    relevantAgents: [{
+      id: "agent-1",
+      principal: owner,
+      displayName: "Unit agent",
+      readScope: { worldId: "world-1" },
+      paused: false,
+      revision: 3n,
+    }],
+    relevantEntities: [{
+      id: "entity-1",
+      displayName: "Blue backpack",
+      kind: "backpack",
+      createdAt,
+      removedAt: undefined,
+    }],
+    relevantExecutions: [{
+      id: "execution-1",
+      requestedBy: owner,
+      agentId: "agent-1",
+      unitId: "unit-1",
+      missionId: "mission-1",
+      objectiveId: "objective-1",
+      missionRevision: 1n,
+      assignmentRevision: 1n,
+      requestFingerprint: "fingerprint",
+      acceptBy: observedAt,
+      input: {
+        tag: "Navigate",
+        value: {
+          mapId: "map-1",
+          basisRevision: 2n,
+          targetFrameId: "map",
+          target: pose,
+        },
+      },
+      binding: {
+        executor: { name: "nemeia-controller", version: "1.0.0", sha256: "a".repeat(64) },
+        mode: { tag: "Simulation" },
+        maxEvidenceAgeMs: 2000,
+        maxLinearMps: 1,
+        maxRunMs: 1000,
+        toleranceM: 0.1,
+      },
+      bindingVersion: 2n,
+      targetVersion: 1n,
+      targetFrameId: undefined,
+      targetBasisObservationId: undefined,
+      state: { tag: "Accepted" },
+      controller: undefined,
+      controllerEpoch: undefined,
+      claimedAt: undefined,
+      createdAt,
+      updatedAt: observedAt,
+      result: undefined,
+      receiptId: "receipt-1",
+      safeStateProof: undefined,
+    }],
+    relevantGeometry: [{
+      key: "geometry-1",
+      entityId: "entity-1",
+      frameId: "map",
+      value: {
+        tag: "BoundingBox2D",
+        value: { frame: captured, centerX: 10, centerY: 20, width: 30, height: 40, angleRad: 0 },
+      },
+      observedAt,
+      observationId: "observation-1",
+      version: 1n,
+    }],
+    relevantLocalMaps: [{
+      id: "map-1",
+      unitId: "unit-1",
+      rootFrameId: "map",
+      headRevision: 2n,
+      updatedAt: observedAt,
+    }],
+    relevantMissionAgents: [{ key: "mission-1:agent-1", missionId: "mission-1", agentId: "agent-1", active: true }],
+    relevantMissionObjectiveProgress: [{
+      key: "mission-1:objective-1",
+      missionId: "mission-1",
+      objectiveId: "objective-1",
+      evidence: { tag: "Observation", value: { observationId: "observation-1" } },
+      recordedAt: observedAt,
+    }],
+    relevantPoses: [{
+      key: "pose-1",
+      entityId: "entity-1",
+      frameId: "map",
+      value: pose,
+      observedAt,
+      observationId: "observation-1",
+      version: 1n,
+    }],
+    relevantSemantic: [{
+      entityId: "entity-1",
+      frameId: "map",
+      value: { hypotheses: [{ label: "backpack", score: 0.9 }] },
+      observedAt,
+      observationId: "observation-1",
+      version: 1n,
+    }],
+    relevantUnitAssignments: [{
+      unitId: "unit-1",
+      agentId: "agent-1",
+      revision: 1n,
+      actionNames: ["navigate"],
+      expiresAt: undefined,
+      updatedAt: observedAt,
+    }],
+    relevantUnitControls: [{
+      unitId: "unit-1",
+      controller: owner,
+      epoch: 4n,
+      activeExecutionId: "execution-1",
+      stopLatched: false,
+      safeStateConfirmed: true,
+      observedAt,
+    }],
+  } satisfies CurrentWorldSnapshot;
+}
